@@ -97,7 +97,7 @@ Detailed explanations of the classes are included in the repository:
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/robot-utility.git
+git clone https://github.com/J0K3R-Joel/BotBall_Library.git
 ```
 
 2. Copy the repository to a USB stick.

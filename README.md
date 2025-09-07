@@ -2,8 +2,9 @@
 
 **Author:** Joel Kalkusch  
 **Email:** [kalkusch.joel@gmail.com](mailto:kalkusch.joel@gmail.com)  
-**Nationality**: Austrian (Österreich)
+**Nationality**: Austrian (Österreich)  
 **Date of Creation**: 2025-09-07
+
 
 ---
 

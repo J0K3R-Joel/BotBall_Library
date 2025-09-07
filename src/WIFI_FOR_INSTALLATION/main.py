@@ -11,8 +11,8 @@ except Exception as e:
 
 
 def wifi_setup():
-    SSID = 'TMOBILE-36869'
-    PASS = 'TMADE24762'
+    SSID = 'Mustermann_WIFI'
+    PASS = 'Mustmann_password'
     connector = WifiConnector(ssid=SSID, password=PASS)
     if not connector.is_connected_to_ssid():
         print(

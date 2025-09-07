@@ -102,23 +102,31 @@ git clone https://github.com/J0K3R-Joel/BotBall_Library.git
 
 2. Copy the repository to a USB stick.
 
-3. Go to the [KIPR Wombat firmware](https://www.kipr.org/kipr/hardware-software/kipr-wombat-firmware) page
+3. Go in [./src/WIFI_FOR_INSTALLATION/main.py](./src/WIFI_FOR_INSTALLATION/main.py) and change the SSID and PASS inside the `wifi_setup()` to a wifi that grants you internet access, so libraries can get installed 
 
-4. Download the latest image.
+4. Go in [./src/src_WIFI/commU.py](./src/src_WIFI/commU.py)  and look for the `standard_conf()` function. Change the `ssid` and `password` to the a private network (preferably a router you got from home). Internet access is not required.
 
-5. Flash the image onto the robot following the instructions on the KIPR website.
+5. Do the same thing as in the previous step, but in [./src/src_Base/commU.py](./src/src_Base/commU.py)
 
-6. Once the robot is flashed and ready, insert the USB stick.
+6. Go to the [KIPR Wombat firmware](https://www.kipr.org/kipr/hardware-software/kipr-wombat-firmware) page
 
-7. Navigate to the path of the USB stick on the robot.
+7. Download the latest image.
 
-8. Run the configuration script:
+8. Flash the image onto the robot following the instructions on the KIPR website.
+
+9. Once the robot is flashed and ready, insert the USB stick.
+
+10. Navigate to the path of the USB stick on the robot.
+
+11. Run the configuration script:
 
 ```bash
 sudo bash config.sh
 ```
 
-9. The installation is complete.
+> Notice: sometimes there is an error in the beginning. If so, then press "Ctrl + c" (for canceling the installation) and afterwards just re-execute the configuration script, then you should be good to go
+
+12. The installation is complete.
 
 ---
 
@@ -127,6 +135,12 @@ sudo bash config.sh
 Example usage for most classes is provided in the documentation files linked above.
 
 ---
+
+## Additional Information
+
+- You will find the `ideas.py` file inside the [base user folder](./src/src_Base/ideas.py). This file is meant to collect ideas on how to handle certain tasks or provide potentially useful snippets. It is not intended for direct execution, but rather as a reference to help with situational problems or concepts that didn’t fit neatly into any class.
+
+- Some classes—especially the `FakeR` class—are quite complex in terms of logic. The `RoboCommunicator` and `FakeR` classes work hand in hand, which makes communication increasingly complicated the more features you add. Since both robots need to communicate seamlessly to get the most value, mastering communication between `RoboCommunicator`, `FakeR`, and the camera classes unlocks almost limitless possibilities. If you have any questions about what to do or how something works, feel free to reach out to me. 
 
 ## License
 

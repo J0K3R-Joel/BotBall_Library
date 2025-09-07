@@ -42,8 +42,8 @@ class WifiConnector:
             the created instance of this WifiConnector class
         '''
         instance = cls(
-            ssid='JOELK',
-            password='5AHIT-BOTBALL-LinzerTechnikum1.'
+            ssid='name_of_wifi',
+            password='password_of_wifi'
         )
         if not instance.is_connected_to_ssid():
             log(f'Wombat not connected to the wifi, trying to reconnect to SSID: {instance.ssid}')

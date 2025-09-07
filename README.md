@@ -70,25 +70,25 @@ The repository is organized as follows:
 
 Detailed explanations of the classes are included in the repository:
 
-- [commU_explainer.md](https://chatgpt.com/c/doc/commU_explainer.md) – Full explanation and usage guide for the `WifiConnector` class
+- [commU_explainer.md](./doc/commU_explainer.md) – Full explanation and usage guide for the `WifiConnector` class
 
-- [digital_explainer.md](https://chatgpt.com/c/doc/digital_explainer.md) – Full explanation and usage guide for the `Digital` class
+- [digital_explainer.md](./doc/digital_explainer.md) – Full explanation and usage guide for the `Digital` class
 
-- [distance_sensor_explainer.md](https://chatgpt.com/c/doc/distance_sensor_explainer.md) – Full explanation and usage guide for the `DistanceSensor` class
+- [distance_sensor_explainer.md](./doc/distance_sensor_explainer.md) – Full explanation and usage guide for the `DistanceSensor` class
 
-- [driveR_explainer.md](https://chatgpt.com/c/doc/driveR_explainer.md) – Full explanation and usage guide for the `driveR_two` and `driveR_four` classes
+- [driveR_explainer.md](./doc/driveR_explainer.md) – Full explanation and usage guide for the `driveR_two` and `driveR_four` classes
 
-- [fake_explainer.md](https://chatgpt.com/c/doc/fake_explainer.md) – Full explanation and usage guide for the `FakeR` class
+- [fake_explainer.md](./doc/fake_explainer.md) – Full explanation and usage guide for the `FakeR` class
 
-- [fileR_explainer.md](https://chatgpt.com/c/doc/fileR_explainer.md) – Full explanation and usage guide for the `FileR` class
+- [fileR_explainer.md](./doc/fileR_explainer.md) – Full explanation and usage guide for the `FileR` class
 
-- [light_sensor_explainer.md](https://chatgpt.com/c/doc/light_sensor_explainer.md) – Full explanation and usage guide for the `LightSensor` class
+- [light_sensor_explainer.md](./doc/light_sensor_explainer.md) – Full explanation and usage guide for the `LightSensor` class
 
-- [logger_explainer.md](https://chatgpt.com/c/doc/logger_explainer.md) – Full explanation and usage guide for the `logger` file
+- [logger_explainer.md](./doc/logger_explainer.md) – Full explanation and usage guide for the `logger` file
 
-- [RoboComm_explainer.md](https://chatgpt.com/c/doc/RoboComm_explainer.md) – Full explanation and usage guide for the `RobotCommunicator` class
+- [RoboComm_explainer.md](./doc/RoboComm_explainer.md) – Full explanation and usage guide for the `RobotCommunicator` class
 
-- [util_explainer.md](https://chatgpt.com/c/doc/util_explainer.md) – Full explanation and usage guide for the `Util` class
+- [util_explainer.md](./doc/util_explainer.md) – Full explanation and usage guide for the `Util` class
 
 ---
 
@@ -131,5 +131,3 @@ Example usage for most classes is provided in the documentation files linked abo
 ## License
 
 This project is open for personal or educational use. For commercial use or redistribution, please contact the author directly.
-
-

@@ -37,7 +37,7 @@ class Digital:
         '''
         return k.digital(self.port)
 
-    def is_Pressed(self) -> bool:
+    def is_pressed(self) -> bool:
         '''
         tells you, if the button is pressed (True) or not (False)
 

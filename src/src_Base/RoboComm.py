@@ -199,6 +199,7 @@ class RobotCommunicator:
                             Options:
                                 "normal"   -> (default), just sending a message in the background
                                 "high"     -> will pause the main() and lets you execute a function before the main() resumes
+                                "pos"      -> sending the message but also saving the position so the other one can ask all the time where it was located last
                                 "new_main" -> == EXPERIMENTAL == (not yet tested) will forget what happens after the current main() and another function / new main will be executed until the end of the program / function / new main
 
        Returns:

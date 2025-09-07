@@ -131,7 +131,7 @@ def end_main(communication_instance):
 
 def is_it_pressed():
     log('waiting till its pressed')
-    while not TestButton.is_Pressed():
+    while not TestButton.is_pressed():
         continue
 
 def handle_high_priority(msg):
@@ -162,7 +162,7 @@ def main(p_event, communication):  # leave it as it is, just write in the try / 
         #communication.on_new_main(another_main)  # if something does not working accordingly you can all the time send a message so another main will be executed
         setup(p_event, communication)  # if you use the ocmmunication, you need these instances
         #communication.on_high_priority(handle_high_priority)
-        print(TestButton.is_Pressed(), flush=True)
+        print(TestButton.is_pressed(), flush=True)
         log('actual program running right now...')
         #for _ in range(5):  # simulation of doing anything before sending a high priority message
         #    do_something()

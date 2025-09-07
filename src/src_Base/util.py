@@ -268,5 +268,5 @@ class Util:
         '''
         self.check_instance_button_fr()
         log('waiting for button FR...')
-        while not self.button_fr.is_Pressed():
+        while not self.button_fr.is_pressed():
             continue

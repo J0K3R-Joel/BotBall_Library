@@ -137,7 +137,7 @@ Example usage for most classes is provided in the documentation files linked abo
 
 ---
 
-##### Additional Information
+## Additional Information
 
 - You can call `help({function_name})` or `help({class_name.function_name})` on any function I made to view its signature and docstring.  
 

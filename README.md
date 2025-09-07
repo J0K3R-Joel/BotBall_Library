@@ -5,7 +5,6 @@
 **Nationality**: Austrian (Österreich)  
 **Date of Creation**: 2025-09-07
 
-
 ---
 
 ## Overview
@@ -145,6 +144,8 @@ Example usage for most classes is provided in the documentation files linked abo
 - You will find the `ideas.py` file inside the [base user folder](./src/src_Base/ideas.py). This file is meant to collect ideas on how to handle certain tasks or provide potentially useful snippets. It is not intended for direct execution, but rather as a reference to help with situational problems or concepts that didn’t fit neatly into any class.
 
 - Some classes—especially the `FakeR` class—are quite complex in terms of logic. The `RoboCommunicator` and `FakeR` classes work hand in hand, which makes communication increasingly complicated the more features you add. Since both robots need to communicate seamlessly to get the most value, mastering communication between `RoboCommunicator`, `FakeR`, and the camera classes unlocks almost limitless possibilities. If you have any questions about what to do or how something works, feel free to reach out to me. 
+
+---
 
 ## License
 

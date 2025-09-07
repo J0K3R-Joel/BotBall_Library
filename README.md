@@ -2,7 +2,6 @@
 
 **Author:** Joel Kalkusch  
 **Email:** [kalkusch.joel@gmail.com](mailto:kalkusch.joel@gmail.com)  
-
 **Nationality**: Austrian (Österreich)
 **Date of Creation**: 2025-09-07
 
@@ -138,7 +137,9 @@ Example usage for most classes is provided in the documentation files linked abo
 
 ---
 
-## Additional Information
+##### Additional Information
+
+- You can call `help({function_name})` or `help({class_name.function_name})` on any function I made to view its signature and docstring.  
 
 - You will find the `ideas.py` file inside the [base user folder](./src/src_Base/ideas.py). This file is meant to collect ideas on how to handle certain tasks or provide potentially useful snippets. It is not intended for direct execution, but rather as a reference to help with situational problems or concepts that didn’t fit neatly into any class.
 

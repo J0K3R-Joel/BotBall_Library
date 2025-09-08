@@ -14,7 +14,6 @@ try:
     import socket
     import time
     from fileR import FileR  # selfmade
-    from util import Util  # selfmade
 except Exception as e:
     log(f'Import Exception in WifiConnector: {str(e)}', important=True, in_exception=True)
 

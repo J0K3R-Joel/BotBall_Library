@@ -99,7 +99,7 @@ def main(p_event, communication):
 
 
 if __name__ == "__main__":
-    try:
+	try:
 		main(None, None) # if you want communication, replace this line with the "fake_main_setup()" line
         #fake_main_setup()  # if you do not need communication, you can replace this line with the main() function
     except Exception as e:

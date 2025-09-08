@@ -178,6 +178,7 @@ def main(p_event, communication):  # leave it as it is, just write in the try / 
 
 if __name__ == "__main__":
     try:
-        fake_main_setup()  # if you do not need communication, you can replace this line with the main() function
+        main(None, None)  # if you want communication, replace this line with the "fake_main_setup()" line
+        #fake_main_setup()  # if you do not need communication, you can replace this line with the main() function
     except Exception as e:
         log(str(e), important=True, in_exception=True)

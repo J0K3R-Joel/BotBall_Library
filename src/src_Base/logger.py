@@ -7,11 +7,11 @@ sys.path.append("/usr/lib")
 # Notice: feel free to write me for questions or help!
 # Date of creation: 2025-09-05
 
-import datetime
+from datetime import datetime
 import inspect
 import os
 
-LOG_FOLDER = "//home//kipr"
+LOG_FOLDER = "//usr//lib//logger_log"
 LOG_FILE = os.path.join(LOG_FOLDER, "log_file.txt")
 os.makedirs(LOG_FOLDER, exist_ok=True)
 
@@ -56,7 +56,7 @@ def log(message: str, with_print: bool = True, important: bool = False, in_excep
     log_entry = f"{now} [{location}] - [{label}] {message}\n"
     print_text = f"[{location}] - [{label}] {message}"
 
-    with open(self.log_file, 'a') as fwriter:
+    with open(LOG_FILE, 'a') as fwriter:
         fwriter.write(log_entry)
 
     if with_print:

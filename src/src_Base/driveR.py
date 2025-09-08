@@ -2,7 +2,7 @@
 import os, sys
 sys.path.append("/usr/lib")
 
-from logger import log
+from logger import *
 
 # Author: Joel Kalkusch
 # Email: kalkusch.joel@gmail.com

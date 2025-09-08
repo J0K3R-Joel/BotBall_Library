@@ -301,6 +301,12 @@ if __name__ == "__main__":
 
 ---
 
+## Why & How?
+
+It may come at your own interest to know why this class is so important. This class is espacially important, when you want communication, but not in the classical sense. you can use the [Communication](./RoboComm_explainer.md) class on its own and you will be fine. If you want to use the send messages with the priorities `high` or `new_main` it is essential though. This is due the following "problem" in python: There is no way of pausing a main and (while the pause is accuring) execute another function during the execution. Sometimes you want to pause on any given moment though, because if for example you know that something is wrong, you can tell the other robot with a `high` or `new_main` priority message that it should help, do another task, do from now on everything different,....  
+
+---
+
 ## Conclusion
 
 The `FakeR` class allows you to run your robot’s main code in a controlled, instrumented environment with full support for communication and pause events. By modifying `main()` on-the-fly, it ensures smooth integration with WiFi, high-priority messages, and other runtime features.

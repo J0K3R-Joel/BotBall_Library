@@ -1,7 +1,7 @@
 import os, sys
 sys.path.append("/usr/lib")
 
-from logger import logger  # selfmade
+from logger import *  # selfmade
 
 # Author: Joel Kalkusch
 # Email: kalkusch.joel@gmail.com

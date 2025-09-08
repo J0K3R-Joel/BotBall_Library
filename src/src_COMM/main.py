@@ -2,7 +2,7 @@
 import os, sys
 sys.path.append("/usr/lib")
 
-from logger import log  # selfmade
+from logger import *  # selfmade
 
 try:
 	import threading

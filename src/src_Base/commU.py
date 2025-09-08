@@ -2,7 +2,7 @@
 import os, sys
 sys.path.append("/usr/lib")
 
-from logger import log  # selfmade
+from logger import *  # selfmade
 
 # Author: Joel Kalkusch
 # Email: kalkusch.joel@gmail.com
@@ -42,8 +42,8 @@ class WifiConnector:
             the created instance of this WifiConnector class
         '''
         instance = cls(
-            ssid='name_of_wifi',
-            password='password_of_wifi'
+            ssid='S22-Ultra',
+            password='wombat123'
         )
         if not instance.is_connected_to_ssid():
             log(f'Wombat not connected to the wifi, trying to reconnect to SSID: {instance.ssid}')

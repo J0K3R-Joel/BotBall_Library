@@ -11,8 +11,8 @@ except Exception as e:
 
 
 def wifi_setup():
-    SSID = 'S22-Ultra'
-    PASS = 'wombat123'
+    SSID = 'XXXXXXXXXXXXXXX'
+    PASS = 'hidden_password'
     connector = WifiConnector(ssid=SSID, password=PASS)
     if not connector.is_connected_to_ssid():
         print(

@@ -21,9 +21,10 @@ class WifiConnector:
     def __init__(self, ssid: str=None, password: str=None):
         self.ssid = ssid
         self.password = password
-        self.file_path = '/home/kipr/wombat-os/configFiles/wifiConnectionMode.txt'
-        self.AP_MODE = '0'
-        self.CLIENT_MODE = '1'
+        self.file_path_std_wifi_conf = '/usr/lib/LOCAL_STD_WIFI.conf'
+        self.file_path_mode = '/home/kipr/wombat-os/configFiles/wifiConnectionMode.txt'  # this file is from kipr themselves
+        self.AP_MODE = '0'  # fixed value (by kipr)
+        self.CLIENT_MODE = '1'  # fixed value (by kipr)
         self.file_manager = FileR()
 
 
@@ -32,7 +33,7 @@ class WifiConnector:
     @classmethod
     def standard_conf(cls):
         '''
-        Start the connection with the router for Botball (will be used for communication)
+        Start the connection with the router for Botball (will be used for communication) using the preset settings you defined inside the standard wifi config file
 
         Args:
             None
@@ -40,9 +41,23 @@ class WifiConnector:
        Returns:
             the created instance of this WifiConnector class
         '''
+        ssid = ''
+        pw = ''
+        if not os.path.exists(self.file_path_std_wifi_conf):
+            log(f'File {self.file_path_std_wifi_conf} does not exist! Please create it manually. The structure of the file is in my GitHub (https://github.com/J0K3R-Joel/BotBall_Library.git). Otherwise you can reset the machine and begin with the setup again (but safe all important files beforehand!!)', important=True, in_exception=True)
+            raise Exception(f'File {self.file_path_std_wifi_conf} does not exist! Please create it manually. The structure of the file is in my GitHub (https://github.com/J0K3R-Joel/BotBall_Library.git). Otherwise you can reset the machine and begin with the setup again (but safe all important files beforehand!!)')
+
+        with open(self.file_path_std_wifi_conf, 'r') as freader:
+            text = freader.read().strip().split('\n')
+            wifi_name_start_index = text[0].find('=')
+            wifi_passw_start_index = text[1].find('=')
+
+            ssid = text[0][wifi_name_start_index:]
+            pw = text[1][wifi_passw_start_index:]
+
         instance = cls(
-            ssid='S22-Ultra',
-            password='wombat123'
+            ssid=ssid,
+            password=pw
         )
         if not instance.is_connected_to_ssid():
             log(f'Wombat not connected to the wifi, trying to reconnect to SSID: {instance.ssid}')
@@ -66,7 +81,7 @@ class WifiConnector:
                 1 -> Client mode
                 2 -> Event mode (just do not use it, since you can not use wifi in this mode -> no communication)
         '''
-        text = self.file_manager.reader(self.file_path)
+        text = self.file_manager.reader(self.file_path_mode)
         return text[text.find('MODE ') + 5]
 
     def set_mode(self, new_mode: str) -> None:
@@ -82,10 +97,10 @@ class WifiConnector:
        Returns:
             None
         '''
-        text = self.file_manager.reader(self.file_path)
+        text = self.file_manager.reader(self.file_path_mode)
         mode_index = text.find('MODE ') + 5
         new_text = text[:mode_index] + text[mode_index:].replace(text[mode_index], new_mode)
-        self.file_manager.writer(self.file_path, 'w', new_text)
+        self.file_manager.writer(self.file_path_mode, 'w', new_text)
 
     def enable_wifi_scanning(self):
         '''

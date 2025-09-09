@@ -14,6 +14,7 @@ SRC_WIFI_FOLDER_NAME="src_WIFI"
 # ==== Skript-Verzeichnis bestimmen ====
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC_DIR="$(realpath "$SCRIPT_DIR/..")"
+ROOT_DIR="$(realpath "$SCRIPT_DIR/../..")"   # zwei Ebenen hoch = Projekt-Stammverzeichnis
 
 WIFI_INIT_SCRIPT="$SRC_DIR/WIFI_FOR_INSTALLATION/main.py"
 
@@ -102,18 +103,30 @@ else
     echo "User $USER_NAME already exists in users.json."
 fi
 
-# ==== Step 9: Sync Time and Firewall Port ====
+# ==== Step 9: Copy LOCAL_STD_WIFI_CONFI.conf to /usr/lib ====
+CONF_FILE="$ROOT_DIR/LOCAL_STD_WIFI_CONFI.conf"
+DEST_CONF="/usr/lib/LOCAL_STD_WIFI_CONFI.conf"
+
+if [ -f "$CONF_FILE" ]; then
+    cp "$CONF_FILE" "$DEST_CONF"
+    chmod 644 "$DEST_CONF"
+    echo "Copied LOCAL_STD_WIFI_CONFI.conf to $DEST_CONF"
+else
+    echo "==========ERROR: LOCAL_STD_WIFI_CONFI.conf not found at $CONF_FILE=========="
+fi
+
+# ==== Step 10: Sync Time and Firewall Port ====
 apt install -y ntp ca-certificates
 systemctl enable ntp
 systemctl start ntp
 update-ca-certificates
 
-# ==== Step 10: Install Python dependencies ====
+# ==== Step 11: Install Python dependencies ====
 echo "Installing required Python packages ..."
 apt install -y python3-pip
 pip3 install scipy --upgrade --target /usr/lib/python3/dist-packages 
 
-# ==== Step 11: Open port for Harrogate ====
+# ==== Step 12: Open port for Harrogate ====
 sudo iptables -I INPUT -p tcp --dport 8888 -j ACCEPT
 sudo sh -c "iptables-save > /etc/iptables/rules.v4"
 

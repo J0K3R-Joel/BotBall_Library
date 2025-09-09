@@ -105,21 +105,20 @@ git clone https://github.com/J0K3R-Joel/BotBall_Library.git
 
 3. Go in [./src/WIFI_FOR_INSTALLATION/main.py](./src/WIFI_FOR_INSTALLATION/main.py) and change the SSID and PASS inside the `wifi_setup()` to a wifi that grants you internet access, so libraries can get installed 
 
-4. Go in [./src/src_WIFI/commU.py](./src/src_WIFI/commU.py)  and look for the `standard_conf()` function. Change the `ssid` and `password` to the a private network (preferably a router you got from home). Internet access is not required.
+4. Go in [./LOCAL_STD_WIFI.conf](./LOCAL_STD_WIFI.conf) and type in the SSID and password of your local router. The local router should be a private router you got from home one, so noone can intercept the communication. Internet access is NOT required. 
+   **HINT**: every space, every character and everything after the "=" counts as either the SSID or password (depends on the line you are writing in), so be aware of spaces and other characters you fill in.
 
-5. Do the same thing as in the previous step, but in [./src/src_Base/commU.py](./src/src_Base/commU.py)
+5. Go to the [KIPR Wombat firmware](https://www.kipr.org/kipr/hardware-software/kipr-wombat-firmware) page
 
-6. Go to the [KIPR Wombat firmware](https://www.kipr.org/kipr/hardware-software/kipr-wombat-firmware) page
+6. Download the latest image.
 
-7. Download the latest image.
+7. Flash the image onto the robot following the instructions on the KIPR website.
 
-8. Flash the image onto the robot following the instructions on the KIPR website.
+8. Once the robot is flashed and ready, insert the USB stick.
 
-9. Once the robot is flashed and ready, insert the USB stick.
+9. Navigate to the path of the USB stick on the robot.
 
-10. Navigate to the path of the USB stick on the robot.
-
-11. Run the configuration script:
+10. Run the configuration script:
 
 ```bash
 sudo bash config.sh

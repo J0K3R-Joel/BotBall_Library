@@ -140,12 +140,32 @@ Example usage for most classes is provided in the documentation files linked abo
 
 - You can call `help({function_name})` or `help({class_name.function_name})` on any function I made to view its signature and docstring.  
 
-- You will find the `ideas.py` file inside the [base user folder](./src/src_Base/ideas.py). This file is meant to collect ideas on how to handle certain tasks or provide potentially useful snippets. It is not intended for direct execution, but rather as a reference to help with situational problems or concepts that didn’t fit neatly into any class.
+- You will find the `ideas.py` file inside the [./src/src_Base/](./src/src_Base/ideas.py) folder. This file is meant to collect ideas on how to handle certain tasks or provide potentially useful snippets. It is not intended for direct execution, but rather as a reference to help with situational problems or concepts that didn’t fit neatly into any class.
 
 - Some classes—especially the `FakeR` class—are quite complex in terms of logic. The `RoboCommunicator` and `FakeR` classes work hand in hand, which makes communication increasingly complicated the more features you add. Since both robots need to communicate seamlessly to get the most value, mastering communication between `RoboCommunicator`, `FakeR`, and the camera classes unlocks almost limitless possibilities. If you have any questions about what to do or how something works, feel free to reach out to me. 
+
+- You can look after setting up the robot in `/usr/lib/bias_folder` to see the bias files. The get updated every time a bias is made
+
+- You can look after setting up the robot in `/usr/lib/logger_log` to see all the logs, that it made. That's why it is prefered to use the `log()` function inside the `logger.py`, since you are able to see the logs, even after something went wrong and it restarted or anything else. Since they get saved in the file, you can look at the errors or informations all the time
+
+- You can look after setting up the robot in `/usr/lib/LOCAL_STD_WIFI.conf` to see and change the default SSID and password of the private network / router. This is like **step 4 in the Installation** segment. 
 
 ---
 
 ## License
 
-This project is open for personal or educational use. For commercial use or redistribution, please contact the author directly.
+This project is open for personal or educational use. For commercial use or redistribution, please contact the author directly. For more information, get to [./LICENSE](./LICENSE)
+
+---
+
+#### Closing Words
+
+Since I am the only contributor, tester and author of this library, I am sorry for every problem that might occur.  
+In case there are problems that cannot be solved, feel free to contact me.  
+I am very thankful and happy that you took your time using or at least considering this library.  
+This way, my time did not go to waste. I wish you the greatest luck and most importantly: fun.  
+
+---
+
+> *"If you're willing to do what most won't, you will live like most can't"*  
+> - Joel Kalkusch

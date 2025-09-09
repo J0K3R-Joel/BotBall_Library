@@ -301,9 +301,44 @@ if __name__ == "__main__":
 
 ---
 
-## Why & How?
+## Purpose and Mechanism of FakeR
 
-It may come at your own interest to know why this class is so important. This class is espacially important, when you want communication, but not in the classical sense. you can use the [Communication](./RoboComm_explainer.md) class on its own and you will be fine. If you want to use the send messages with the priorities `high` or `new_main` it is essential though. This is due the following "problem" in python: There is no way of pausing a main and (while the pause is accuring) execute another function during the execution. Sometimes you want to pause on any given moment though, because if for example you know that something is wrong, you can tell the other robot with a `high` or `new_main` priority message that it should help, do another task, do from now on everything different,....  
+###### Why?
+
+It may be in your interest to understand why this class is so important. The `FakeR` class becomes crucial when you want communication, but not in the classical sense. You can use the [Communication](./RoboComm_explainer.md) class on its own without problems. However, if you want to send messages with the priorities `high` or `new_main`, then `FakeR` is essential.
+
+The reason lies in a limitation of Python: there is no built-in way to pause a main function and, while paused, execute another function in parallel. Sometimes, though, you need exactly that. For example, if you know that something is wrong, you might want to signal the other robot with a `high` or `new_main` priority message — telling it to help, switch tasks, or completely change its behavior.
+
+This design also opens the door for future improvements, such as integrating AI to detect objects, paths, angles, distances, and more.
+
+---
+
+###### How?
+
+When you create an instance of the `FakeR` class and call its `start()` function, the following happens in the background:
+
+1. **Folder Copy** – The entire working directory is duplicated into `/home/kipr/Joel`.
+
+2. **Import Main** – The new file is used to import the `main()` function.
+   
+   - If `main()` has two parameters, communication is considered available.
+   
+   - If not, the normal main is executed as usual.
+
+3. **Pause Handling** – The `pause_event` variable in `main.py` is replaced with `None`, to avoid unnecessary `threading.Lock` instances and potential issues.
+
+4. **Function Analysis** – The file is scanned for `def main(`. The beginning and end indices of the `main()` function are recorded. This allows the program to determine exactly where `main()` starts and ends.
+
+5. **Imports Cleanup** – Everything before the `main()` function is analyzed. Imported classes are checked, the `_kipr` module is identified, and the console is cleared on execution.
+
+6. **Thread Insertion** – Inside the `try/except` block, `{threading.Lock instance}.wait()` calls are inserted to enable pausing the later-created thread.
+
+7. **Communication Handling** – All `comm` variables in `main.py` are renamed to a placeholder (`AkommunikatorA`).
+
+8. **Setup Complete** – The setup (normally called manually) is already handled during `FakeR` initialization.
+
+If everything succeeds, you can call `{instance_name}.start()` and the modified main will run inside a thread. This enables pausing and resuming execution on `high` and `new_main` priority messages.  
+If something goes wrong, the original `main()` (non-threaded) is executed instead, still via `{instance_name}.start()`.
 
 ---
 

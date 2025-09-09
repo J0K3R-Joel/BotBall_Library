@@ -9,11 +9,13 @@ sys.path.append("/usr/lib")
 
 from datetime import datetime
 import inspect
+import subprocess
 import os
 
-LOG_FOLDER = "//usr//lib//logger_log"
+LOG_FOLDER = "/usr/lib/logger_log"
 LOG_FILE = os.path.join(LOG_FOLDER, "log_file.txt")
 os.makedirs(LOG_FOLDER, exist_ok=True)
+subprocess.run(["sudo", "chmod", "-R", "777", LOG_FOLDER], check=True)
 
 def log(message: str, with_print: bool = True, important: bool = False, in_exception: bool = False) -> None:
     '''
@@ -54,7 +56,10 @@ def log(message: str, with_print: bool = True, important: bool = False, in_excep
         message = '=' * 10 + message + '=' * 10
 
     log_entry = f"{now} [{location}] - [{label}] {message}\n"
-    print_text = f"[{location}] - [{label}] {message}"
+    if in_exception:
+        print_text = f"=================================\n[{location}] - [{label}] {message}\n================================="
+    else:
+        print_text = f"[{location}] - [{label}] {message}"
 
     with open(LOG_FILE, 'a') as fwriter:
         fwriter.write(log_entry)

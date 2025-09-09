@@ -401,12 +401,15 @@ class FakeR():
                     log('main() function not found!', in_exception=True)
                     raise Exception('main() function not found!')
 
-                main_end_relative = entire_text[main_start:].find('end_main(communication)')
+                main_end_relative = entire_text[main_start:].find('end_main(')
                 if main_end_relative == -1:
-                    log('"end_main(communication)" function not found in main!', in_exception=True)
-                    raise Exception('"end_main(communication)" function not found in main!')
+                    log('"end_main()" function not found in main!', in_exception=True)
+                    raise Exception('"end_main()" function not found in main!')
 
-                main_end = main_start + main_end_relative + len('end_main(communication)')
+                main_end_newLine = entire_text[main_start + main_end_relative:].find('\n')
+
+                main_end = main_start + main_end_relative + main_end_relative + main_end_newLine
+
 
                 # get the name of the kipr module
                 kpr = self.__resolve_import_alias("_kipr", "", entire_text[0:main_start])
@@ -429,7 +432,7 @@ class FakeR():
                 # build new text: replace old main with new one
                 new_entire_text = entire_text[:main_start] + main_from_file + entire_text[main_end:]
 
-                final_entire_text = self.replace_exact_word(new_entire_text, 'comm', 'AkommunikatorA')
+                final_entire_text = self.replace_exact_word(new_entire_text, 'comm', 'AkommunikatorA')  # this is only to avoid further problems
 
                 # write in target main.py
                 target_main_path = os.path.join(self.target_dir, 'src', 'main.py')

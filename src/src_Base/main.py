@@ -124,7 +124,7 @@ def setup(pause_instance, Communication_instance):
 
 # ======================== IMPORTANT FUNCTIONS =======================
 def end_main(communication_instance):
-    communication_instance.disconnect()  # if you do not want communication, you can remove this line
+    #communication_instance.disconnect()  # if you do not want communication, you can remove this line, otherwise you can implement this line
     log('PROGRAM FINISHED')
 
 # ======================== CUSTOM METHODS =======================
@@ -160,7 +160,7 @@ def another_main():
 def main(p_event, communication):  # leave it as it is, just write in the try / catch block! Do not remove the "p_event" or "communication"! (You can obviously write anything outside and inside the main though) If you delete any of those parameters, there wont be a communication
     try:  # try / catch is always useful in the main! leave it!
         #communication.on_new_main(another_main)  # if something does not working accordingly you can all the time send a message so another main will be executed
-        #setup(p_event, communication)  # if you use the ocmmunication, you need these instances
+        setup(p_event, communication)  # if you use the ocmmunication, you need these parameters
         #communication.on_high_priority(handle_high_priority)
         print(TestButton.is_pressed(), flush=True)
         log('actual program running right now...')

@@ -104,15 +104,15 @@ else
 fi
 
 # ==== Step 9: Copy LOCAL_STD_WIFI_CONFI.conf to /usr/lib ====
-CONF_FILE="$ROOT_DIR/LOCAL_STD_WIFI_CONFI.conf"
-DEST_CONF="/usr/lib/LOCAL_STD_WIFI_CONFI.conf"
+CONF_FILE="$ROOT_DIR/LOCAL_STD_WIFI.conf"
+DEST_CONF="/usr/lib/LOCAL_STD_WIFI.conf"
 
 if [ -f "$CONF_FILE" ]; then
     cp "$CONF_FILE" "$DEST_CONF"
     chmod 644 "$DEST_CONF"
-    echo "Copied LOCAL_STD_WIFI_CONFI.conf to $DEST_CONF"
+    echo "Copied LOCAL_STD_WIFI.conf to $DEST_CONF"
 else
-    echo "==========ERROR: LOCAL_STD_WIFI_CONFI.conf not found at $CONF_FILE=========="
+    echo "==========ERROR: LOCAL_STD_WIFI.conf not found at $CONF_FILE=========="
 fi
 
 # ==== Step 10: Sync Time and Firewall Port ====

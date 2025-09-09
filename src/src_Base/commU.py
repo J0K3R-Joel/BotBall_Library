@@ -18,10 +18,11 @@ except Exception as e:
     log(f'Import Exception in WifiConnector: {str(e)}', important=True, in_exception=True)
 
 class WifiConnector:
+    file_path_std_wifi_conf = '/usr/lib/LOCAL_STD_WIFI.conf'
+
     def __init__(self, ssid: str=None, password: str=None):
         self.ssid = ssid
         self.password = password
-        self.file_path_std_wifi_conf = '/usr/lib/LOCAL_STD_WIFI.conf'
         self.file_path_mode = '/home/kipr/wombat-os/configFiles/wifiConnectionMode.txt'  # this file is from kipr themselves
         self.AP_MODE = '0'  # fixed value (by kipr)
         self.CLIENT_MODE = '1'  # fixed value (by kipr)
@@ -43,14 +44,14 @@ class WifiConnector:
         '''
         ssid = ''
         pw = ''
-        if not os.path.exists(self.file_path_std_wifi_conf):
-            log(f'File {self.file_path_std_wifi_conf} does not exist! Please create it manually. The structure of the file is in my GitHub (https://github.com/J0K3R-Joel/BotBall_Library.git). Otherwise you can reset the machine and begin with the setup again (but safe all important files beforehand!!)', important=True, in_exception=True)
-            raise Exception(f'File {self.file_path_std_wifi_conf} does not exist! Please create it manually. The structure of the file is in my GitHub (https://github.com/J0K3R-Joel/BotBall_Library.git). Otherwise you can reset the machine and begin with the setup again (but safe all important files beforehand!!)')
+        if not os.path.exists(cls.file_path_std_wifi_conf):
+            log(f'File {cls.file_path_std_wifi_conf} does not exist! Please create it manually. The structure of the file is in my GitHub (https://github.com/J0K3R-Joel/BotBall_Library.git). Otherwise you can reset the machine and begin with the setup again (but safe all important files beforehand!!)', important=True, in_exception=True)
+            raise Exception(f'File {cls.file_path_std_wifi_conf} does not exist! Please create it manually. The structure of the file is in my GitHub (https://github.com/J0K3R-Joel/BotBall_Library.git). Otherwise you can reset the machine and begin with the setup again (but safe all important files beforehand!!)')
 
-        with open(self.file_path_std_wifi_conf, 'r') as freader:
+        with open(cls.file_path_std_wifi_conf, 'r') as freader:
             text = freader.read().strip().split('\n')
-            wifi_name_start_index = text[0].find('=')
-            wifi_passw_start_index = text[1].find('=')
+            wifi_name_start_index = text[0].find('=') + 1  # +1 so you skip the "=" and get the character after the "="
+            wifi_passw_start_index = text[1].find('=') + 1  # +1 so you skip the "=" and get the character after the "="
 
             ssid = text[0][wifi_name_start_index:]
             pw = text[1][wifi_passw_start_index:]

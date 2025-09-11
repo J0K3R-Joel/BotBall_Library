@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import os, sys
+
 sys.path.append("/usr/lib")
 
 from logger import *
@@ -27,13 +28,11 @@ try:
 except Exception as e:
     log(f'FileR Error: {str(e)}', important=True, in_exception=True)
 
+BIAS_FOLDER = '/usr/lib/bias_files'
+os.makedirs(BIAS_FOLDER, exist_ok=True)
 
-# bias_gyro_z.txt file -> should work
-# bias_gyro_y.txt file -> should work
-# bias_accel_x.txt file -> should work
-# bias_accel_y.txt file -> should work
 
-class driveR_two:
+class driveR_two():
     def __init__(self,
                  Port_right_wheel: int,
                  Port_left_wheel: int,
@@ -61,383 +60,381 @@ class driveR_two:
 
         self.distance_sensor = Instance_distance_sensor
 
-        self.ds_speed = self.ds_speed
-        self.bias_gyro_z = None  # self.get_bias_gyro_z()
-        self.bias_gyro_y = None  # self.get_bias_gyro_y()
-        self.bias_accel_x = None  # There are no function where you can do anything with the accel x -> you need to invent them by yourself  
+        self.ds_speed = DS_SPEED
+        self.bias_gyro_z = self.get_bias_gyro_z()
+        self.bias_gyro_y = self.get_bias_gyro_y()
+        self.bias_accel_x = None  # There are no function where you can do anything with the accel x -> you need to invent them by yourself
         self.bias_accel_y = None  # There are no function where you can do anything with the accel y -> you need to invent them by yourself
         self.isClose = False
         self.ONEEIGHTY_DEGREES_SECS = None
         self.NINETY_DEGREES_SECS = None
 
-
-        # ======================== SET INSTANCES ========================
-
-        def set_instance_distance_sensor(self, Instance_distance_sensor: DistanceSensor) -> None:
-            '''
-            create or overwrite the existance of the distance_sensor
-
-            Args:
-                Instance_distance_sensor (DistanceSensor): the instance of the distance sensor
-
-           Returns:
-                None
-            '''
-            self.distance_sensor = Instance_distance_sensor
-
-        def set_instance_light_sensors(self, Instance_light_sensor_front: LightSensor,
-                                       Instance_light_sensor_back: LightSensor,
-                                       Instance_light_sensor_side: LightSensor) -> None:
-            '''
-            create or overwrite the existance of all light sensors
-
-            Args:
-                Instance_light_sensor_front (LightSensor): the instance of the front light sensor
-                Instance_light_sensor_back (LightSensor): the instance of the back light sensor
-                Instance_light_sensor_side (LightSensor):  the instance of the side light sensor
-
-           Returns:
-                None
-            '''
-            self.light_sensor_front = Instance_light_sensor_front
-            self.light_sensor_back = Instance_light_sensor_back
-            self.light_sensor_side = Instance_light_sensor_side
-
-        def set_instance_light_sensor_front(self, Instance_light_sensor_front: LightSensor) -> None:
-            '''
-            create or overwrite the existance of the front light sensors
-
-            Args:
-                Instance_light_sensor_front (LightSensor): the instance of the front light sensor
-
-           Returns:
-                None
-            '''
-            self.light_sensor_front = Instance_light_sensor_front
-
-        def set_instance_light_sensor_back(self, Instance_light_sensor_back: LightSensor) -> None:
-            '''
-            create or overwrite the existance of the back light sensor
-
-            Args:
-                Instance_light_sensor_back (LightSensor): the instance of the back light sensor
-
-           Returns:
-                None
-            '''
-            self.light_sensor_back = Instance_light_sensor_back
-
-        def set_instance_light_sensor_side(self, Instance_light_sensor_side: LightSensor) -> None:
-            '''
-            create or overwrite the existance of the side light sensor
-
-            Args:
-                Instance_light_sensor_side (LightSensor):  the instance of the side light sensor
-
-           Returns:
-                None
-            '''
-            self.light_sensor_side = Instance_light_sensor_side
-
-        def set_instances_buttons(self, Instance_button_front_right: Digital, Instance_button_front_left: Digital,
-                                  Instance_button_back_right: Digital, Instance_button_back_left: Digital) -> None:
-            '''
-            create or overwrite the existance of all buttons
-
-            Args:
-                Instance_button_front_right (Digital): the instance of the front right button
-                Instance_button_front_left (Digital): the instance of the front left button
-                Instance_button_back_left (Digital):  the instance of the back left button
-                Instance_button_back_right (Digital):  the instance of the back right button
-
-           Returns:
-                None
-            '''
-            self.button_fl = Instance_button_front_left
-            self.button_fr = Instance_button_front_right
-            self.button_br = Instance_button_back_right
-            self.button_bl = Instance_button_back_left
-
-        def set_instance_button_fl(self, Instance_button_front_left: Digital) -> None:
-            '''
-            create or overwrite the existance of the front left button
-
-            Args:
-                Instance_button_front_left (Digital): the instance of the front left button
-
-           Returns:
-                None
-            '''
-            self.button_fl = Instance_button_front_left
-
-        def set_instance_button_fr(self, Instance_button_front_right: Digital) -> None:
-            '''
-            create or overwrite the existance of the front right button
-
-            Args:
-                Instance_button_front_right (Digital): the instance of the front right button
-
-           Returns:
-                None
-            '''
-            self.button_fr = Instance_button_front_right
-
-        def set_instance_button_bl(self, Instance_button_back_left: Digital) -> None:
-            '''
-            create or overwrite the existance of the back left button
-
-            Args:
-                Instance_button_back_left (Digital):  the instance of the back left button
-
-           Returns:
-                None
-            '''
-            self.button_bl = Instance_button_back_left
-
-        def set_instance_button_br(self, Instance_button_back_right: Digital) -> None:
-            '''
-            create or overwrite the existance of the back right button
-
-            Args:
-                Instance_button_back_right (Digital):  the instance of the back right button
-
-           Returns:
-                None
-            '''
-            self.button_br = Instance_button_back_right
-
-
-        # ======================== CHECK INSTANCES ========================
-
-        def check_instance_light_sensors(self) -> bool:
-            '''
-            inspect the existance of all light sensors
-
-            Args:
-                None
-
-           Returns:
-                if there is an instance of all light sensor in existance
-            '''
-            if not isinstance(self.light_sensor_front, LightSensor):
-                log('Light sensor front is not initialized!', in_exception=True)
-                raise Exception('Light sensor front is not initialized!')
-
-            if not isinstance(self.light_sensor_back, LightSensor):
-                log('Light sensor back is not initialized!', in_exception=True)
-                raise Exception('Light sensor back is not initialized!')
-
-            if not isinstance(self.light_sensor_side, LightSensor):
-                log('Light sensor side is not initialized!', in_exception=True)
-                raise Exception('Light sensor side is not initialized!')
-            return True
-
-        def check_instance_light_sensors_middle(self) -> bool:
-            '''
-            inspect the existance of the middle light sensors
-
-            Args:
-                None
-
-           Returns:
-                if there is an instance of the middle light sensors in existance
-            '''
-            if not isinstance(self.light_sensor_front, LightSensor):
-                log('Light sensor front is not initialized!', in_exception=True)
-                raise Exception('Light sensor front is not initialized!')
-
-            if not isinstance(self.light_sensor_back, LightSensor):
-                log('Light sensor back is not initialized!', in_exception=True)
-                raise Exception('Light sensor back is not initialized!')
-            return True
-
-        def check_instance_light_sensor_front(self) -> bool:
-            '''
-            inspect the existance of the front light sensor
-
-            Args:
-                None
-
-           Returns:
-                if there is an instance of the front light sensor in existance
-            '''
-            if not isinstance(self.light_sensor_front, LightSensor):
-                log('Light sensor front is not initialized!', in_exception=True)
-                raise Exception('Light sensor front is not initialized!')
-            return True
-
-        def check_instance_light_sensor_back(self) -> bool:
-            '''
-            inspect the existance of the back light sensor
-
-            Args:
-                None
-
-           Returns:
-                if there is an instance of the back light sensor in existance
-            '''
-            if not isinstance(self.light_sensor_back, LightSensor):
-                log('Light sensor back is not initialized!', in_exception=True)
-                raise Exception('Light sensor back is not initialized!')
-            return True
-
-        def check_instance_light_sensor_side(self) -> bool:
-            '''
-            inspect the existance of the side light sensor
-
-            Args:
-                None
-
-           Returns:
-                if there is an instance of the side light sensor in existance
-            '''
-            if not isinstance(self.light_sensor_side, LightSensor):
-                log('Light sensor side is not initialized!', in_exception=True)
-                raise Exception('Light sensor side is not initialized!')
-            return True
-
-        def check_instance_distance_sensor(self) -> bool:
-            '''
-            inspect the existance of the distance sensor
-
-            Args:
-                None
-
-           Returns:
-                if there is an instance of the distance sensor in existance
-            '''
-            if not isinstance(self.distance_sensor, DistanceSensor):
-                log('Distance sensor is not initialized!', in_exception=True)
-                raise Exception('Distance sensor is not initialized!')
-            return True
-
-        def check_instance_button_fl(self) -> bool:
-            '''
-            inspect the existance of the front left button
-
-            Args:
-                None
-
-           Returns:
-                if there is an instance of the front left button in existance
-            '''
-            if not isinstance(self.button_fl, Digital):
-                log('Button front left is not initialized!', in_exception=True)
-                raise Exception('Button front left is not initialized!')
-            return True
-
-        def check_instance_button_fr(self) -> bool:
-            '''
-            inspect the existance of the front right button
-
-            Args:
-                None
-
-           Returns:
-                if there is an instance of the front right button in existance
-            '''
-            if not isinstance(self.button_fr, Digital):
-                log('Button front right is not initialized!', in_exception=True)
-                raise Exception('Button front right is not initialized!')
-            return True
-
-        def check_instance_button_bl(self) -> bool:
-            '''
-            inspect the existance of the back left button
-
-            Args:
-                None
-
-           Returns:
-                if there is an instance of the back left button in existance
-            '''
-            if not isinstance(self.button_bl, Digital):
-                log('Button back left is not initialized!', in_exception=True)
-                raise Exception('Button back left is not initialized!')
-            return True
-
-        def check_instance_button_br(self) -> bool:
-            '''
-            inspect the existance of the back right button
-
-            Args:
-                None
-
-           Returns:
-                if there is an instance of the back right button in existance
-            '''
-            if not isinstance(self.button_br, Digital):
-                log('Button back right is not initialized!', in_exception=True)
-                raise Exception('Button back right is not initialized!')
-            return True
-
-        def check_instances_buttons_front(self) -> bool:
-            '''
-            inspect the existance of the front buttons
-
-            Args:
-                None
-
-           Returns:
-                if there is an instance of the front buttons in existance
-            '''
-            if not isinstance(self.button_fl, Digital):
-                log('Button front left is not initialized!', in_exception=True)
-                raise Exception('Button front left is not initialized!')
-
-            if not isinstance(self.button_fr, Digital):
-                log('Button front right is not initialized!', in_exception=True)
-                raise Exception('Button front right is not initialized!')
-
-            return True
-
-        def check_instances_buttons_back(self) -> bool:
-            '''
-            inspect the existance of the back buttons
-
-            Args:
-                None
-
-           Returns:
-                if there is an instance of the back buttons in existance
-            '''
-            if not isinstance(self.button_bl, Digital):
-                log('Button back left is not initialized!', in_exception=True)
-                raise Exception('Button back left is not initialized!')
-
-            if not isinstance(self.button_br, Digital):
-                log('Button back right is not initialized!', in_exception=True)
-                raise Exception('Button back right is not initialized!')
-
-            return True
-
-        def check_instances_buttons(self) -> bool:
-            '''
-            inspect the existance of all buttons
-
-            Args:
-                None
-
-           Returns:
-                if there is an instance of all buttons in existance
-            '''
-            if not isinstance(self.button_fl, Digital):
-                log('Button front left is not initialized!', in_exception=True)
-                raise Exception('Button front left is not initialized!')
-
-            if not isinstance(self.button_fr, Digital):
-                log('Button front right is not initialized!', in_exception=True)
-                raise Exception('Button front right is not initialized!')
-
-            if not isinstance(self.button_bl, Digital):
-                log('Button back left is not initialized!', in_exception=True)
-                raise Exception('Button back left is not initialized!')
-
-            if not isinstance(self.button_br, Digital):
-                log('Button back right is not initialized!', in_exception=True)
-                raise Exception('Button back right is not initialized!')
-
-            return True
+    # ======================== SET INSTANCES ========================
+
+    def set_instance_distance_sensor(self, Instance_distance_sensor: DistanceSensor) -> None:
+        '''
+        create or overwrite the existance of the distance_sensor
+
+        Args:
+            Instance_distance_sensor (DistanceSensor): the instance of the distance sensor
+
+       Returns:
+            None
+        '''
+        self.distance_sensor = Instance_distance_sensor
+
+    def set_instance_light_sensors(self, Instance_light_sensor_front: LightSensor,
+                                   Instance_light_sensor_back: LightSensor,
+                                   Instance_light_sensor_side: LightSensor) -> None:
+        '''
+        create or overwrite the existance of all light sensors
+
+        Args:
+            Instance_light_sensor_front (LightSensor): the instance of the front light sensor
+            Instance_light_sensor_back (LightSensor): the instance of the back light sensor
+            Instance_light_sensor_side (LightSensor):  the instance of the side light sensor
+
+       Returns:
+            None
+        '''
+        self.light_sensor_front = Instance_light_sensor_front
+        self.light_sensor_back = Instance_light_sensor_back
+        self.light_sensor_side = Instance_light_sensor_side
+
+    def set_instance_light_sensor_front(self, Instance_light_sensor_front: LightSensor) -> None:
+        '''
+        create or overwrite the existance of the front light sensors
+
+        Args:
+            Instance_light_sensor_front (LightSensor): the instance of the front light sensor
+
+       Returns:
+            None
+        '''
+        self.light_sensor_front = Instance_light_sensor_front
+
+    def set_instance_light_sensor_back(self, Instance_light_sensor_back: LightSensor) -> None:
+        '''
+        create or overwrite the existance of the back light sensor
+
+        Args:
+            Instance_light_sensor_back (LightSensor): the instance of the back light sensor
+
+       Returns:
+            None
+        '''
+        self.light_sensor_back = Instance_light_sensor_back
+
+    def set_instance_light_sensor_side(self, Instance_light_sensor_side: LightSensor) -> None:
+        '''
+        create or overwrite the existance of the side light sensor
+
+        Args:
+            Instance_light_sensor_side (LightSensor):  the instance of the side light sensor
+
+       Returns:
+            None
+        '''
+        self.light_sensor_side = Instance_light_sensor_side
+
+    def set_instances_buttons(self, Instance_button_front_right: Digital, Instance_button_front_left: Digital,
+                              Instance_button_back_right: Digital, Instance_button_back_left: Digital) -> None:
+        '''
+        create or overwrite the existance of all buttons
+
+        Args:
+            Instance_button_front_right (Digital): the instance of the front right button
+            Instance_button_front_left (Digital): the instance of the front left button
+            Instance_button_back_left (Digital):  the instance of the back left button
+            Instance_button_back_right (Digital):  the instance of the back right button
+
+       Returns:
+            None
+        '''
+        self.button_fl = Instance_button_front_left
+        self.button_fr = Instance_button_front_right
+        self.button_br = Instance_button_back_right
+        self.button_bl = Instance_button_back_left
+
+    def set_instance_button_fl(self, Instance_button_front_left: Digital) -> None:
+        '''
+        create or overwrite the existance of the front left button
+
+        Args:
+            Instance_button_front_left (Digital): the instance of the front left button
+
+       Returns:
+            None
+        '''
+        self.button_fl = Instance_button_front_left
+
+    def set_instance_button_fr(self, Instance_button_front_right: Digital) -> None:
+        '''
+        create or overwrite the existance of the front right button
+
+        Args:
+            Instance_button_front_right (Digital): the instance of the front right button
+
+       Returns:
+            None
+        '''
+        self.button_fr = Instance_button_front_right
+
+    def set_instance_button_bl(self, Instance_button_back_left: Digital) -> None:
+        '''
+        create or overwrite the existance of the back left button
+
+        Args:
+            Instance_button_back_left (Digital):  the instance of the back left button
+
+       Returns:
+            None
+        '''
+        self.button_bl = Instance_button_back_left
+
+    def set_instance_button_br(self, Instance_button_back_right: Digital) -> None:
+        '''
+        create or overwrite the existance of the back right button
+
+        Args:
+            Instance_button_back_right (Digital):  the instance of the back right button
+
+       Returns:
+            None
+        '''
+        self.button_br = Instance_button_back_right
+
+    # ======================== CHECK INSTANCES ========================
+
+    def check_instance_light_sensors(self) -> bool:
+        '''
+        inspect the existance of all light sensors
+
+        Args:
+            None
+
+       Returns:
+            if there is an instance of all light sensor in existance
+        '''
+        if not isinstance(self.light_sensor_front, LightSensor):
+            log('Light sensor front is not initialized!', in_exception=True)
+            raise Exception('Light sensor front is not initialized!')
+
+        if not isinstance(self.light_sensor_back, LightSensor):
+            log('Light sensor back is not initialized!', in_exception=True)
+            raise Exception('Light sensor back is not initialized!')
+
+        if not isinstance(self.light_sensor_side, LightSensor):
+            log('Light sensor side is not initialized!', in_exception=True)
+            raise Exception('Light sensor side is not initialized!')
+        return True
+
+    def check_instance_light_sensors_middle(self) -> bool:
+        '''
+        inspect the existance of the middle light sensors
+
+        Args:
+            None
+
+       Returns:
+            if there is an instance of the middle light sensors in existance
+        '''
+        if not isinstance(self.light_sensor_front, LightSensor):
+            log('Light sensor front is not initialized!', in_exception=True)
+            raise Exception('Light sensor front is not initialized!')
+
+        if not isinstance(self.light_sensor_back, LightSensor):
+            log('Light sensor back is not initialized!', in_exception=True)
+            raise Exception('Light sensor back is not initialized!')
+        return True
+
+    def check_instance_light_sensor_front(self) -> bool:
+        '''
+        inspect the existance of the front light sensor
+
+        Args:
+            None
+
+       Returns:
+            if there is an instance of the front light sensor in existance
+        '''
+        if not isinstance(self.light_sensor_front, LightSensor):
+            log('Light sensor front is not initialized!', in_exception=True)
+            raise Exception('Light sensor front is not initialized!')
+        return True
+
+    def check_instance_light_sensor_back(self) -> bool:
+        '''
+        inspect the existance of the back light sensor
+
+        Args:
+            None
+
+       Returns:
+            if there is an instance of the back light sensor in existance
+        '''
+        if not isinstance(self.light_sensor_back, LightSensor):
+            log('Light sensor back is not initialized!', in_exception=True)
+            raise Exception('Light sensor back is not initialized!')
+        return True
+
+    def check_instance_light_sensor_side(self) -> bool:
+        '''
+        inspect the existance of the side light sensor
+
+        Args:
+            None
+
+       Returns:
+            if there is an instance of the side light sensor in existance
+        '''
+        if not isinstance(self.light_sensor_side, LightSensor):
+            log('Light sensor side is not initialized!', in_exception=True)
+            raise Exception('Light sensor side is not initialized!')
+        return True
+
+    def check_instance_distance_sensor(self) -> bool:
+        '''
+        inspect the existance of the distance sensor
+
+        Args:
+            None
+
+       Returns:
+            if there is an instance of the distance sensor in existance
+        '''
+        if not isinstance(self.distance_sensor, DistanceSensor):
+            log('Distance sensor is not initialized!', in_exception=True)
+            raise Exception('Distance sensor is not initialized!')
+        return True
+
+    def check_instance_button_fl(self) -> bool:
+        '''
+        inspect the existance of the front left button
+
+        Args:
+            None
+
+       Returns:
+            if there is an instance of the front left button in existance
+        '''
+        if not isinstance(self.button_fl, Digital):
+            log('Button front left is not initialized!', in_exception=True)
+            raise Exception('Button front left is not initialized!')
+        return True
+
+    def check_instance_button_fr(self) -> bool:
+        '''
+        inspect the existance of the front right button
+
+        Args:
+            None
+
+       Returns:
+            if there is an instance of the front right button in existance
+        '''
+        if not isinstance(self.button_fr, Digital):
+            log('Button front right is not initialized!', in_exception=True)
+            raise Exception('Button front right is not initialized!')
+        return True
+
+    def check_instance_button_bl(self) -> bool:
+        '''
+        inspect the existance of the back left button
+
+        Args:
+            None
+
+       Returns:
+            if there is an instance of the back left button in existance
+        '''
+        if not isinstance(self.button_bl, Digital):
+            log('Button back left is not initialized!', in_exception=True)
+            raise Exception('Button back left is not initialized!')
+        return True
+
+    def check_instance_button_br(self) -> bool:
+        '''
+        inspect the existance of the back right button
+
+        Args:
+            None
+
+       Returns:
+            if there is an instance of the back right button in existance
+        '''
+        if not isinstance(self.button_br, Digital):
+            log('Button back right is not initialized!', in_exception=True)
+            raise Exception('Button back right is not initialized!')
+        return True
+
+    def check_instances_buttons_front(self) -> bool:
+        '''
+        inspect the existance of the front buttons
+
+        Args:
+            None
+
+       Returns:
+            if there is an instance of the front buttons in existance
+        '''
+        if not isinstance(self.button_fl, Digital):
+            log('Button front left is not initialized!', in_exception=True)
+            raise Exception('Button front left is not initialized!')
+
+        if not isinstance(self.button_fr, Digital):
+            log('Button front right is not initialized!', in_exception=True)
+            raise Exception('Button front right is not initialized!')
+
+        return True
+
+    def check_instances_buttons_back(self) -> bool:
+        '''
+        inspect the existance of the back buttons
+
+        Args:
+            None
+
+       Returns:
+            if there is an instance of the back buttons in existance
+        '''
+        if not isinstance(self.button_bl, Digital):
+            log('Button back left is not initialized!', in_exception=True)
+            raise Exception('Button back left is not initialized!')
+
+        if not isinstance(self.button_br, Digital):
+            log('Button back right is not initialized!', in_exception=True)
+            raise Exception('Button back right is not initialized!')
+
+        return True
+
+    def check_instances_buttons(self) -> bool:
+        '''
+        inspect the existance of all buttons
+
+        Args:
+            None
+
+       Returns:
+            if there is an instance of all buttons in existance
+        '''
+        if not isinstance(self.button_fl, Digital):
+            log('Button front left is not initialized!', in_exception=True)
+            raise Exception('Button front left is not initialized!')
+
+        if not isinstance(self.button_fr, Digital):
+            log('Button front right is not initialized!', in_exception=True)
+            raise Exception('Button front right is not initialized!')
+
+        if not isinstance(self.button_bl, Digital):
+            log('Button back left is not initialized!', in_exception=True)
+            raise Exception('Button back left is not initialized!')
+
+        if not isinstance(self.button_br, Digital):
+            log('Button back right is not initialized!', in_exception=True)
+            raise Exception('Button back right is not initialized!')
+
+        return True
 
     # ===================== CALIBRATE BIAS =====================
 
@@ -568,7 +565,7 @@ class driveR_two:
             Average of the bias_gyro_z.txt file (optionally with the recent calibrated bias as well)
         '''
         avg = 0
-        file_name = 'bias_gyro_z.txt'
+        file_name = os.path.join(BIAS_FOLDER, 'bias_gyro_z.txt')
         try:
             with open(file_name, "r") as f:
                 temp_bias = f.read()
@@ -593,7 +590,7 @@ class driveR_two:
             Average of the bias_gyro_y.txt file (optionally with the recent calibrated bias as well)
         '''
         avg = 0
-        file_name = 'bias_gyro_y.txt'
+        file_name = os.path.join(BIAS_FOLDER, 'bias_gyro_y.txt')
         try:
             with open(file_name, "r") as f:
                 temp_bias = f.read()
@@ -618,7 +615,7 @@ class driveR_two:
             Average of the bias_accel_x.txt file (optionally with the recent calibrated bias as well)
         '''
         avg = 0
-        file_name = 'bias_accel_x.txt'
+        file_name = os.path.join(BIAS_FOLDER, 'bias_accel_x.txt')
         try:
             with open(file_name, "r") as f:
                 temp_bias = f.read()
@@ -643,7 +640,7 @@ class driveR_two:
             Average of the bias_accel_y.txt file (optionally with the recent calibrated bias as well)
         '''
         avg = 0
-        file_name = 'bias_accel_y.txt'
+        file_name = os.path.join(BIAS_FOLDER, 'bias_accel_y.txt')
         try:
             with open(file_name, "r") as f:
                 temp_bias = f.read()
@@ -824,7 +821,7 @@ class driveR_two:
         k.msleep(millis)
 
     def drive_straight_condition_analog(self, Instance, condition: str, value: int, millis: int = 9999999,
-                                        speed: int = self.ds_speed) -> None:
+                                        speed: int = None) -> None:
         '''
        drive straight until an analog value gets reached for the desired instance
 
@@ -838,6 +835,8 @@ class driveR_two:
        Returns:
            None
        '''
+        if speed is None:
+            speed = self.ds_speed
         self.check_instances_buttons()
         theta = 0.0
         startTime = k.seconds()
@@ -1004,7 +1003,7 @@ class driveR_two:
                 k.ao()
                 k.msleep(200)
 
-    def turn_to_black_line(self, direction: str, millis: str = 80, speed: int = self.ds_speed) -> None:
+    def turn_to_black_line(self, direction: str, millis: str = 80, speed: int = None) -> None:
         '''
        Turn as long as the light sensor (front or back, depends if the speed is positive or negative) sees the black line
 
@@ -1016,6 +1015,8 @@ class driveR_two:
        Returns:
            None
        '''
+        if speed is None:
+            speed = self.ds_speed
         self.check_instance_light_sensors_middle()
         ports = self.port_wheel_right, self.port_wheel_left, self.light_sensor_front
         if speed < 0:
@@ -1037,7 +1038,7 @@ class driveR_two:
                 'turn_black_line() Exception: Only "right" and "left" are valid commands for the direction!')
         k.ao()
 
-    def align_line(self, onLine: bool, direction: str = None, speed: int = self.ds_speed) -> None:
+    def align_line(self, onLine: bool, direction: str = None, speed: int = None) -> None:
         '''
         ==== NEEDS IMPROVEMENT ====
         If you are anywhere on the black line, you can align yourself on the black line. If you are not on the line, it drives (forwards or backwards, depends if the speed is positive or negative) until the line was found and then aligns as desired.
@@ -1052,11 +1053,14 @@ class driveR_two:
         Returns:
            None
         '''
+        if speed is None:
+            speed = self.ds_speed
         self.check_instances_buttons()
         self.check_instance_light_sensors_middle()
         if not onLine:
             if direction != 'left' and direction != 'right':
-                log('If the Wombat is not on the line, please tell it which direction it should face when it is on the line ("right" or "left")', in_exception=True)
+                log('If the Wombat is not on the line, please tell it which direction it should face when it is on the line ("right" or "left")',
+                    in_exception=True)
                 raise Exception(
                     'align_line() Exception: If the Wombat is not on the line, please tell it which direction it should face when it is on the line ("right" or "left")')
 
@@ -1097,7 +1101,7 @@ class driveR_two:
                 if ports[2].is_Pressed() or ports[3].is_Pressed():
                     break
 
-    def black_line(self, millis: int, speed: int = self.ds_speed) -> None:
+    def black_line(self, millis: int, speed: int = None) -> None:
         '''
        drive on the black line as long as wished
 
@@ -1108,6 +1112,8 @@ class driveR_two:
        Returns:
            None
        '''
+        if speed is None:
+            speed = self.ds_speed
         self.check_instances_buttons()
         self.check_instance_light_sensors_middle()
         startTime: float = k.seconds()
@@ -1124,7 +1130,7 @@ class driveR_two:
             if not ports[2].sees_Black():
                 self.align_line(True, speed=speed)
 
-    def drive_straight(self, millis: int, speed: int = self.ds_speed) -> None:
+    def drive_straight(self, millis: int, speed: int = None) -> None:
         '''
         drive straight for as long as you want to (in millis)
 
@@ -1135,6 +1141,8 @@ class driveR_two:
         Returns:
             None
         '''
+        if speed is None:
+            speed = self.ds_speed
         startTime: float = k.seconds()
         theta = 0.0
         adjuster = round(speed / 1.8)
@@ -1245,12 +1253,14 @@ class driveR_two:
         self.check_instance_light_sensors_middle()
         try:
             if direction != 'vertical' and direction != 'horizontal':
-                log('Only "vertical" or "horizontal" are valid options for the "direction" parameter', in_exception=True)
+                log('Only "vertical" or "horizontal" are valid options for the "direction" parameter',
+                    in_exception=True)
                 raise Exception(
                     'align_on_black_line() Exception: Only "vertical" or "horizontal" are valid options for the "direction" parameter')
 
             if leaning_side != None and leaning_side != 'right' and leaning_side != 'left':
-                log('Only "right", "left" or None / nothing are valid options for the "leaning_side" parameter', in_exception=True)
+                log('Only "right", "left" or None / nothing are valid options for the "leaning_side" parameter',
+                    in_exception=True)
                 raise Exception(
                     'align_on_black_line() Exception: Only "right", "left" or None / nothing are valid options for the "leaning_side" parameter')
 
@@ -1448,7 +1458,7 @@ class driveR_two:
         except Exception as e:
             log(str(e), important=True, in_exception=True)
 
-    def drive_til_distance(self, mm_to_object: int, speed: int = self.ds_speed) -> None:
+    def drive_til_distance(self, mm_to_object: int, speed: int = None) -> None:
         '''
         drive straight as long as the object in front of the distance sensor (in mm) is not in reach
 
@@ -1459,6 +1469,8 @@ class driveR_two:
         Returns:
             None
         '''
+        if speed is None:
+            speed = self.ds_speed
         self.check_instances_buttons_back()
         self.check_instance_distance_sensor()
         if mm_to_object > 800 or mm_to_object < 10:
@@ -1564,7 +1576,7 @@ class driveR_two:
 
             self.break_all_motors()
 
-    def turn_degrees_far(self, direction: str, degree: int, speed: int = self.ds_speed) -> None:
+    def turn_degrees_far(self, direction: str, degree: int, speed: int = None) -> None:
         '''
        turn the amount of degrees given, to take a turn with only one wheel, resulting in a turn not on the spot
 
@@ -1575,6 +1587,8 @@ class driveR_two:
        Returns:
            None
        '''
+        if speed is None:
+            speed = self.ds_speed
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
             raise Exception(
@@ -1599,7 +1613,7 @@ class driveR_two:
             time.sleep(2 * value)
         self.break_all_motors()
 
-    def turn_degrees(self, direction: str, degree: int, speed: int = self.ds_speed) -> None:
+    def turn_degrees(self, direction: str, degree: int, speed: int = None) -> None:
         '''
         turn the amount of degrees given, to take a turn with all wheels, resulting in a turn on the spot
 
@@ -1610,6 +1624,8 @@ class driveR_two:
         Returns:
             None
         '''
+        if speed is None:
+            speed = self.ds_speed
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
             raise Exception(
@@ -1671,15 +1687,18 @@ class driveR_four:
         self.distance_sensor = Instance_distance_sensor
 
         self.ds_speed = DS_SPEED
-        self.bias_gyro_z = None
-        self.bias_gyro_y = None
-        self.bias_accel_x = None  # There are no function where you can do anything with the accel x -> you need to invent them by yourself
-        self.bias_accel_y = None  # There are no function where you can do anything with the accel y -> you need to invent them by yourself
+        self.bias_gyro_z = self.get_bias_gyro_z()
+        self.bias_gyro_y = self.bias_gyro_y()
+        self.bias_accel_x = self.get_bias_accel_x()  # There are no function where you can do anything with the accel x -> you need to invent them by yourself
+        self.bias_accel_y = self.get_bias_accel_y()  # There are no function where you can do anything with the accel y -> you need to invent them by yourself
         self.isClose = False
-        self.ONEEIGHTY_DEGREES_SECS = None
-        self.NINETY_DEGREES_SECS = None
+        self.ONEEIGHTY_DEGREES_SECS = self.get_degrees()
+        self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
 
     # ======================== SET INSTANCES ========================
+    def set_degrees(self, degree: float) -> None:
+        self.ONEEIGHTY_DEGREES_SECS = degree
+        self.NINETY_DEGREES_SECS = degree / 2
 
     def set_instance_distance_sensor(self, Instance_distance_sensor: DistanceSensor) -> None:
         '''
@@ -2084,7 +2103,7 @@ class driveR_four:
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
         log('DEGREES CALIBRATED')
 
-    def calibrate_gyro_z(self, counter: int, max: int) -> None:
+    def calibrate_gyro_z(self, counter: int = None, max: int = None) -> None:
         '''
         calibrates the bias from the gyro to be able to drive straight, since the bias is for telling us how far off from driving straight the wombat is
 
@@ -2103,9 +2122,10 @@ class driveR_four:
             k.msleep(1)
             i += 1
         self.bias_gyro_z = avg / time
-        log(f'{counter}/{max} - GYRO Z CALIBRATED')
+        if counter is not None and max is not None:
+            log(f'{counter}/{max} - GYRO Z CALIBRATED')
 
-    def calibrate_gyro_y(self, counter: int, max: int) -> None:
+    def calibrate_gyro_y(self, counter: int = None, max: int = None) -> None:
         '''
         calibrates the bias from the gyro to be able to drive straight, since the bias is for telling us how far off from driving straight the wombat is (theoretically it is for driving sideways)
 
@@ -2124,9 +2144,10 @@ class driveR_four:
             k.msleep(1)
             i += 1
         self.bias_gyro_y = avg / time
-        log(f'{counter}/{max} - GYRO Y CALIBRATED')
+        if counter is not None and max is not None:
+            log(f'{counter}/{max} - GYRO Y CALIBRATED')
 
-    def calibrate_accel_x(self, counter: int, max: int) -> None:
+    def calibrate_accel_x(self, counter: int = None, max: int = None) -> None:
         '''
         calibrates the bias from the accelerometer to know how fast the wombat is going towards the x-axis(accelerometer is not yet in use though)
 
@@ -2145,9 +2166,10 @@ class driveR_four:
             k.msleep(1)
             i += 1
         self.bias_accel_x = avg / time
-        log(f'{counter}/{max} - ACCEL X CALIBRATED')
+        if counter is not None and max is not None:
+            log(f'{counter}/{max} - ACCEL X CALIBRATED')
 
-    def calibrate_accel_y(self, counter: int, max: int) -> None:
+    def calibrate_accel_y(self, counter: int = None, max: int = None) -> None:
         '''
         calibrates the bias from the accelerometer to know how fast the wombat is going towards the y-axis(accelerometer is not yet in use though)
 
@@ -2166,9 +2188,36 @@ class driveR_four:
             k.msleep(1)
             i += 1
         self.bias_accel_y = avg / time
-        log(f'{counter}/{max} - ACCEL Y CALIBRATED')
+        if counter is not None and max is not None:
+            log(f'{counter}/{max} - ACCEL Y CALIBRATED')
 
     # ================== GET / OVERWRITE BIAS ==================
+
+    def get_degrees(self, calibrated: bool = False) -> float:
+        '''
+        Getting the average degrees from the bias_degrees.txt file
+
+        Args:
+            calibrated (bool, optional): Writing to the file bias_degrees.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
+
+
+        Returns:
+            Average of the bias_degrees.txt file (optionally with the recent calibrated bias as well)
+        '''
+        avg = 0
+        file_name = os.path.join(BIAS_FOLDER, 'bias_degrees.txt')
+        try:
+            temp_deg = file_Manager.reader(file_name)
+            if calibrated:
+                avg = (float(temp_deg) + self.ONEEIGHTY_DEGREES_SECS) / 2
+                file_Manager.writer(file_name, 'w', avg)
+            else:
+                avg = temp_deg
+
+            return avg
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
+
 
     def get_bias_gyro_z(self, calibrated: bool = False) -> float:
         '''
@@ -2182,12 +2231,12 @@ class driveR_four:
             Average of the bias_gyro_z.txt file (optionally with the recent calibrated bias as well)
         '''
         avg = 0
-        file_name = 'bias_gyro_z.txt'
+        file_name = os.path.join(BIAS_FOLDER, 'bias_gyro_z.txt')
         try:
             with open(file_name, "r") as f:
                 temp_bias = f.read()
                 if calibrated:
-                    avg = (float(temp_bias) + bias_gyro_z) / 2
+                    avg = (float(temp_bias) + self.bias_gyro_z) / 2
                     file_Manager.writer(file_name, 'w', avg)
                 else:
                     avg = float(temp_bias)
@@ -2207,12 +2256,12 @@ class driveR_four:
             Average of the bias_gyro_y.txt file (optionally with the recent calibrated bias as well)
         '''
         avg = 0
-        file_name = 'bias_gyro_y.txt'
+        file_name = os.path.join(BIAS_FOLDER, 'bias_gyro_y.txt')
         try:
             with open(file_name, "r") as f:
                 temp_bias = f.read()
                 if calibrated:
-                    avg = (float(temp_bias) + bias_gyro_y) / 2
+                    avg = (float(temp_bias) + self.bias_gyro_y) / 2
                     file_Manager.writer(file_name, 'w', avg)
                 else:
                     avg = float(temp_bias)
@@ -2232,12 +2281,12 @@ class driveR_four:
             Average of the bias_accel_x.txt file (optionally with the recent calibrated bias as well)
         '''
         avg = 0
-        file_name = 'bias_accel_x.txt'
+        file_name = os.path.join(BIAS_FOLDER, 'bias_accel_x.txt')
         try:
             with open(file_name, "r") as f:
                 temp_bias = f.read()
                 if calibrated:
-                    avg = (float(temp_bias) + bias_accel_x) / 2
+                    avg = (float(temp_bias) + self.bias_accel_x) / 2
                     file_Manager.writer(file_name, 'w', avg)
                 else:
                     avg = float(temp_bias)
@@ -2257,12 +2306,12 @@ class driveR_four:
             Average of the bias_accel_y.txt file (optionally with the recent calibrated bias as well)
         '''
         avg = 0
-        file_name = 'bias_accel_y.txt'
+        file_name = os.path.join(BIAS_FOLDER, 'bias_accel_y.txt')
         try:
             with open(file_name, "r") as f:
                 temp_bias = f.read()
                 if calibrated:
-                    avg = (float(temp_bias) + bias_accel_y) / 2
+                    avg = (float(temp_bias) + self.bias_accel_y) / 2
                     file_Manager.writer(file_name, 'w', avg)
                 else:
                     avg = float(temp_bias)
@@ -2272,7 +2321,7 @@ class driveR_four:
 
     # ======================== PUBLIC METHODS =======================
 
-    def drive_side(self, direction: str, millis: int, speed: int = self.ds_speed) -> None:
+    def drive_side(self, direction: str, millis: int, speed: int = None) -> None:
         '''
         drive sideways for as long as you want to (in millis)
 
@@ -2284,6 +2333,8 @@ class driveR_four:
         Returns:
             None
         '''
+        if speed is None:
+            speed = self.ds_speed
         startTime: float = k.seconds()
         theta = 0
         t = 10
@@ -2358,7 +2409,7 @@ class driveR_four:
 
         k.ao()
 
-    def drive_straight(self, millis: int, speed: int = self.ds_speed) -> None:
+    def drive_straight(self, millis: int, speed: int = None) -> None:
         '''
         drive straight for as long as you want to (in millis)
 
@@ -2369,6 +2420,8 @@ class driveR_four:
         Returns:
             None
         '''
+        if speed is None:
+            speed = self.ds_speed
         startTime: float = k.seconds()
         theta = 0
         adjuster = 1600
@@ -2393,7 +2446,7 @@ class driveR_four:
             theta += (k.gyro_z() - self.bias_gyro_z) * 1.5
         k.ao()
 
-    def drive_diagonal(self, end: str, side: str, millis: int, speed: int = self.ds_speed) -> None:
+    def drive_diagonal(self, end: str, side: str, millis: int, speed: int = None) -> None:
         # side -> left + right
         # end -> front + back
         '''
@@ -2408,6 +2461,8 @@ class driveR_four:
         Returns:
             None
         '''
+        if speed is None:
+            speed = self.ds_speed
         if end != 'front' and end != 'back':
             log('Only "front" or "back" are valid options for the "end" parameter', in_exception=True)
             raise Exception(
@@ -2561,7 +2616,7 @@ class driveR_four:
             time.sleep(value)
         k.ao()
 
-    def drive_side_til_mm_found(self, mm_to_object: int, direction: str, speed: int = self.ds_speed) -> None:
+    def drive_side_til_mm_found(self, mm_to_object: int, direction: str, speed: int = None) -> None:
         '''
         turn the amount of degrees given, to take a turn with basically only two, resulting in a turn not on the spot
 
@@ -2573,6 +2628,8 @@ class driveR_four:
         Returns:
             None
         '''
+        if speed is None:
+            speed = self.ds_speed
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
             raise Exception(
@@ -2647,7 +2704,7 @@ class driveR_four:
 
         self.break_all_motors()
 
-    def drive_til_distance(self, mm_to_object: int, speed: int = self.ds_speed) -> None:
+    def drive_til_distance(self, mm_to_object: int, speed: int = None) -> None:
         # distance in mm
         '''
         drive straight as long as the object in front of the distance sensor (in mm) is not in reach
@@ -2659,6 +2716,8 @@ class driveR_four:
         Returns:
             None
         '''
+        if speed is None:
+            speed = self.ds_speed
         if mm_to_object > 800 or mm_to_object < 10:
             log('You can only put a value in range of 10 - 800 for the distance parameter!', in_exception=True)
             raise Exception(
@@ -2935,7 +2994,7 @@ class driveR_four:
             k.ao()
 
     def drive_side_condition_analog(self, direction: str, Instance, condition: str, value: int, millis: int = 9999999,
-                                    speed: int = self.ds_speed) -> None:
+                                    speed: int = None) -> None:
         '''
         drive sideways until an analog value gets reached for the desired instance
 
@@ -2950,6 +3009,8 @@ class driveR_four:
         Returns:
             None
         '''
+        if speed is None:
+            speed = self.ds_speed
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid arguments for the direction parameter!', in_exception=True)
             raise Exception(
@@ -3214,7 +3275,7 @@ class driveR_four:
         k.ao()
 
     def drive_straight_condition_analog(self, Instance, condition: str, value: int, millis: int = 9999999,
-                                        speed: int = self.ds_speed) -> None:
+                                        speed: int = None) -> None:
         '''
        drive straight until an analog value gets reached for the desired instance
 
@@ -3228,6 +3289,8 @@ class driveR_four:
        Returns:
            None
        '''
+        if speed is None:
+            speed = self.ds_speed
         self.check_instances_buttons()
         theta = 0.0
         ports = self.button_fl, self.button_fr
@@ -3339,12 +3402,14 @@ class driveR_four:
         self.check_instance_light_sensors_middle()
         try:
             if direction != 'vertical' and direction != 'horizontal':
-                log('Only "vertical" or "horizontal" are valid options for the "direction" parameter', in_exception=True)
+                log('Only "vertical" or "horizontal" are valid options for the "direction" parameter',
+                    in_exception=True)
                 raise Exception(
                     'align_on_black_line() Exception: Only "vertical" or "horizontal" are valid options for the "direction" parameter')
 
             if leaning_side != None and leaning_side != 'right' and leaning_side != 'left':
-                log('Only "right", "left" or None / nothing are valid options for the "leaning_side" parameter', in_exception=True)
+                log('Only "right", "left" or None / nothing are valid options for the "leaning_side" parameter',
+                    in_exception=True)
                 raise Exception(
                     'align_on_black_line() Exception: Only "right", "left" or None / nothing are valid options for the "leaning_side" parameter')
 
@@ -3549,7 +3614,7 @@ class driveR_four:
         except Exception as e:
             log(str(e), important=True, in_exception=True)
 
-    def turn_to_black_line(self, direction: str, millis: int = 80, speed: int = self.ds_speed) -> None:
+    def turn_to_black_line(self, direction: str, millis: int = 80, speed: int = None) -> None:
         '''
         Turn as long as the light sensor (front or back, depends if the speed is positive or negative) sees the black line
 
@@ -3561,6 +3626,8 @@ class driveR_four:
         Returns:
            None
         '''
+        if speed is None:
+            speed = self.ds_speed
         self.check_instance_light_sensors_middle()
         ports = self.port_wheel_fl, self.port_wheel_fr, self.port_wheel_bl, self.port_wheel_br, self.light_sensor_front
         if speed < 0:
@@ -3586,7 +3653,7 @@ class driveR_four:
                 'turn_black_line() Exception: Only "right" and "left" are valid commands for the direction!')
         k.ao()
 
-    def align_line(self, onLine: bool, direction: str = None, speed: int = self.ds_speed,
+    def align_line(self, onLine: bool, direction: str = None, speed: int = None,
                    maxDuration: int = 100) -> None:
         '''
          ==== NEEDS IMPROVEMENT ====
@@ -3602,11 +3669,14 @@ class driveR_four:
         Returns:
            None
         '''
+        if speed is None:
+            speed = self.ds_speed
         self.check_instances_buttons()
         self.check_instance_light_sensors_middle()
         if not onLine:
             if direction != 'left' and direction != 'right':
-                log('If the Wombat is not on the line, please tell it which direction it should face when it is on the line ("right" or "left")', in_exception=True)
+                log('If the Wombat is not on the line, please tell it which direction it should face when it is on the line ("right" or "left")',
+                    in_exception=True)
                 raise Exception(
                     'align_line() Exception: If the Wombat is not on the line, please tell it which direction it should face when it is on the line ("right" or "left")')
 
@@ -3655,7 +3725,7 @@ class driveR_four:
                     break
             k.ao()
 
-    def black_line(self, millis: int, speed: int = self.ds_speed) -> None:
+    def black_line(self, millis: int, speed: int = None) -> None:
         '''
        drive on the black line as long as wished
 
@@ -3666,6 +3736,8 @@ class driveR_four:
        Returns:
            None
        '''
+        if speed is None:
+            speed = self.ds_speed
         self.check_instances_buttons()
         self.check_instance_light_sensors_middle()
         startTime: float = k.seconds()

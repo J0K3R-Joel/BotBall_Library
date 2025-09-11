@@ -21,7 +21,7 @@ def Comm_Setup(p_event, Communication_instance):
 	global comm
 	try:
 		if Communication_instance == None:
-			comm = RobotCommunicator('192.168.0.10', 10000, is_server=True) # one has to be the server, the other one has to be is_server=False (or be left out) -> both need the IP-Adress (IP from the the server) and the same port to communicate
+			comm = RobotCommunicator('192.168.XX.XX', 10000, is_server=True) # one has to be the server, the other one has to be is_server=False (or be left out) -> both need the IP-Adress (IP from the the server) and the same port to communicate
 			pause_event.set()
 		else:
 			Communication_instance.set_pause_event_instance(p_event)

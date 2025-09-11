@@ -339,6 +339,19 @@ class RobotCommunicator:
         log(f'position history has a length of {len(self.position_history)} and you try to access the {str(i)} element of it -> NOT VALID!')
         return None
 
+    def is_connected(self) -> bool:
+        '''
+        tells you, if it is connected with another robot.
+
+        Args:
+            None
+
+        Returns:
+            If it is currently connected (True), or not (False)
+        '''
+        return self.connected
+
+
     def disconnect(self) -> None:
         '''
         will kill the communication with the other device

@@ -199,7 +199,6 @@ class RobotCommunicator:
                             Options:
                                 "normal"   -> (default), just sending a message in the background
                                 "high"     -> will pause the main() and lets you execute a function before the main() resumes
-                                "pos"      -> sending the message but also saving the position so the other one can ask all the time where it was located last
                                 "new_main" -> == EXPERIMENTAL == (not yet tested) will forget what happens after the current main() and another function / new main will be executed until the end of the program / function / new main
 
        Returns:
@@ -339,6 +338,19 @@ class RobotCommunicator:
             return self.position_history[i]
         log(f'position history has a length of {len(self.position_history)} and you try to access the {str(i)} element of it -> NOT VALID!')
         return None
+
+    def is_connected(self) -> bool:
+        '''
+        tells you, if it is connected with another robot.
+
+        Args:
+            None
+
+        Returns:
+            If it is currently connected (True), or not (False)
+        '''
+        return self.connected
+
 
     def disconnect(self) -> None:
         '''

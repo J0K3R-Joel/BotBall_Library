@@ -15,7 +15,7 @@ try:
     import time
     from fileR import FileR  # selfmade
 except Exception as e:
-    log(f'Import Exception in WifiConnector: {str(e)}', important=True, in_exception=True)
+    log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 class WifiConnector:
     file_path_std_wifi_conf = '/usr/lib/LOCAL_STD_WIFI.conf'

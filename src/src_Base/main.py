@@ -23,6 +23,9 @@ try:
     from fileR import FileR  # selfmade
     from fake import FakeR  # selfmade
     from driveR import *  # selfmade
+    from camera_manager import CameraManager  # selfmade
+    from brightness_detector import CameraBrightnessDetector  # selfmade
+    from object_detector import CameraObjectDetector  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
@@ -33,6 +36,9 @@ wifi = None
 comm = None
 utility = None
 file_Manager = None
+camera_man = None
+brightness_cam = None
+object_cam = None
 pause_event = threading.Event()
 
 # ===== PORTS ANALOG =====
@@ -50,6 +56,15 @@ PORT_BUTTON = 0
 
 
 # ======================== SETUP FUNCTIONS =======================
+def Camera_Setup():
+    global camera_man, brightness_cam, object_cam
+    try:
+        camera_man = CameraManager(cam_index=X)
+        brightness_cam = CameraBrightnessDetector(camera_man)
+        object_cam = CameraObjectDetector(camera_man)
+    except Exception as e:
+        log(f'Camera Exception: {str(e)}', important=True, in_exception=True)
+
 def Wifi_Setup():
     global wifi
     try:
@@ -116,6 +131,7 @@ def setup(pause_instance, Communication_instance):
     try:
         Wifi_Setup()  # you can delete this line from now on, just as the function!
         # Comm_Setup(pause_instance, Communication_instance)
+        # Camera_Setup()  # if you want to use the camera
         FileR_Setup()
         Utility_Setup()
         Instancer_Setup()
@@ -126,6 +142,7 @@ def setup(pause_instance, Communication_instance):
 # ======================== IMPORTANT FUNCTIONS =======================
 def end_main(communication_instance):
     #communication_instance.disconnect()  # if you do not want communication, you can remove this line, otherwise you can implement this line
+    #camera_man.release()  # if you want to use the camera, you should release it as well
     log('PROGRAM FINISHED')
 
 # ======================== CUSTOM METHODS =======================

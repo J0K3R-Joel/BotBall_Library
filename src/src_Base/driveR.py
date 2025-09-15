@@ -62,8 +62,8 @@ class driveR_two():
         self.distance_sensor = Instance_distance_sensor
 
         self.ds_speed = DS_SPEED
-        self.bias_gyro_z = self.get_bias_gyro_z()
-        self.bias_gyro_y = self.get_bias_gyro_y()
+        self.bias_gyro_z = None
+        self.bias_gyro_y = None
         self.bias_accel_x = None  # There are no function where you can do anything with the accel x -> you need to invent them by yourself
         self.bias_accel_y = None  # There are no function where you can do anything with the accel y -> you need to invent them by yourself
         self.isClose = False
@@ -72,8 +72,18 @@ class driveR_two():
         self._motor_lock = threading.Lock()
         self._active_motor_id = None
 
+        self._set_values()
+
     # ======================== HELPER  ========================
-    def _manage_motor_stopper(self, beginning: bool) -> str | None:
+    def _set_values(self):
+        self.ONEEIGHTY_DEGREES_SECS = self.get_degrees()
+        self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
+        self.bias_gyro_z = self.get_bias_gyro_z()
+        self.bias_gyro_y = self.get_bias_gyro_y()
+        self.bias_accel_x = self.get_bias_accel_x()
+        self.bias_accel_y = self.get_bias_accel_y()
+
+    def _manage_motor_stopper(self, beginning: bool) -> str:
         with self._motor_lock:
             if beginning:
                 new_id = str(uuid.uuid4())
@@ -571,6 +581,30 @@ class driveR_two():
         log('DEGREES CALIBRATED')
 
     # ================== GET / OVERWRITE BIAS ==================
+    def get_degrees(self, calibrated: bool = False) -> float:
+        '''
+        Getting the average degrees from the bias_degrees.txt file
+
+        Args:
+            calibrated (bool, optional): Writing to the file bias_degrees.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
+
+
+        Returns:
+            Average of the bias_degrees.txt file (optionally with the recent calibrated bias as well)
+        '''
+        avg = 0
+        file_name = os.path.join(BIAS_FOLDER, 'bias_degrees.txt')
+        try:
+            temp_deg = file_Manager.reader(file_name)
+            if calibrated:
+                avg = (float(temp_deg) + self.ONEEIGHTY_DEGREES_SECS) / 2
+                file_Manager.writer(file_name, 'w', avg)
+            else:
+                avg = float(temp_deg)
+
+            return avg
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
 
     def get_bias_gyro_z(self, calibrated: bool = False) -> float:
         '''
@@ -1733,19 +1767,28 @@ class driveR_four:
         self.distance_sensor = Instance_distance_sensor
 
         self.ds_speed = DS_SPEED
-        self.bias_gyro_z = self.get_bias_gyro_z()
-        self.bias_gyro_y = self.bias_gyro_y()
-        self.bias_accel_x = self.get_bias_accel_x()  # There are no function where you can do anything with the accel x -> you need to invent them by yourself
-        self.bias_accel_y = self.get_bias_accel_y()  # There are no function where you can do anything with the accel y -> you need to invent them by yourself
+        self.bias_gyro_z = None
+        self.bias_gyro_y = None
+        self.bias_accel_x = None  # There are no function where you can do anything with the accel x -> you need to invent them by yourself
+        self.bias_accel_y = None  # There are no function where you can do anything with the accel y -> you need to invent them by yourself
         self.isClose = False
-        self.ONEEIGHTY_DEGREES_SECS = self.get_degrees()
-        self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
+        self.ONEEIGHTY_DEGREES_SECS = None
+        self.NINETY_DEGREES_SECS = None
         self._motor_lock = threading.Lock()
         self._active_motor_id = None
 
-        # ======================== HELPER  ========================
+        self._set_values()
 
-    def _manage_motor_stopper(self, beginning: bool) -> str | None:
+    # ======================== HELPER  ========================
+    def _set_values(self):
+        self.ONEEIGHTY_DEGREES_SECS = self.get_degrees()
+        self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
+        self.bias_gyro_z = self.get_bias_gyro_z()
+        self.bias_gyro_y = self.get_bias_gyro_y()
+        self.bias_accel_x = self.get_bias_accel_x()
+        self.bias_accel_y = self.get_bias_accel_y()
+
+    def _manage_motor_stopper(self, beginning: bool) -> str:
         with self._motor_lock:
             if beginning:
                 new_id = str(uuid.uuid4())
@@ -2277,7 +2320,7 @@ class driveR_four:
                 avg = (float(temp_deg) + self.ONEEIGHTY_DEGREES_SECS) / 2
                 file_Manager.writer(file_name, 'w', avg)
             else:
-                avg = temp_deg
+                avg = float(temp_deg)
 
             return avg
         except Exception as e:

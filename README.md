@@ -15,6 +15,10 @@ This repository provides a set of utility classes and communication tools design
 
 - Robot driving (`driveR_two`, `driveR_four`)
 
+- Servo / micro-servo usage (`ServoX`)
+
+- Camera detection (`CameraObjectDetector`, `CameraBrightnessDetector`, `CameraManager`)
+
 - Robot communication (`RobotCommunicator`, `WifiConnector`)
 
 - File management and logging (`FileR`, `logger`)
@@ -39,11 +43,21 @@ The repository is organized as follows:
   
   - `LightSensor` – Light sensor
 
-- **Driving Classes:**
+- **Movement Classes:**
   
   - `driveR_two` – Two-motor drive system
   
   - `driveR_four` – Four-motor drive system
+  
+  - `ServoX` - Servo / micro-servo controlling
+
+- **Camera Classes:**
+  
+  - `CameraManager` - Threadsafe camera control
+  
+  - `CameraObjectDetector` - Object / color / shape detection
+  
+  - `CameraBrightnessDetector` - Segment-based brightness detection
 
 - **Communication Classes:**
   
@@ -90,6 +104,14 @@ Detailed explanations of the classes are included in the repository:
 - [RoboComm_explainer.md](./doc/RoboComm_explainer.md) – Full explanation and usage guide for the `RobotCommunicator` class
 
 - [util_explainer.md](./doc/util_explainer.md) – Full explanation and usage guide for the `Util` class
+
+- [servo_explainer.md](./doc/servo_explainer.md) - Full explanation and usage guide for the `ServoX` class
+
+- [brightness_detector_explainer.md](./doc/brightness_detector_explainer.md) - Full explanation and usage guide for the `CameraBrightnessDetector` class
+
+- [object_detector_explainer.md](./doc/object_detector_explainer.md) - Full explanation and usage guide for the `CameraObjectDetector` class
+
+- [camera_manager_explainer.md](./doc/camera_manager_explainer.md) - Full explanation and usage guide for the `CameraManager` class
 
 ---
 
@@ -150,7 +172,11 @@ Example usage for most classes is provided in the documentation files linked abo
 
 - You can look after setting up the robot in `/usr/lib/LOCAL_STD_WIFI.conf` to see and change the default SSID and password of the private network / router. This is like **step 4 in the Installation** segment. 
 
----
+- Every time you change the weight or size, you should calibrate all bias again. The more often the better, since the bias is getting calibrated with the current and last bias.
+
+- If you are using the camera, please make sure to release it at the end of the code (I provided a function in the `CameraManager` class)
+
+----
 
 ## License
 

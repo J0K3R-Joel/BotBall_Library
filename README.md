@@ -156,7 +156,15 @@ sudo bash config.sh
 
 Example usage for most classes is provided in the documentation files linked above.
 
-Additionally, an example usage for the `FakeR` class is provided in [./doc/user_server_client_fake_explaner.md](./doc/user_server_client_fake_explaner.md) file, since this will be the best exercise for the beginning, if you do not have experience with this library.
+Additionally, an example usage for the `FakeR` class is provided in [./doc/user_server_client_fake_explaner.md](./doc/user_server_client_fake_explaner.md) file, since this will be the best exercise for the beginning, if you do not have experience with this library. This got two new users (one for as a client, the other as the server)
+
+Other classes that got an entire user as test purpose:
+
+- `Camera` -> `CameraManager`, `CameraObjectDetector`, `CameraBrightnessDetector`
+
+- `WIFI` -> `WifiConnector` 
+
+- `COMM` -> `RobotCommunicator` 
 
 ---
 
@@ -179,6 +187,8 @@ Additionally, an example usage for the `FakeR` class is provided in [./doc/user_
 - If you are using the camera, please make sure to release it at the end of the code (I provided a function in the `CameraManager` class)
 
 - Go to [./doc/user_server_client_fake_explaner.md](./doc/user_server_client_fake_explaner.md) to get an example usage with the `FakeR` class
+
+- If you get into the `driveR.py` file, you will find `gyro_z` and `gyro_y`. While they are getting explained, there is still `gyro_x`, which is not in use yet. This value is for the following: If the controller is (for example) laying down and then it is on the way of standing up, then `gyro_x` changes. You will also find the `accel_x` value. `accel_y` and `accel_z` get explained, but not `accel_x`. This value (`accel_x`) is changing, when the controller is (for example) lying down and then getting moved left or right. 
 
 ----
 

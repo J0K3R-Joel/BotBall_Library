@@ -24,6 +24,7 @@ class ServoX:
         self._servo_lock = threading.Lock()
         self._active_servo_id = None
 
+    # ======================== PRIVATE METHODS ========================
     def _manage_servo_stopper(self, beginning: bool) -> str:
         '''
         Manages the Lock of every class method, so if it (for example) gets spun clockwise and counterclockwise at the same time, the one that was sent through high priority will get executed and the other one does not
@@ -116,6 +117,7 @@ class ServoX:
         if enabler_needed:
             self._servo_disabler()
 
+    # ======================== PUBLIC METHODS ========================
     def get_pos(self) -> int:
         '''
         The position where the servo is set at the moment

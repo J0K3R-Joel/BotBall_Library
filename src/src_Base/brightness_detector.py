@@ -221,7 +221,7 @@ class CameraBrightnessDetector:
         cv2.imwrite(path, frame)
         log(f"Saved result: {path}")
 
-    # ======================== NORMAL METHODS ========================
+    # ======================== PUBLIC METHODS ========================
 
     # ---------- Frame-wide detection ----------
     def is_black_in_frame(self) -> bool:

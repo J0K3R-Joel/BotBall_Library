@@ -37,6 +37,7 @@ class driveR_two():
     def __init__(self,
                  Port_right_wheel: int,
                  Port_left_wheel: int,
+                 controller_standing: bool,
                  DS_SPEED: int = 2600,
                  Instance_button_front_right: Digital = None,
                  Instance_button_front_left: Digital = None,
@@ -49,6 +50,8 @@ class driveR_two():
 
         self.port_wheel_left = Port_left_wheel
         self.port_wheel_right = Port_right_wheel
+
+        self.standing = controller_standing
 
         self.button_fr = Instance_button_front_right
         self.button_fl = Instance_button_front_left
@@ -64,7 +67,7 @@ class driveR_two():
         self.ds_speed = DS_SPEED
         self.bias_gyro_z = None
         self.bias_gyro_y = None
-        self.bias_accel_x = None  # There are no function where you can do anything with the accel x -> you need to invent them by yourself
+        self.bias_accel_z = None  # There are no function where you can do anything with the accel x -> you need to invent them by yourself
         self.bias_accel_y = None  # There are no function where you can do anything with the accel y -> you need to invent them by yourself
         self.isClose = False
         self.ONEEIGHTY_DEGREES_SECS = None
@@ -89,8 +92,15 @@ class driveR_two():
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
         self.bias_gyro_z = self.get_bias_gyro_z()
         self.bias_gyro_y = self.get_bias_gyro_y()
-        self.bias_accel_x = self.get_bias_accel_x()
+        self.bias_accel_z = self.get_bias_accel_z()
         self.bias_accel_y = self.get_bias_accel_y()
+
+        if self.standing:
+            self.standard_bias_gyro = self.bias_gyro_y
+            self.standard_bias_accel = self.bias_accel_z
+        else:
+            self.standard_bias_gyro = self.bias_gyro_z
+            self.standard_bias_accel = self.bias_accel_y
 
     def _manage_motor_stopper(self, beginning: bool) -> str:
         '''
@@ -126,6 +136,66 @@ class driveR_two():
 
 
     # ======================== SET INSTANCES ========================
+    def set_degrees(self, secs:float) -> None:
+        '''
+        Sets the amount of degrees for a 180° turn
+
+        Args:
+            secs (float): the time in seconds it takes for a 180° turn
+
+        Returns:
+            None
+        '''
+        self.ONEEIGHTY_DEGREES_SECS = secs
+        self.NINETY_DEGREES_SECS = secs / 2
+
+    def set_gyro_z(self, bias:float) -> None:
+        '''
+        Sets the amount of bias where the controller is laying down (for example) and getting turned from left to right or right to left
+
+        Args:
+            bias (float): the average of gyro_z after some time
+
+        Returns:
+            None
+        '''
+        self.bias_gyro_z = bias
+
+    def set_gyro_y(self, bias:float) -> None:
+        '''
+        Sets the amount of bias where the controller is standing (for example) and getting turned from left to right or right to left
+
+        Args:
+            bias (float): the average of _kipr.gyro_y() after some time
+
+        Returns:
+            None
+        '''
+        self.bias_gyro_y = bias
+
+    def set_accel_z(self, bias:float) -> None:
+        '''
+        Sets the amount of bias where the controller is standing (for example) and moving backward or forward
+
+        Args:
+            bias (float): the average of _kipr.accel_y() after some time
+
+        Returns:
+            None
+        '''
+        self.bias_accel_z = bias
+
+    def set_accel_y(self, bias:float) -> None:
+        '''
+        Sets the amount of bias where the controller is laying down (for example) and moving backward or forward
+
+        Args:
+            bias (float): the average of _kipr.accel_y() after some time
+
+        Returns:
+            None
+        '''
+        self.bias_accel_y = bias
 
     def set_instance_distance_sensor(self, Instance_distance_sensor: DistanceSensor) -> None:
         '''
@@ -536,7 +606,7 @@ class driveR_two():
         self.bias_gyro_y = avg / time
         log(f'{counter}/{max} - GYRO Y CALIBRATED')
 
-    def calibrate_accel_x(self, counter: int, max: int) -> None:
+    def calibrate_accel_z(self, counter: int, max: int) -> None:
         '''
         calibrates the bias from the accelerometer to know how fast the wombat is going towards the x-axis(accelerometer is not yet in use though)
 
@@ -551,10 +621,10 @@ class driveR_two():
         avg: float = 0
         time: int = 8000
         while i < time:
-            avg += k.accel_x()
+            avg += k.accel_z()
             k.msleep(1)
             i += 1
-        self.bias_accel_x = avg / time
+        self.bias_accel_z = avg / time
         log(f'{counter}/{max} - ACCEL X CALIBRATED')
 
     def calibrate_accel_y(self, counter: int, max: int) -> None:
@@ -608,6 +678,21 @@ class driveR_two():
         log('DEGREES CALIBRATED')
 
     # ================== GET / OVERWRITE BIAS ==================
+    def get_current_standard_gyro(self) -> int:
+        '''
+        Getting the current value of the bias depending on if the controller is standing or laying down
+
+        Args:
+            None
+
+        Returns:
+            int: the gyro_z or gyro_y value
+        '''
+        if self.standing:
+            return k.gyro_y()
+        else:
+            return k.gyro_z()
+
     def get_degrees(self, calibrated: bool = False) -> float:
         '''
         Getting the average degrees from the bias_degrees.txt file
@@ -683,24 +768,24 @@ class driveR_two():
         except Exception as e:
             log(str(e), important=True, in_exception=True)
 
-    def get_bias_accel_x(self, calibrated: bool = False) -> float:
+    def get_bias_accel_z(self, calibrated: bool = False) -> float:
         '''
-        Getting the average bias from the bias_accel_x.txt file
+        Getting the average bias from the bias_accel_z.txt file
 
         Args:
-            calibrated (bool, optional): Writing to the file bias_accel_x.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
+            calibrated (bool, optional): Writing to the file bias_accel_z.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
 
 
         Returns:
-            Average of the bias_accel_x.txt file (optionally with the recent calibrated bias as well)
+            Average of the bias_accel_z.txt file (optionally with the recent calibrated bias as well)
         '''
         avg = 0
-        file_name = os.path.join(BIAS_FOLDER, 'bias_accel_x.txt')
+        file_name = os.path.join(BIAS_FOLDER, 'bias_accel_z.txt')
         try:
             with open(file_name, "r") as f:
                 temp_bias = f.read()
                 if calibrated:
-                    avg = (float(temp_bias) + self.bias_accel_x) / 2
+                    avg = (float(temp_bias) + self.bias_accel_z) / 2
                     file_Manager.writer(file_name, 'w', avg)
                 else:
                     avg = float(temp_bias)
@@ -945,7 +1030,7 @@ class driveR_two():
                     k.mav(ports[0], speed + adjuster)
                     k.mav(ports[1], speed - adjuster)
                 k.msleep(10)
-                theta += (k.gyro_z() - bias) * 2
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 2
 
         elif condition == 'het' or condition == '>=':  # het -> higher or equal than
             while Instance.current_value() >= value and (not ports[2].is_Pressed() and not ports[
@@ -960,7 +1045,7 @@ class driveR_two():
                     k.mav(ports[0], speed + adjuster)
                     k.mav(ports[1], speed - adjuster)
                 k.msleep(10)
-                theta += (k.gyro_z() - bias) * 2
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 2
 
         elif condition == 'ht' or condition == '>':  # ht -> higher than
             while Instance.current_value() > value and (not ports[2].is_Pressed() and not ports[
@@ -975,7 +1060,7 @@ class driveR_two():
                     k.mav(ports[0], speed + adjuster)
                     k.mav(ports[1], speed - adjuster)
                 k.msleep(10)
-                theta += (k.gyro_z() - bias) * 2
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 2
 
         elif condition == 'lt' or condition == '<':  # lt -> less than
             while Instance.current_value() < value and (not ports[2].is_Pressed() and not ports[
@@ -990,7 +1075,7 @@ class driveR_two():
                     k.mav(ports[0], speed + adjuster)
                     k.mav(ports[1], speed - adjuster)
                 k.msleep(10)
-                theta += (k.gyro_z() - bias) * 2
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 2
         self._manage_motor_stopper(False)
 
     def drive_straight_side_checker(self, follow: bool, speed: int, millis: int) -> None:
@@ -1056,7 +1141,7 @@ class driveR_two():
                     k.mav(ports[4], speed + adjuster)
                     k.mav(ports[5], speed - adjuster)
                 k.msleep(10)
-                theta += (k.gyro_z() - bias) * 1.5
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
             k.ao()
             k.msleep(1)
         else:
@@ -1077,7 +1162,7 @@ class driveR_two():
                         k.mav(ports[4], speed + adjuster)
                         k.mav(ports[5], speed - adjuster)
                     k.msleep(10)
-                    theta += (k.gyro_z() - bias) * 1.5
+                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
                 if ports[2].sees_Black():
                     scenario3()
                 elif ports[3].sees_Black():
@@ -1258,7 +1343,7 @@ class driveR_two():
                 k.mav(ports[0], speed + adjuster)
                 k.mav(ports[1], speed - adjuster)
             k.msleep(10)
-            theta += (k.gyro_z() - self.bias_gyro_z) * 1.5
+            theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
         k.ao()
         self._manage_motor_stopper(False)
 
@@ -1596,7 +1681,7 @@ class driveR_two():
                     k.mav(self.port_wheel_left, -speed + adjuster)
                     k.mav(self.port_wheel_right, -speed - adjuster)
                 k.msleep(10)
-                theta += (k.gyro_z() - self.bias_gyro_z) * 1.5
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
             if theta != 0.0:
                 # break_all_motors()
                 k.mav(self.port_wheel_left, speed)
@@ -1655,7 +1740,7 @@ class driveR_two():
                         k.mav(self.port_wheel_right, speed - adjuster)
 
                     k.msleep(5)
-                    theta += (k.gyro_z() - self.bias_gyro_z) * 1.5
+                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
                 self.break_all_motors()
                 k.ao()
@@ -1674,7 +1759,7 @@ class driveR_two():
                     k.mav(self.port_wheel_left, speed + adjuster)
                     k.mav(self.port_wheel_right, speed - adjuster)
                 time.sleep(0.0023)
-                theta += (k.gyro_z() - self.bias_gyro_z) * 1.5
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
             self.break_all_motors()
         self._manage_motor_stopper(False)
@@ -1766,6 +1851,7 @@ class driveR_four:
                  Port_back_right_wheel: int,
                  Port_front_left_wheel: int,
                  Port_back_left_wheel: int,
+                 controller_standing: bool,
                  DS_SPEED: int = 2160,
                  Instance_button_front_right: Digital = None,
                  Instance_button_front_left: Digital = None,
@@ -1782,6 +1868,8 @@ class driveR_four:
         self.port_wheel_bl = Port_back_left_wheel
         self.port_wheel_br = Port_back_right_wheel
 
+        self.standing = controller_standing
+
         self.button_fr = Instance_button_front_right
         self.button_fl = Instance_button_front_left
         self.button_br = Instance_button_back_right
@@ -1796,7 +1884,7 @@ class driveR_four:
         self.ds_speed = DS_SPEED
         self.bias_gyro_z = None
         self.bias_gyro_y = None
-        self.bias_accel_x = None  # There are no function where you can do anything with the accel x -> you need to invent them by yourself
+        self.bias_accel_z = None  # There are no function where you can do anything with the accel x -> you need to invent them by yourself
         self.bias_accel_y = None  # There are no function where you can do anything with the accel y -> you need to invent them by yourself
         self.isClose = False
         self.ONEEIGHTY_DEGREES_SECS = None
@@ -1821,8 +1909,15 @@ class driveR_four:
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
         self.bias_gyro_z = self.get_bias_gyro_z()
         self.bias_gyro_y = self.get_bias_gyro_y()
-        self.bias_accel_x = self.get_bias_accel_x()
+        self.bias_accel_z = self.get_bias_accel_z()
         self.bias_accel_y = self.get_bias_accel_y()
+
+        if self.standing:
+            self.standard_bias_gyro = self.bias_gyro_y
+            self.standard_bias_accel = self.bias_accel_z
+        else:
+            self.standard_bias_gyro = self.bias_gyro_z
+            self.standard_bias_accel = self.bias_accel_y
 
     def _manage_motor_stopper(self, beginning: bool) -> str:
         '''
@@ -1858,7 +1953,7 @@ class driveR_four:
 
     # ======================== SET INSTANCES ========================
 
-    def set_degrees(self, secs: float) -> None:
+    def set_degrees(self, secs:float) -> None:
         '''
         Sets the amount of degrees for a 180° turn
 
@@ -1870,6 +1965,54 @@ class driveR_four:
         '''
         self.ONEEIGHTY_DEGREES_SECS = secs
         self.NINETY_DEGREES_SECS = secs / 2
+
+    def set_gyro_z(self, bias:float) -> None:
+        '''
+        Sets the amount of bias where the controller is laying down (for example) and getting turned from left to right or right to left
+
+        Args:
+            bias (float): the average of gyro_z after some time
+
+        Returns:
+            None
+        '''
+        self.bias_gyro_z = bias
+
+    def set_gyro_y(self, bias:float) -> None:
+        '''
+        Sets the amount of bias where the controller is standing (for example) and getting turned from left to right or right to left
+
+        Args:
+            bias (float): the average of _kipr.gyro_y() after some time
+
+        Returns:
+            None
+        '''
+        self.bias_gyro_y = bias
+
+    def set_accel_z(self, bias:float) -> None:
+        '''
+        Sets the amount of bias where the controller is standing (for example) and moving backward or forward
+
+        Args:
+            bias (float): the average of _kipr.accel_y() after some time
+
+        Returns:
+            None
+        '''
+        self.bias_accel_z = bias
+
+    def set_accel_y(self, bias:float) -> None:
+        '''
+        Sets the amount of bias where the controller is laying down (for example) and moving backward or forward
+
+        Args:
+            bias (float): the average of _kipr.accel_y() after some time
+
+        Returns:
+            None
+        '''
+        self.bias_accel_y = bias
 
     def set_instance_distance_sensor(self, Instance_distance_sensor: DistanceSensor) -> None:
         '''
@@ -2318,7 +2461,7 @@ class driveR_four:
         if counter is not None and max is not None:
             log(f'{counter}/{max} - GYRO Y CALIBRATED')
 
-    def calibrate_accel_x(self, counter: int = None, max: int = None) -> None:
+    def calibrate_accel_z(self, counter: int = None, max: int = None) -> None:
         '''
         calibrates the bias from the accelerometer to know how fast the wombat is going towards the x-axis(accelerometer is not yet in use though)
 
@@ -2333,10 +2476,10 @@ class driveR_four:
         avg: float = 0
         time: int = 8000
         while i < time:
-            avg += k.accel_x()
+            avg += k.accel_z()
             k.msleep(1)
             i += 1
-        self.bias_accel_x = avg / time
+        self.bias_accel_z = avg / time
         if counter is not None and max is not None:
             log(f'{counter}/{max} - ACCEL X CALIBRATED')
 
@@ -2363,7 +2506,21 @@ class driveR_four:
             log(f'{counter}/{max} - ACCEL Y CALIBRATED')
 
     # ================== GET / OVERWRITE BIAS ==================
+    def get_current_standard_gyro(self) -> int:
+        '''
+        Getting the current value of the bias depending on if the controller is standing or laying down
 
+        Args:
+            None
+
+        Returns:
+            int: the gyro_z or gyro_y value
+        '''
+        if self.standing:
+            return k.gyro_y()
+        else:
+            return k.gyro_z()
+        
     def get_degrees(self, calibrated: bool = False) -> float:
         '''
         Getting the average degrees from the bias_degrees.txt file
@@ -2440,24 +2597,24 @@ class driveR_four:
         except Exception as e:
             log(str(e), important=True, in_exception=True)
 
-    def get_bias_accel_x(self, calibrated: bool = False) -> float:
+    def get_bias_accel_z(self, calibrated: bool = False) -> float:
         '''
-        Getting the average bias from the bias_accel_x.txt file
+        Getting the average bias from the bias_accel_z.txt file
 
         Args:
-            calibrated (bool, optional): Writing to the file bias_accel_x.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
+            calibrated (bool, optional): Writing to the file bias_accel_z.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
 
 
         Returns:
-            Average of the bias_accel_x.txt file (optionally with the recent calibrated bias as well)
+            Average of the bias_accel_z.txt file (optionally with the recent calibrated bias as well)
         '''
         avg = 0
-        file_name = os.path.join(BIAS_FOLDER, 'bias_accel_x.txt')
+        file_name = os.path.join(BIAS_FOLDER, 'bias_accel_z.txt')
         try:
             with open(file_name, "r") as f:
                 temp_bias = f.read()
                 if calibrated:
-                    avg = (float(temp_bias) + self.bias_accel_x) / 2
+                    avg = (float(temp_bias) + self.bias_accel_z) / 2
                     file_Manager.writer(file_name, 'w', avg)
                 else:
                     avg = float(temp_bias)
@@ -2618,7 +2775,7 @@ class driveR_four:
                 k.mav(self.port_wheel_bl, speed + adjuster)
                 k.mav(self.port_wheel_br, speed - adjuster)
             k.msleep(10)
-            theta += (k.gyro_z() - self.bias_gyro_z) * 1.5
+            theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
         k.ao()
         self._manage_motor_stopper(False)
 
@@ -2686,7 +2843,7 @@ class driveR_four:
                     k.mav(ports[0], speed)
                     k.mav(ports[1], speed)
                 k.msleep(10)
-                theta_z += (k.gyro_z() - self.bias_gyro_z) * 1.5
+                theta_z += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
         else:
             # p[0] -> fr
             t = 10
@@ -2712,7 +2869,7 @@ class driveR_four:
                     k.mav(ports[0], speed)
                     k.mav(ports[1], speed)
                 k.msleep(t)
-                theta_z += (k.gyro_z() - self.bias_gyro_z) * 1.5
+                theta_z += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
         k.ao()
         self._manage_motor_stopper(False)
@@ -2929,7 +3086,7 @@ class driveR_four:
                     k.mav(self.port_wheel_bl, -speed + adjuster)
                     k.mav(self.port_wheel_br, -speed - adjuster)
                 k.msleep(10)
-                theta += (k.gyro_z() - self.bias_gyro_z) * 1.5
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
             if theta != 0.0:
                 # break_all_motors()
                 k.mav(self.port_wheel_fl, speed)
@@ -2996,7 +3153,7 @@ class driveR_four:
                         k.mav(self.port_wheel_br, speed - adjuster)
 
                     k.msleep(5)
-                    theta += (k.gyro_z() - self.bias_gyro_z) * 1.5
+                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
                 self.break_all_motors()
                 k.ao()
@@ -3021,7 +3178,7 @@ class driveR_four:
                     k.mav(self.port_wheel_bl, speed + adjuster)
                     k.mav(self.port_wheel_br, speed - adjuster)
                 time.sleep(0.0023)
-                theta += (k.gyro_z() - self.bias_gyro_z) * 1.5
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
             self.break_all_motors()
         self._manage_motor_stopper(False)
@@ -3513,7 +3670,7 @@ class driveR_four:
                     k.mav(self.port_wheel_bl, speed + adjuster)
                     k.mav(self.port_wheel_br, speed - adjuster)
                 k.msleep(10)
-                theta += (k.gyro_z() - self.bias_gyro_z) * 1.5
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
         elif condition == 'het' or condition == '>=':  # het -> higher or equal than
             while (Instance.current_value() >= value) and (not ports[0].is_Pressed() and not ports[
@@ -3534,7 +3691,7 @@ class driveR_four:
                     k.mav(self.port_wheel_bl, speed + adjuster)
                     k.mav(self.port_wheel_br, speed - adjuster)
                 k.msleep(10)
-                theta += (k.gyro_z() - self.bias_gyro_z) * 1.5
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
         elif condition == 'ht' or condition == '>':  # ht -> higher than
             while (Instance.current_value() > value) and (not ports[0].is_Pressed() and not ports[
@@ -3555,7 +3712,7 @@ class driveR_four:
                     k.mav(self.port_wheel_bl, speed + adjuster)
                     k.mav(self.port_wheel_br, speed - adjuster)
                 k.msleep(10)
-                theta += (k.gyro_z() - self.bias_gyro_z) * 1.5
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
         elif condition == 'lt' or condition == '<':  # lt -> less than
             while (Instance.current_value() < value) and (not ports[0].is_Pressed() and not ports[
@@ -3576,7 +3733,7 @@ class driveR_four:
                     k.mav(self.port_wheel_bl, speed + adjuster)
                     k.mav(self.port_wheel_br, speed - adjuster)
                 k.msleep(10)
-                theta += (k.gyro_z() - self.bias_gyro_z) * 1.5
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
         k.ao()
         self._manage_motor_stopper(False)
 
@@ -4045,7 +4202,7 @@ class driveR_four:
                     k.mav(ports[6], speed + adjuster)
                     k.mav(ports[7], speed - adjuster)
                 k.msleep(10)
-                theta += (k.gyro_z() - self.bias_gyro_z) * 1.5
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
             k.ao()
             k.msleep(1)
         else:
@@ -4070,7 +4227,7 @@ class driveR_four:
                         k.mav(ports[6], speed + adjuster)
                         k.mav(ports[7], speed - adjuster)
                     k.msleep(10)
-                    theta += (k.gyro_z() - self.bias_gyro_z) * 1.5
+                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
                 if ports[2].sees_Black():  # front
                     scenario3()
                 elif ports[3].sees_Black():  # back

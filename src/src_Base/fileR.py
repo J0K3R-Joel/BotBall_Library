@@ -3,6 +3,7 @@ import os, sys
 sys.path.append("/usr/lib")
 
 from logger import *  # selfmade
+import threading
 
 # Author: Joel Kalkusch
 # Email: kalkusch.joel@gmail.com
@@ -12,6 +13,7 @@ from logger import *  # selfmade
 class FileR:
 	def __init__(self):
 		print()
+		self._writer_lock = threading.Lock()
 
 	def reader(self, file_name: str) -> str:
 		'''
@@ -42,8 +44,9 @@ class FileR:
             None
         '''
 		try:
-			with open(file_name, mode) as f:
-				f.write(str(msg))
+			with self._writer_lock:
+				with open(file_name, mode) as f:
+					f.write(str(msg))
 		except Exception as e:
 			log(str(e), important=True, in_exception=True)
 

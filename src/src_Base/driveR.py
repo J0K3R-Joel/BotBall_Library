@@ -75,7 +75,16 @@ class driveR_two():
         self._set_values()
 
     # ======================== HELPER  ========================
-    def _set_values(self):
+    def _set_values(self) -> None:
+        '''
+        Sets all internal values
+
+        Args:
+            None
+
+        Returns:
+            None
+        '''
         self.ONEEIGHTY_DEGREES_SECS = self.get_degrees()
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
         self.bias_gyro_z = self.get_bias_gyro_z()
@@ -84,6 +93,15 @@ class driveR_two():
         self.bias_accel_y = self.get_bias_accel_y()
 
     def _manage_motor_stopper(self, beginning: bool) -> str:
+        '''
+        Manages the Lock of every class method, so if it (for example) gets spun clockwise and counterclockwise at the same time, the one that was sent through high priority will get executed and the other one does not
+
+        Args:
+            beginning (bool): is it in the beginning of a function (True) or at the end of a function (False)
+
+        Returns:
+            str: the ID of the motor at this moment
+        '''
         with self._motor_lock:
             if beginning:
                 new_id = str(uuid.uuid4())
@@ -94,6 +112,15 @@ class driveR_two():
                 return None
 
     def is_motor_active(self, motor_id: str) -> bool:
+        '''
+        Validates if the motor ID is still the same
+
+        Args:
+            motor_id (str): the ID from the manager
+
+        Returns:
+            bool: Is it still valid (True), or not (False)
+        '''
         with self._motor_lock:
             return self._active_motor_id == motor_id
 
@@ -1781,6 +1808,15 @@ class driveR_four:
 
     # ======================== HELPER  ========================
     def _set_values(self):
+        '''
+        Sets all internal values
+
+        Args:
+            None
+
+        Returns:
+            None
+        '''
         self.ONEEIGHTY_DEGREES_SECS = self.get_degrees()
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
         self.bias_gyro_z = self.get_bias_gyro_z()
@@ -1789,6 +1825,15 @@ class driveR_four:
         self.bias_accel_y = self.get_bias_accel_y()
 
     def _manage_motor_stopper(self, beginning: bool) -> str:
+        '''
+        Manages the Lock of every class method, so if it (for example) gets spun clockwise and counterclockwise at the same time, the one that was sent through high priority will get executed and the other one does not
+
+        Args:
+            beginning (bool): is it in the beginning of a function (True) or at the end of a function (False)
+
+        Returns:
+            str: the ID of the motor at this moment
+        '''
         with self._motor_lock:
             if beginning:
                 new_id = str(uuid.uuid4())
@@ -1799,14 +1844,32 @@ class driveR_four:
                 return None
 
     def is_motor_active(self, motor_id: str) -> bool:
+        '''
+        Validates if the motor ID is still the same
+
+        Args:
+            motor_id (str): the ID from the manager
+
+        Returns:
+            bool: Is it still valid (True), or not (False)
+        '''
         with self._motor_lock:
             return self._active_motor_id == motor_id
 
     # ======================== SET INSTANCES ========================
 
-    def set_degrees(self, degree: float) -> None:
-        self.ONEEIGHTY_DEGREES_SECS = degree
-        self.NINETY_DEGREES_SECS = degree / 2
+    def set_degrees(self, secs: float) -> None:
+        '''
+        Sets the amount of degrees for a 180° turn
+
+        Args:
+            secs (float): the time in seconds it takes for a 180° turn
+
+        Returns:
+            None
+        '''
+        self.ONEEIGHTY_DEGREES_SECS = secs
+        self.NINETY_DEGREES_SECS = secs / 2
 
     def set_instance_distance_sensor(self, Instance_distance_sensor: DistanceSensor) -> None:
         '''
@@ -3039,6 +3102,8 @@ class driveR_four:
                 if i % 2 == 0:  # this is since the robot is driving straight a little bit after some time
                     self.drive_straight(50, -self.ds_speed)
                     self.break_all_motors()
+            else:
+                break
         self._manage_motor_stopper(False)
 
     def align_drive_front(self, drive_bw: bool = True) -> None:
@@ -4091,6 +4156,8 @@ class driveR_four:
                 time.sleep(value)
                 if i % 2 != 0:
                     ports = ports[1], ports[0], ports[3], ports[2]
+            else:
+                break
         self.break_all_motors()
         while th1.is_alive() and self.is_motor_active(motor_id):
             continue

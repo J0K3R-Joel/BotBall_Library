@@ -11,6 +11,8 @@ from logger import *  # selfmade
 
 try:
     import _kipr as k
+    import threading
+    import uuid
 except Exception as e:
     log(f'Import Exception in WifiConnector: {str(e)}', important=True, in_exception=True)
 
@@ -19,6 +21,40 @@ class ServoX:
         self.port = Port
         self.max_value = maxValue
         self.min_value = minValue
+        self._servo_lock = threading.Lock()
+        self._active_servo_id = None
+
+    def _manage_servo_stopper(self, beginning: bool) -> str:
+        '''
+        Manages the Lock of every class method, so if it (for example) gets spun clockwise and counterclockwise at the same time, the one that was sent through high priority will get executed and the other one does not
+
+        Args:
+            beginning (bool): is it in the beginning of a function (True) or at the end of a function (False)
+
+        Returns:
+            str: the ID of the servo at this moment
+        '''
+        with self._servo_lock:
+            if beginning:
+                new_id = str(uuid.uuid4())
+                self._active_servo_id = new_id
+                return new_id
+            else:
+                self._active_servo_id = None
+                return None
+
+    def _is_servo_active(self, servo_id: str) -> bool:
+        '''
+        Validates if the servo ID is still the same
+
+        Args:
+            servo_id (str): the ID from the manager
+
+        Returns:
+            bool: Is it still valid (True), or not (False)
+        '''
+        with self._servo_lock:
+            return self._active_servo_id == servo_id
 
     def _servo_enabler(self) -> None:
         '''
@@ -60,21 +96,9 @@ class ServoX:
             raise Exception(f"{num} is out of range, where the range is between {self.min_value} to {self.max_value}")
         return num
 
-    def get_pos(self) -> int:
+    def _set_pos_internal(self, value: int, enabler_needed: bool=True) -> None:
         '''
-        The position where the servo is set at the moment
-
-        Args:
-            None
-
-        Returns:
-            int: The position of the servo
-        '''
-        return k.get_servo_position()
-
-    def set_pos(self, value: int, enabler_needed: bool=True) -> None:
-        '''
-        Sets the position of the servo
+        Sets the position of the servo internally without a Lock, so you need to manage them
 
         Args:
             value (int): the value where it has to be
@@ -92,6 +116,34 @@ class ServoX:
         if enabler_needed:
             self._servo_disabler()
 
+    def get_pos(self) -> int:
+        '''
+        The position where the servo is set at the moment
+
+        Args:
+            None
+
+        Returns:
+            int: The position of the servo
+        '''
+        return k.get_servo_position(self.port)
+
+    def set_pos(self, value: int, enabler_needed: bool = True) -> None:
+        '''
+        Sets the position of the servo
+
+        Args:
+            value (int): the value where it has to be
+            enabler_needed (bool, optional): If True (default), it enables and disables the servo port. If it is set to False, then the port will not move if you did not enabled it first
+
+        Returns:
+            None
+        '''
+        servo_id = self._manage_servo_stopper(True)
+        if self._is_servo_active(servo_id):
+            self._set_pos_internal(value=value, enabler_needed=enabler_needed)
+        self._manage_servo_stopper(False)
+
     def add_to_pos(self, value: int, enabler_needed: bool=True) -> None:
         '''
         Adds the value to the current pos
@@ -105,7 +157,7 @@ class ServoX:
         '''
         new_pos = self.get_pos() + value
         if self._valid_range(new_pos):
-            self.set_pos(new_pos, enabler_needed=enabler_needed)
+            self._set_pos_internal(new_pos, enabler_needed=enabler_needed)
 
     def range_to_pos(self, value:int, multi: int = 2, disabler_needed: bool= True) -> None:
         '''
@@ -119,6 +171,7 @@ class ServoX:
         Returns:
             None
         '''
+        servo_id = self._manage_servo_stopper(True)
         if multi < 1:
             multi = 1
         self._servo_enabler()
@@ -128,11 +181,15 @@ class ServoX:
         counter = int(multi)
         if self._valid_range(value):
             for _ in range(abs(value-curr_pos)//abs(int(multi))):
-                self.add_to_pos(counter, enabler_needed=False)
+                if self._is_servo_active(servo_id):
+                    self.add_to_pos(counter, enabler_needed=False)
+                else:
+                    break
         if disabler_needed:
             self._servo_disabler()
+        self._manage_servo_stopper(False)
 
-    def range_from_to_pos(interval: list, multi: int = 2, disabler_needed: bool= True) -> None:
+    def range_from_to_pos(self, interval: list, multi: int = 2, disabler_needed: bool= True) -> None:
         '''
         Changes the position smoothly from the first position in the interval to the second position in the interval
 
@@ -144,6 +201,7 @@ class ServoX:
         Returns:
             None
         '''
+        servo_id = self._manage_servo_stopper(True)
         min_val = min(int(interval[0]), int(interval[1]))
         max_val = max(int(interval[0]), int(interval[1]))
         if multi < 1:
@@ -156,7 +214,11 @@ class ServoX:
         counter = int(interval[0])
         adder = int(multi)
         for _ in range((max_val-min_val)//abs(int(multi))):
-            self.set_pos(counter, enabler_needed=False)
-            counter += adder
+            if self._is_servo_active(servo_id):
+                self._set_pos_internal(counter, enabler_needed=False)
+                counter += adder
+            else:
+                break
         if disabler_needed:
             self._servo_disabler()
+        self._manage_servo_stopper(False)

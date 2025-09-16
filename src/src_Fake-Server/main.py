@@ -22,11 +22,6 @@ try:
     from digital import Digital  # selfmade
     from fileR import FileR  # selfmade
     from fake import FakeR  # selfmade
-    from driveR import *  # selfmade
-    from servo import ServoX  # selfmade
-    from camera_manager import CameraManager  # selfmade
-    from brightness_detector import CameraBrightnessDetector  # selfmade
-    from object_detector import CameraObjectDetector  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
@@ -37,16 +32,13 @@ wifi = None
 comm = None
 utility = None
 file_Manager = None
-camera_man = None
-brightness_cam = None
-object_cam = None
 pause_event = threading.Event()
 
 # ===== PORTS ANALOG =====
 
 
 # ===== PORTS DIGITAL =====
-PORT_BUTTON = 0
+PORT_BUTTON = XX
 
 
 # ===== PORTS MOTORS =====
@@ -57,15 +49,6 @@ PORT_BUTTON = 0
 
 
 # ======================== SETUP FUNCTIONS =======================
-def Camera_Setup():
-    global camera_man, brightness_cam, object_cam
-    try:
-        camera_man = CameraManager(cam_index=X)
-        brightness_cam = CameraBrightnessDetector(camera_man)
-        object_cam = CameraObjectDetector(camera_man)
-    except Exception as e:
-        log(f'Camera Exception: {str(e)}', important=True, in_exception=True)
-
 def Wifi_Setup():
     global wifi
     try:
@@ -87,14 +70,6 @@ def Comm_Setup(p_event, Communication_instance):
 		log(f'Communication Exception: {str(e)}', important=True, in_exception=True)
 
 
-def Utility_Setup():
-    global utility
-    try:
-        utility = Util()
-    except Exception as e:
-        log(f'Utility Exception: {str(e)}', important=True, in_exception=True)
-
-
 def Instancer_Setup():
     try:
         # ============ Ports Initializing ===========
@@ -103,22 +78,12 @@ def Instancer_Setup():
         # ================== Util ===================
 
         # ================= DriveR ==================
-
-        # ================= ServoX ==================
     
         # ============== DistanceSensor =============
 
         # =============== LightSensor ===============
     except Exception as e:
         log(f'Instancer Exception: {str(e)}', important=True, in_exception=True)
-
-
-def FileR_Setup():
-    global file_Manager
-    try:
-        file_Manager = FileR()
-    except Exception as e:
-        log(f'FileR Exception: {str(e)}', important=True, in_exception=True)
 
 
 def fake_main_setup():  # see this as the call of the main function -> only execute this in the if __name__ == "__main__": line (if you want communication)
@@ -133,10 +98,7 @@ def fake_main_setup():  # see this as the call of the main function -> only exec
 def setup(pause_instance, Communication_instance):
     try:
         Wifi_Setup()  # you can delete this line from now on, just as the function!
-        # Comm_Setup(pause_instance, Communication_instance)
-        # Camera_Setup()  # if you want to use the camera
-        FileR_Setup()
-        Utility_Setup()
+        Comm_Setup(pause_instance, Communication_instance)
         Instancer_Setup()
     except Exception as e:
         log(f'Setup Exception: {str(e)}', important=True, in_exception=True)
@@ -144,52 +106,26 @@ def setup(pause_instance, Communication_instance):
 
 # ======================== IMPORTANT FUNCTIONS =======================
 def end_main(communication_instance):
-    #communication_instance.disconnect()  # if you do not want communication, you can remove this line, otherwise you can implement this line
-    #camera_man.release()  # if you want to use the camera, you should release it as well
+    #communication_instance.disconnect()  # uncomment here as well
     log('PROGRAM FINISHED')
 
 # ======================== CUSTOM METHODS =======================
-
-def is_it_pressed():
-    log('waiting till its pressed')
-    while not TestButton.is_pressed():
-        continue
-
-def handle_high_priority(msg):
-	try:
-		log(f'HIGH PRIORITY MESSAGE RECEIVED: {msg}')
-		is_it_pressed()
-		log('continue with program...')
-	except Exception as e:
-		log(f'handle exception: {str(e)}', important=True, in_exception=True)
-
-def do_something():
-    log('driving straight...')
-    time.sleep(1)
-    log('turning...')
-    time.sleep(1)
-
-def another_main():
-	log('breathing...')
-	time.sleep(1)
-	log('exhaling...')
-	time.sleep(1)
 
 
 # ======================== MAIN =======================
 
 def main(p_event, communication):  # leave it as it is, just write in the try / catch block! Do not remove the "p_event" or "communication"! (You can obviously write anything outside and inside the main though) If you delete any of those parameters, there wont be a communication
     try:  # try / catch is always useful in the main! leave it!
-        #communication.on_new_main(another_main)  # if something does not working accordingly you can all the time send a message so another main will be executed
-        setup(p_event, communication)  # if you use the ocmmunication, you need these parameters
-        #communication.on_high_priority(handle_high_priority)
-        print(TestButton.is_pressed(), flush=True)
-        log('actual program running right now...')
-        #for _ in range(5):  # simulation of doing anything before sending a high priority message
-        #    do_something()
-        #communication.send('hallo client!', priority='high')  # keep care that the client is running at this time as well, otherwise the message will get sent into the void
-        #for _ in range(5):
-        #    do_something()
+        print('uncomment to start. Also uncomment in the "end_main" function and where you execute this function from. You can now delete this line.\nDo not forget to change the invalid params (like XX)', flush=True)
+        #setup(p_event, communication)  # if you use the ocmmunication, you need these parameters
+        #i = 0
+        #while communication.is_connected():
+        #    if TestButton.is_pressed():
+        #        i += 1
+        #        communication.send('button got pressed', priority='high')
+        #        print('sent: ', i)
+        #    k.msleep(100)
+            
 
     except Exception as e:
         log(f'Main Exception: {str(e)}', important=True, in_exception=True)

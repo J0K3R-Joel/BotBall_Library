@@ -156,6 +156,8 @@ sudo bash config.sh
 
 Example usage for most classes is provided in the documentation files linked above.
 
+Additionally, an example usage for the `FakeR` class is provided in [./doc/user_server_client_fake_explaner.md](./doc/user_server_client_fake_explaner.md) file, since this will be the best exercise for the beginning, if you do not have experience with this library.
+
 ---
 
 ## Additional Information
@@ -175,6 +177,8 @@ Example usage for most classes is provided in the documentation files linked abo
 - Every time you change the weight or size, you should calibrate all bias again. The more often the better, since the bias is getting calibrated with the current and last bias.
 
 - If you are using the camera, please make sure to release it at the end of the code (I provided a function in the `CameraManager` class)
+
+- Go to [./doc/user_server_client_fake_explaner.md](./doc/user_server_client_fake_explaner.md) to get an example usage with the `FakeR` class
 
 ----
 

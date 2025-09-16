@@ -200,7 +200,7 @@ class Util:
                 threading.Thread(target=distance_stopper, args=(True,)).start()
 
                 log('waiting for wished distance...')
-                while not self.isClose:  # fail save probably needed
+                while not self.isClose:  # @TODO -> fail save could be needed
                     continue
 
             if not sideways and mm_to_object <= 200:
@@ -211,7 +211,7 @@ class Util:
 
         elif sideways and mm_to_object < 200:
             threading.Thread(target=distance_stopper, args=(False,)).start()
-            while not self.isClose:  # @TODO -> fail save probably needed
+            while not self.isClose:  # @TODO -> fail save could be needed
                 continue
 
         return True

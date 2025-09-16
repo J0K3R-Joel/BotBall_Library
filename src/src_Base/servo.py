@@ -108,7 +108,7 @@ class ServoX:
         Returns:
             None
         '''
-        millis = abs(self.get_pos() - value) / 10 + 10 # + 20 is just a kind of bias. @TODO -> testen, ob die formel so passt
+        millis = abs(self.get_pos() - value) / 10 + 20 # + 20 is just a kind of bias.
         if enabler_needed:
             self._servo_enabler()
         if self._valid_range(value):

@@ -124,7 +124,7 @@ update-ca-certificates
 # ==== Step 11: Install Python dependencies ====
 echo "Installing required Python packages ..."
 apt install -y python3-pip
-pip3 install scipy --upgrade --target /usr/lib/python3/dist-packages 
+pip3 install scipy opencv-python --upgrade --target /usr/lib/python3/dist-packages 
 
 # ==== Step 12: Open port for Harrogate ====
 sudo iptables -I INPUT -p tcp --dport 8888 -j ACCEPT

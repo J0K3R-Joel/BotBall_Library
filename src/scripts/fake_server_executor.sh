@@ -1,15 +1,15 @@
 #!/bin/bash
 # Author: Joel Kalkusch
 # Email: kalkusch.joel@gmail.com
-# Date: 2025-09-15
-# Purpose: Create the camera test user
+# Date: 2025-09-16
+# Purpose: Create the server for the communication
 
 # ==== Configuration ====
-USER_NAME="Camera"
+USER_NAME="Fake-Server"
 PROJECT_NAME="setup"
 DEST_BASE="/home/kipr/Documents/KISS"
 USERS_FILE="/home/kipr/Documents/KISS/users.json"
-SRC_CAMERA_FOLDER_NAME="src_Camera"
+SRC_FAKE_SERVER_FOLDER_NAME="src_Fake-Server"
 
 # ==== Skript-Verzeichnis bestimmen ====
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -48,20 +48,20 @@ cp "$TMP_MANIFEST" "$DEST/project.manifest"
 
 echo "Projectpath copied to '$DEST'."
 
-# ==== Paste src_Camera in bin/ and src/ (relativ) ====
-USB_SRC_CAMERA="$SRC_DIR/$SRC_CAMERA_FOLDER_NAME"
+# ==== Paste src_Fake-Server in bin/ and src/ (relativ) ====
+USB_SRC_FAKE_SERVER="$SRC_DIR/$SRC_FAKE_SERVER_FOLDER_NAME"
 
-if [ ! -d "$USB_SRC_CAMERA" ]; then
-    echo "=========='$SRC_CAMERA_FOLDER_NAME' folder not found relative to script!=========="
+if [ ! -d "$USB_SRC_FAKE_SERVER" ]; then
+    echo "=========='$SRC_FAKE_SERVER_FOLDER_NAME' folder not found relative to script!=========="
     exit 1
 fi
 
-cp -r "$USB_SRC_CAMERA"/* "$DEST/bin/"
-cp -r "$USB_SRC_CAMERA"/* "$DEST/src/"
+cp -r "$USB_SRC_FAKE_SERVER"/* "$DEST/bin/"
+cp -r "$USB_SRC_FAKE_SERVER"/* "$DEST/src/"
 
 chmod -R 777 "$DEST_BASE/"*  # PRISM7k's glory idea -> lets you compile and run the programs
 
-echo "src_Camera files copied to bin/ and src/."
+echo "src_Fake-Server files copied to bin/ and src/."
 
 # ==== Replace EDITME_USER and EDITME_PROJECT in the target ====
 find "$DEST_BASE" -type f -exec sed -i "s/EDITME_USER/$USER_NAME/g" {} \;
@@ -100,4 +100,4 @@ fi
 
 # ==== Ending message ====
 echo ""
-echo "Camera-script finished."
+echo "Fake_Server-script finished."

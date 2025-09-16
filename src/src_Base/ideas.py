@@ -95,23 +95,6 @@ def start_position() -> None:
     shovel_motor_position(15000)
     shovel_servo_position(2047)
 
-def claw_position_open_range(interval: list, multi: int = 1) -> None:
-    small_range = 1200
-    if interval[0] < small_range:
-        interval[0] = small_range
-
-    if interval[1] < small_range:
-        interval[1] = small_range
-
-    k.enable_servos()
-    counter = interval[0]
-    waiter = int(10 // multi)
-    for _ in range(interval[0], interval[1]):
-        k.set_servo_position(PORT_SERVOS_CLAW_OPEN, counter)
-        k.msleep(waiter)
-        counter += 1
-    k.disable_servos()
-
 
 stabelized = False  # variable for stabelizing. If a motor gets stabelizing at the moment, this variable will become 'True'
 
@@ -190,8 +173,3 @@ def setup(at_competition: bool) -> None:
         print('////////////////////////////////////////////\n', flush=True)
         tryout()
     k.cmpc(PORT_MOTOR_CLAW)
-
-
-# =====================================================================
-# CAMERA
-# FOLLOW AN OBJECT

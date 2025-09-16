@@ -542,7 +542,7 @@ class CameraBrightnessDetector:
 
     def calculate_brightness_bias(self, frames=50, delay=0.05) -> float:
         '''
-        calculates the brightness bias via holding something white in front of the camera. Also saves the bias and if there is already a bias in the file, then add the new bias to the old bias and divide by 2, to get the average.
+        calculates the brightness bias via holding something white in front of the camera. Saves the bias and if there is already a bias in the file, then adds the new bias to the old bias and divides by 2, to get the average.
         If this function won't be called, but if you still want a bias, then if there is a bias file of the brightness, then it will just take the old bias.
 
         Args:
@@ -550,61 +550,70 @@ class CameraBrightnessDetector:
             delay (float): time in seconds between each frame (default: 0.05)
 
         Returns:
-            float: the calibrated bias (if there was already a bias calibrated once, it will add it to the newly calibrated one and divide it by 2 to get the average bias)
+            float: the calibrated bias (if there was already a bias calibrated once,
+                   it will add it to the newly calibrated one and divide it by 2 to get the average bias)
         '''
-        file_path = os.path.join(self.save_base_path, "brightness_bias.txt")
-        # @TODO -> irgendetwas machen, bis man bereit ist
-
         bias_values = []
 
         for i in range(frames):
             _, gray = self._capture_frame()
             bias_values.append(np.mean(gray))
-            time.sleep(delay)  # optional -> good enough without?
+            time.sleep(delay)
 
-        current_bias = np.mean(bias_values)
-        with self._bias_lock:
-            if os.path.exists(file_path):
-                try:
-                    with open(file_path, "r") as f:
-                        old_bias = float(f.read().strip())
-                        new_bias = (old_bias + current_bias) / 2
-                except:
-                    new_bias = current_bias
-            else:
-                new_bias = current_bias
+        current_bias = float(np.mean(bias_values))
 
-            with open(file_path, "w") as f:
-                f.write(str(new_bias))
+        self._brightness_bias = current_bias
+        return self.get_brightness_bias(calibrated=True)
 
-            self._brightness_bias = new_bias
-        return new_bias
-
-    def get_brightness_bias(self) -> float:
+    def get_brightness_bias(self, calibrated: bool = False) -> float:
         '''
-        gives you the opportunity to see the calibrated bias from the file
+        Gives you the opportunity to see the calibrated bias from the file.
+        Optionally updates the stored bias with a new calibration.
 
         Args:
-           None
+            calibrated (bool, optional):
+                If True, combines the current brightness measurement with the stored bias and writes the average back.
+                If False, only reads the stored bias (default: False).
 
         Returns:
-            float: The bias from the brightness bias file
+            float: The bias from the brightness bias file (optionally updated with a new calibration)
         '''
-        with self._bias_lock:
-            if self._brightness_bias is not None:
-                return self._brightness_bias
+        file_path = os.path.join(self.save_base_path, "brightness_bias.txt")
 
-            file_path = os.path.join(self.save_base_path, "brightness_bias.txt")
-            if os.path.exists(file_path):
-                try:
+        with self._bias_lock:
+            try:
+                new_bias = None
+                if calibrated and self._brightness_bias is not None:
+                    new_bias = self._brightness_bias
+                elif calibrated:
+                    _, gray = self._capture_frame()
+                    new_bias = float(np.mean(gray))
+
+                if os.path.exists(file_path):
                     with open(file_path, "r") as f:
-                        self._brightness_bias = float(f.read().strip())
-                    return self._brightness_bias
-                except Exception as e:
-                    log(f"Could not read bias from file: {e}", important=True, in_exception=True)
-                    return None
-            else:
-                log("Bias not calculated yet and file not found.", important=True)
+                        old_bias = float(f.read().strip())
+                else:
+                    old_bias = None
+
+                if calibrated:
+                    if old_bias is not None:
+                        avg_bias = (old_bias + new_bias) / 2
+                    else:
+                        avg_bias = new_bias
+                    with open(file_path, "w") as f:
+                        f.write(str(avg_bias))
+                    self._brightness_bias = avg_bias
+                    return avg_bias
+                else:
+                    if old_bias is not None:
+                        self._brightness_bias = old_bias
+                        return old_bias
+                    else:
+                        log("Bias not calculated yet and file not found.", important=True)
+                        return None
+
+            except Exception as e:
+                log(f"Could not read/write bias from file: {e}", important=True, in_exception=True)
                 return None
 
     def analyze_frame(self) -> list:

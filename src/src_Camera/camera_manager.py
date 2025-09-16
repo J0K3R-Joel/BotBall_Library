@@ -24,6 +24,7 @@ class CameraManager:
         self.warmup_frames = warmup_frames
         self.warmup_delay = warmup_delay
 
+    # ======================== PRIVATE METHODS ========================
     def _warmup(self) -> None:
         '''
         when initializing the camera, it takes some time so you get a clear image and not an image where everything is kind of black, since it just got started
@@ -40,6 +41,7 @@ class CameraManager:
                 time.sleep(self.warmup_delay)
             self._warmed_up = True
 
+    # ======================== PUBLIC METHODS ========================
     def get_frame(self, retries:int=5, delay:float=0.05):
         '''
         create one frame. If there is an error, then retry again

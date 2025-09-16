@@ -424,7 +424,8 @@ class CameraObjectDetector:
 
         return last_frame
 
-    # ======================== FIND METHODS ========================
+    # ======================== PUBLIC METHODS ========================
+    # x----------x find methods x------------x
 
     def find_by_shape(self, shape_name: str) -> bool:
         '''
@@ -622,7 +623,7 @@ class CameraObjectDetector:
 
         return found
 
-    # ======================== WAIT METHODS ========================
+    # x----------x wait methods x------------x
     def wait_for_object(self, object_name: str, interval: float=0.25, min_matches: int =35, max_hue_diff: int=10, max_secs: float=999999.0) -> bool:
         '''
         takes multiple images for as long as the timeout limit is not hit or the object is not found. If the object is found within the limit, it exits this function

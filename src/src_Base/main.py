@@ -169,7 +169,8 @@ def do_something():
     log('turning...')
     time.sleep(1)
 
-def another_main():
+def another_main(p_event, communication):  # every new main should have the p_event and communication instances (except you do not need communication from this moment on)
+    communication.send('I am in the new main now!')
 	log('breathing...')
 	time.sleep(1)
 	log('exhaling...')
@@ -180,7 +181,7 @@ def another_main():
 
 def main(p_event, communication):  # leave it as it is, just write in the try / catch block! Do not remove the "p_event" or "communication"! (You can obviously write anything outside and inside the main though) If you delete any of those parameters, there wont be a communication
     try:  # try / catch is always useful in the main! leave it!
-        #communication.on_new_main(another_main)  # if something does not working accordingly you can all the time send a message so another main will be executed
+        #communication.on_new_main(another_main, p_event, communication)  # if something does not working accordingly you can all the time send a message so another main will be executed
         setup(p_event, communication)  # if you use the ocmmunication, you need these parameters
         #communication.on_high_priority(handle_high_priority)
         print(TestButton.is_pressed(), flush=True)

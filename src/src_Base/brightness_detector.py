@@ -130,7 +130,8 @@ class CameraBrightnessDetector:
                 if data["white"]:
                     color = (255, 255, 255)
                 cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-        cv2.imshow("Test Mode - Camera Feedback", frame)
+        if self.test_mode:
+            cv2.imshow("Test Mode - Camera Feedback", frame)
 
     def _capture_frame(self) -> tuple:
         '''

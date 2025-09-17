@@ -184,11 +184,13 @@ Other classes that got an entire user as test purpose:
 
 - Every time you change the weight or size, you should calibrate all bias again. The more often the better, since the bias is getting calibrated with the current and last bias.
 
-- If you are using the camera, please make sure to release it at the end of the code (I provided a function in the `CameraManager` class)
+- If you are using the camera, please make sure to release it at the end of the code (I provided a function in the `CameraManager` class, which is calles `release`)
 
 - Go to [./doc/user_server_client_fake_explaner.md](./doc/user_server_client_fake_explaner.md) to get an example usage with the `FakeR` class
 
 - If you get into the `driveR.py` file, you will find `gyro_z` and `gyro_y`. While they are getting explained, there is still `gyro_x`, which is not in use yet. This value is for the following: If the controller is (for example) laying down and then it is on the way of standing up, then `gyro_x` changes. You will also find the `accel_x` value. `accel_y` and `accel_z` get explained, but not `accel_x`. This value (`accel_x`) is changing, when the controller is (for example) lying down and then getting moved left or right. 
+
+- You will find in every `main.py` file which is somehow connected with communication `p_event` and `communication` parameters. You will need those parameters everywhere, where you want communication. `p_event` is the short form of "pause_event". With this parameter you are able to pause the main everytime a `high_priority` message gets sent to you. On the other hand the `communication` parameter is for reading and sending messages to the other robot. More on that in [./doc/user_server_client_fake_explaner.md](./doc/user_server_client_fake_explaner.md)
 
 ----
 

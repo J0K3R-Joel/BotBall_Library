@@ -132,7 +132,6 @@ class FakeR():
         pattern = r'\.on_new_main\(\s*([a-zA-Z_][a-zA-Z0-9_]*)'
         matches = re.findall(pattern, code)
 
-        # Deduplicate while preserving order
         seen = set()
         for m in matches:
             seen.add(m)
@@ -141,7 +140,8 @@ class FakeR():
 
     def __insert_valid_markers_in_file(self, file_path: str) -> None:
         '''
-        Inserts pause-event markers into 'main()' and all functions registered via 'on_new_main'.
+        Inserts pause-event markers into 'main()' and all functions registered via 'on_new_main',
+        but only if the function has a parameter named "p_event".
 
         Args:
             file_path (str): The file to modify.
@@ -155,11 +155,15 @@ class FakeR():
         lines = code.splitlines()
         tree = ast.parse(code)
 
-        # Funktionen, die bearbeitet werden sollen
         target_functions = ['main'] + getattr(self, 'another_main_function_names', [])
 
         for node in tree.body:
             if isinstance(node, ast.FunctionDef) and node.name in target_functions:
+                param_names = [arg.arg for arg in node.args.args]
+                if "p_event" not in param_names:
+                    log(f"[SKIP] '{node.name}' has no parameter 'p_event'. No marker will be added.", important=True)
+                    continue
+
                 first_stmt = node.body[0] if node.body else None
 
                 if isinstance(first_stmt, ast.Try):
@@ -195,16 +199,84 @@ class FakeR():
                         lines.insert(insert_at, indent + self.inserted_line)
 
                 else:
-                    log("try/except was not found as the first statement... writing in the first line. ADD the try/catch block in the very beginning of the function")  # @TODO -> funktionsname hinzufügen
+                    log(f"try/except was not found as the first statement in function '{node.name}'. Writing marker in the first line instead. ADD a try/except block at the very beginning of the function!",
+                        important=True)
                     func_start = node.lineno
-                    indent = lines[func_start][
-                             :len(lines[func_start]) - len(lines[func_start].lstrip())] + "    "  # Standard 4 spaces
+                    indent = lines[func_start][:len(lines[func_start]) - len(lines[func_start].lstrip())]
                     lines.insert(func_start, indent + self.inserted_line)
-                    print(
-                        f"[INFO] '{node.name}': Marker eingefügt als erste Zeile, da kein try/except als erstes Statement vorhanden.")
+                    print(f"'{node.name}': Marker inserted in the first line, since there is no try/except as the first statement", flush=True)
 
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write('\n'.join(lines))
+
+    def __merge_functions_back_into_text(self, entire_text: str) -> str:
+        '''
+        Reads each function file saved in self.another_main_file_names and replaces the original
+        function definition in entire_text with the (possibly modified) function code from the file.
+
+        Returns:
+            The updated entire_text with functions replaced by their updated versions.
+        '''
+        import ast
+        # split lines once for easier slicing
+        lines = entire_text.splitlines()
+
+        # build a list of (start_idx, end_idx, replacement_text) for each target function
+        replacements = []
+
+        try:
+            tree = ast.parse(entire_text)
+        except Exception as e:
+            log(f"Could not parse entire_text for merging functions: {e}", important=True)
+            return entire_text
+
+        # map function name -> (start_line, end_line)
+        func_positions = {}
+        for node in tree.body:
+            if isinstance(node, ast.FunctionDef) and node.name in self.another_main_function_names:
+                start_line = node.lineno - 1  # 0-based index for lines list
+                end_line = getattr(node, 'end_lineno', node.lineno) - 1
+                func_positions[node.name] = (start_line, end_line)
+
+        for file_path in self.another_main_file_names:
+            try:
+                base = os.path.basename(file_path)
+                if base.startswith("function_") and base.endswith(".py"):
+                    func_name = base[len("function_"):-len(".py")]
+                else:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        fcode = f.read()
+                    ftree = ast.parse(fcode)
+                    fname = None
+                    for n in ftree.body:
+                        if isinstance(n, ast.FunctionDef):
+                            fname = n.name
+                            break
+                    if fname is None:
+                        continue
+                    func_name = fname
+
+                if func_name not in func_positions:
+                    continue
+
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    updated_code = f.read().rstrip('\n')
+
+                start_line, end_line = func_positions[func_name]
+                replacements.append((start_line, end_line, updated_code))
+            except Exception as e:
+                log(f"Error while preparing merge for {file_path}: {e}", important=True, in_exception=True)
+                continue
+
+        replacements.sort(key=lambda x: x[0], reverse=True)
+
+        for start_line, end_line, updated_code in replacements:
+            before = lines[:start_line]
+            after = lines[end_line + 1:]
+            updated_lines = updated_code.splitlines()
+            lines = before + updated_lines + after
+
+        return '\n'.join(lines)
 
     def __insert_beginning_in_code(self, code_str: str) -> str:
         '''
@@ -263,7 +335,6 @@ class FakeR():
         Returns:
            The module that needs to be imported
         '''
-        # get path and module-name
         module_name = "fake_main"
         spec = importlib.util.spec_from_file_location(module_name, path_to_main_py)
         if spec is None:
@@ -332,7 +403,6 @@ class FakeR():
         import ast
         import os
 
-        # Parse the entire code
         tree = ast.parse(code)
 
         functions_found = {}
@@ -344,7 +414,6 @@ class FakeR():
                 function_lines = code.splitlines()[start_line:end_line]
                 functions_found[node.name] = '\n'.join(function_lines)
 
-        # Create target directory if it doesn't exist
         os.makedirs(target_dir, exist_ok=True)
 
         # Save each function to a separate file
@@ -454,16 +523,18 @@ class FakeR():
                     self.comm_wanted = True
                     self.inserted_line = params[0] + self.inserted_method
 
-                # replace every pause_event = threading.Event() oder mit .set()
+                # replace every pause_event = threading.Event() with or without .set()
                 pattern = r'(^\s*pause_event\s*=\s*)threading\.Event\(\)(\.set\(\))?'
                 replacement = r'\1None'
 
                 entire_text = self.__replace_first_valid_event_assignment(old_entire_text)
-                self.another_main_function_names = self__extract_on_new_main_functions(entire_text)
-                self.__save_functions_to_files(entire_text, os.path.join(self.target_dir, 'src')
+                self.another_main_function_names = self.__extract_on_new_main_functions(entire_text)
+                self.__save_functions_to_files(entire_text, os.path.join(self.target_dir, 'src'))
 
                 for file in self.another_main_file_names:
                     self.__insert_valid_markers_in_file(file)
+
+                entire_text = self.__merge_functions_back_into_text(entire_text)
 
                 # find positions of main() and end_main()
                 main_start = entire_text.find('def main(')

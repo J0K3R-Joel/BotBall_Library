@@ -14,6 +14,7 @@ try:
     import threading
     import json
     import time
+    from stop_manager import stop_manager  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
@@ -185,7 +186,6 @@ class RobotCommunicator:
 
     def __handle_new_main(self, msg: str) -> None:
         '''
-        == EXPERIMENTAL == (not yet tested)
         Function to determine what should happen if there was a new_main priority message.
         Will stop the main() thread and start a new one instead.
 
@@ -196,6 +196,7 @@ class RobotCommunicator:
             None
         '''
         log("new main will be executed...")
+        stop_manager.emergency_stop()
         if self.new_main_callback:
             try:
                 log(f"[NEW MAIN] {msg}", important=True)

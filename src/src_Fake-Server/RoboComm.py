@@ -14,6 +14,7 @@ try:
     import threading
     import json
     import time
+    from stop_manager import stop_manager  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
@@ -36,7 +37,13 @@ class RobotCommunicator:
         self.position_history = []
 
         self.high_priority_callback = None
+        self.high_priority_args = ()
+        self.high_priority_kwargs = {}
+
         self.new_main_callback = None
+        self.new_main_args = ()
+        self.new_main_kwargs = {}
+
         self.pause_event = pause_event
 
         self.__start_connection()
@@ -152,26 +159,35 @@ class RobotCommunicator:
 
     def __handle_high_priority(self, msg: str) -> None:
         '''
-        function to determine what should happen if there was a high priority message. Also stops the thread of the main() and resumes it.
-
-        Args:
-            msg (str): the message sent from the sender
-
-       Returns:
-            None
+        Function to handle high priority messages.
+        Only passes exactly what the user registered via on_high_priority().
         '''
         self.check_pause_event_instance()
         if self.pause_event:
             self.pause_event.clear()
+
         if self.high_priority_callback:
-            self.high_priority_callback(msg)
+            try:
+                # msg einfach anzeigen
+                log(f"[HIGH PRIORITY] {msg}", important=True)
+
+                # Callback mit exakt den registrierten Args/Kwargs ausführen
+                self.high_priority_callback(
+                    *self.high_priority_args,
+                    **self.high_priority_kwargs
+                )
+
+            except Exception as e:
+                log(f'Exception in high_priority_callback: {str(e)}',
+                    important=True, in_exception=True)
+
         if self.pause_event:
             self.pause_event.set()
 
-    def __handle_new_main(self, msg) -> None:
+    def __handle_new_main(self, msg: str) -> None:
         '''
-        == EXPERIMENTAL == (not yet tested)
-        function to determine what should happen if there was a new_main priority message. Will stop the main() thread and start a new one instead
+        Function to determine what should happen if there was a new_main priority message.
+        Will stop the main() thread and start a new one instead.
 
         Args:
             msg (str): the message sent from the sender
@@ -179,14 +195,23 @@ class RobotCommunicator:
         Returns:
             None
         '''
-        log("new_main will be executed...")
+        log("new main will be executed...")
+        stop_manager.emergency_stop()
         if self.new_main_callback:
             try:
-                self.new_main_callback(msg)
+                log(f"[NEW MAIN] {msg}", important=True)
+
+                self.new_main_callback(
+                    *self.new_main_args,
+                    **self.new_main_kwargs
+                )
+
             except Exception as e:
-                log(str(e), important=True, in_exception=True)
-        log("new_main has finished. Exiting thread...")
-        sys.exit()  # clean exit of this thread
+                log(f'Exception in new_main_callback: {str(e)}',
+                    important=True, in_exception=True)
+
+        log("new main has finished. Exiting thread...")
+        os._exit(0)
 
     # ======================== PUBLIC METHODS ========================
 
@@ -276,7 +301,7 @@ class RobotCommunicator:
         '''
         return self.all_messages
 
-    def on_high_priority(self, callback) -> None:
+    def on_high_priority(self, callback, *args, **kwargs) -> None:
         '''
         Register a function to be called on high-priority messages
 
@@ -287,8 +312,10 @@ class RobotCommunicator:
             None
         '''
         self.high_priority_callback = callback
+        self.high_priority_args = args
+        self.high_priority_kwargs = kwargs
 
-    def on_new_main(self, callback) -> None:
+    def on_new_main(self, callback, *args, **kwargs) -> None:
         '''
         == EXPERIMENTAL == (not yet tested)
         Register a function to be called on high-priority messages
@@ -300,6 +327,8 @@ class RobotCommunicator:
             None
         '''
         self.new_main_callback = callback
+        self.new_main_args = args
+        self.new_main_kwargs = kwargs
 
     def get_positions(self) -> list:
         '''
@@ -363,7 +392,6 @@ class RobotCommunicator:
        Returns:
             None
         '''
-        return self.position_history
         try:
             self.connected = False
             if self.conn:

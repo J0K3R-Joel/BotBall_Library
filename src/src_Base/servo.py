@@ -13,6 +13,7 @@ try:
     import _kipr as k
     import threading
     import uuid
+    from stop_manager import stop_manager  # selfmade
 except Exception as e:
     log(f'Import Exception in WifiConnector: {str(e)}', important=True, in_exception=True)
 
@@ -23,6 +24,7 @@ class ServoX:
         self.min_value = minValue
         self._servo_lock = threading.Lock()
         self._active_servo_id = None
+        stop_manager.register_servo(self)
 
     # ======================== PRIVATE METHODS ========================
     def _manage_servo_stopper(self, beginning: bool) -> str:
@@ -79,6 +81,7 @@ class ServoX:
         Returns:
             None
         '''
+        self._manage_servo_stopper(False)
         k.disable_servo(self.port)
 
     def _valid_range(self, value:int) -> bool:

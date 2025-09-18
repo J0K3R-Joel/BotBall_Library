@@ -21,6 +21,7 @@ try:
     from light_sensor import LightSensor  # selfmade
     from digital import Digital  # selfmade
     from fileR import FileR  # selfmade
+    from stop_manager import stop_manager  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
@@ -74,6 +75,8 @@ class driveR_two():
         self.NINETY_DEGREES_SECS = None
         self._motor_lock = threading.Lock()
         self._active_motor_id = None
+
+        stop_manager.register_motor(self)
 
         self._set_values()
 
@@ -1892,6 +1895,7 @@ class driveR_four:
         self._motor_lock = threading.Lock()
         self._active_motor_id = None
 
+        stop_manager.register_motor(self)
         self._set_values()
 
     # ======================== HELPER  ========================

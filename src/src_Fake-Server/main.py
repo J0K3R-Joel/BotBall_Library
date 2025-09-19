@@ -16,11 +16,7 @@ try:
     import subprocess
     from commU import WifiConnector  # selfmade
     from RoboComm import RobotCommunicator  # selfmade
-    from util import Util  # selfmade
-    from distance_sensor import DistanceSensor  # selfmade
-    from light_sensor import LightSensor  # selfmade
     from digital import Digital  # selfmade
-    from fileR import FileR  # selfmade
     from fake import FakeR  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
@@ -30,15 +26,13 @@ except Exception as e:
 # ===== GLOBAL VARIABLES =====
 wifi = None
 comm = None
-utility = None
-file_Manager = None
 pause_event = threading.Event()
 
 # ===== PORTS ANALOG =====
 
 
 # ===== PORTS DIGITAL =====
-PORT_BUTTON = XX
+#PORT_BUTTON = XX
 
 
 # ===== PORTS MOTORS =====
@@ -72,8 +66,9 @@ def Comm_Setup(p_event, Communication_instance):
 
 def Instancer_Setup():
     try:
+        print('you can delete this line from now on and uncomment the global variable', flush=True)
         # ============ Ports Initializing ===========
-        globals()['TestButton'] = Digital(PORT_BUTTON)  # This is how you will declare all sensors and motors and servos. globals()['{VAR_NAME)'] creates a global variable that is accessable EVERYWHERE (see main function)!
+        #globals()['TestButton'] = Digital(PORT_BUTTON)  # This is how you will declare all sensors and motors and servos. globals()['{VAR_NAME)'] creates a global variable that is accessable EVERYWHERE (see main function)!
 
         # ================== Util ===================
 
@@ -106,7 +101,8 @@ def setup(pause_instance, Communication_instance):
 
 # ======================== IMPORTANT FUNCTIONS =======================
 def end_main(communication_instance):
-    #communication_instance.disconnect()  # uncomment here as well
+    #if isinstance(communication_instance, RobotCommunicator):  # if you do not want communication, you can remove this line, otherwise you can implement this line
+    #	communication_instance.disconnect()  # if you do not want communication, you can remove this line, otherwise you can implement this line
     log('PROGRAM FINISHED')
 
 # ======================== CUSTOM METHODS =======================

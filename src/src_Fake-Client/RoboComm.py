@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import os, sys
+
 sys.path.append("/usr/lib")
 
 from logger import *  # selfmade
@@ -168,10 +169,7 @@ class RobotCommunicator:
 
         if self.high_priority_callback:
             try:
-                # msg einfach anzeigen
                 log(f"[HIGH PRIORITY] {msg}", important=True)
-
-                # Callback mit exakt den registrierten Args/Kwargs ausführen
                 self.high_priority_callback(
                     *self.high_priority_args,
                     **self.high_priority_kwargs
@@ -196,11 +194,13 @@ class RobotCommunicator:
             None
         '''
         log("new main will be executed...")
-        stop_manager.emergency_stop()
+        self.check_pause_event_instance()
+        if self.pause_event:
+            self.pause_event.clear()
+            
         if self.new_main_callback:
             try:
                 log(f"[NEW MAIN] {msg}", important=True)
-
                 self.new_main_callback(
                     *self.new_main_args,
                     **self.new_main_kwargs
@@ -211,7 +211,7 @@ class RobotCommunicator:
                     important=True, in_exception=True)
 
         log("new main has finished. Exiting thread...")
-        os._exit(0)
+        stop_manager.sys_end()
 
     # ======================== PUBLIC METHODS ========================
 
@@ -380,7 +380,6 @@ class RobotCommunicator:
             If it is currently connected (True), or not (False)
         '''
         return self.connected
-
 
     def disconnect(self) -> None:
         '''

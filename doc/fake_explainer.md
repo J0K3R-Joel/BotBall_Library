@@ -230,9 +230,8 @@ def is_it_pressed():
     while not TestButton.is_pressed():
         continue
 
-def handle_high_priority(msg):
+def handle_high_priority():
     try:
-        log(f'HIGH PRIORITY MESSAGE RECEIVED: {msg}')
         is_it_pressed()
         log('continue with program...')
     except Exception as e:
@@ -275,7 +274,7 @@ def main(p_event, communication):  # leave it as it is, just write in the try / 
 if __name__ == "__main__":
     try:
         fake_main_setup()  
-    except Exception as e:
+    except Exception as e:
         log(str(e), important=True, in_exception=True)
 ```
 

@@ -45,7 +45,8 @@ def setup(pause_instance, Communication_instance):
 
 # ======================== IMPORTANT FUNCTIONS =======================
 def end_main(communication_instance):
-    #communication_instance.disconnect()  # if you do not want communication, you can remove this line
+    #if isinstance(communication_instance, RobotCommunicator):  # if you do not want communication, you can remove this line, otherwise you can implement this line
+    #	communication_instance.disconnect()  # if you do not want communication, you can remove this line, otherwise you can implement this line
     log('PROGRAM FINISHED')
 
 # ======================== CUSTOM METHODS =======================
@@ -56,16 +57,25 @@ def do_something():
     log('turning...')
     time.sleep(1)
 
-def another_main():
-	log('breathing...')
-	time.sleep(1)
-	log('exhaling...')
-	time.sleep(1)
+def another_main(p_event, communication):  # every new main should have the p_event and communication instances (except you do not need communication from this moment on)
+    try:
+		communication.send('I am in the new main now!')
+		log('breathing...')
+		time.sleep(1)
+		log('exhaling...')
+		time.sleep(1)
+	except Exception as e:
+		log(f'Another main exception: {str(e)}', in_exception=True, important=True)
+	finally:
+		end_main(None)
+		
 
-def handle_high_priority(msg):
-    log(f'HIGH PRIORITY MESSAGE RECEIVED: {msg}')
-    time.sleep(10)
-    log("continue with program...")
+def handle_high_priority():
+	try:
+		time.sleep(10)
+		log('continue with program...')
+	except Exception as e:
+		log(f'handle exception: {str(e)}', important=True, in_exception=True)
 
 def drive_straight_text():
 	try:

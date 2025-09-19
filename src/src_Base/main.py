@@ -144,7 +144,8 @@ def setup(pause_instance, Communication_instance):
 
 # ======================== IMPORTANT FUNCTIONS =======================
 def end_main(communication_instance):
-    #communication_instance.disconnect()  # if you do not want communication, you can remove this line, otherwise you can implement this line
+    #if isinstance(communication_instance, RobotCommunicator): # if you do not want communication, you can remove this line, otherwise you can implement this line
+        #communication_instance.disconnect()  # if you do not want communication, you can remove this line, otherwise you can implement this line
     #camera_man.release()  # if you want to use the camera, you should release it as well
     log('PROGRAM FINISHED')
 
@@ -155,9 +156,8 @@ def is_it_pressed():
     while not TestButton.is_pressed():
         continue
 
-def handle_high_priority(msg):
+def handle_high_priority():
 	try:
-		log(f'HIGH PRIORITY MESSAGE RECEIVED: {msg}')
 		is_it_pressed()
 		log('continue with program...')
 	except Exception as e:
@@ -170,11 +170,16 @@ def do_something():
     time.sleep(1)
 
 def another_main(p_event, communication):  # every new main should have the p_event and communication instances (except you do not need communication from this moment on)
-    communication.send('I am in the new main now!')
-	log('breathing...')
-	time.sleep(1)
-	log('exhaling...')
-	time.sleep(1)
+    try:
+		communication.send('I am in the new main now!')
+		log('breathing...')
+		time.sleep(1)
+		log('exhaling...')
+		time.sleep(1)
+	except Exception as e:
+		log(f'Another main exception: {str(e)}', in_exception=True, important=True)
+	finally:
+		end_main(communication)
 
 
 # ======================== MAIN =======================

@@ -73,8 +73,9 @@ class driveR_two():
         self.isClose = False
         self.ONEEIGHTY_DEGREES_SECS = None
         self.NINETY_DEGREES_SECS = None
+        self._motor_stoppers = {}
+        self._next_id = 0
         self._motor_lock = threading.Lock()
-        self._active_motor_id = None
 
         stop_manager.register_motor(self)
 
@@ -117,12 +118,15 @@ class driveR_two():
         '''
         with self._motor_lock:
             if beginning:
-                new_id = str(uuid.uuid4())
-                self._active_motor_id = new_id
-                return new_id
+                self._next_id += 1
+                motor_id = self._next_id
+                self._motor_stoppers[motor_id] = True
+                return motor_id
             else:
-                self._active_motor_id = None
-                return None
+                if self._next_id in self._motor_stoppers:
+                    self._motor_stoppers[self._next_id] = False
+                return self._next_id
+
 
     def is_motor_active(self, motor_id: str) -> bool:
         '''
@@ -134,8 +138,8 @@ class driveR_two():
         Returns:
             bool: Is it still valid (True), or not (False)
         '''
-        with self._motor_lock:
-            return self._active_motor_id == motor_id
+        with self._stopper_lock:
+            return self._motor_stoppers.get(motor_id, False)
 
 
     # ======================== SET INSTANCES ========================
@@ -839,25 +843,28 @@ class driveR_two():
         except Exception as e:
             log(str(e), important=True, in_exception=True)
 
-    def break_all_motors(self) -> None:
+    def break_all_motors(self, stop:bool = False) -> None:
         '''
         immediately stop all motors
 
         Args:
-            None
+            stop (bool, optional): If it should be turned off completly and everywhere (True), or just stop driving (False, default)
 
         Returns:
             None
         '''
         k.freeze(self.port_wheel_left)
         k.freeze(self.port_wheel_right)
+        if stop:
+            self._manage_motor_stopper(False)
 
-    def wait_motor_done(self, *args) -> bool:
+    def wait_motor_done(self, *args, stop: bool = False) -> bool:
         '''
         Waits until all specified motors have completed their rotations.
 
         Args:
             *args (int): Ports of the motors to wait for.
+            stop (bool, optional): If it should wait completly and everywhere (True), or just in this Thread (False, default)
 
         Returns:
             bool: True when all specified motors are done.
@@ -870,6 +877,8 @@ class driveR_two():
                     if k.get_motor_done(motor):
                         pending.remove(motor)
 
+            if stop:
+                self._manage_motor_stopper(False)
             return True
 
         except Exception as e:
@@ -1893,7 +1902,8 @@ class driveR_four:
         self.ONEEIGHTY_DEGREES_SECS = None
         self.NINETY_DEGREES_SECS = None
         self._motor_lock = threading.Lock()
-        self._active_motor_id = None
+        self._motor_stoppers = {}
+        self._next_motor_id = 0
 
         stop_manager.register_motor(self)
         self._set_values()
@@ -1935,12 +1945,14 @@ class driveR_four:
         '''
         with self._motor_lock:
             if beginning:
-                new_id = str(uuid.uuid4())
-                self._active_motor_id = new_id
-                return new_id
+                self._next_motor_id += 1
+                motor_id = self._next_motor_id
+                self._motor_stoppers[motor_id] = True
+                return motor_id
             else:
-                self._active_motor_id = None
-                return None
+                if self._next_motor_id in self._motor_stoppers:
+                    self._motor_stoppers[self._next_motor_id] = False
+                return self._next_motor_id
 
     def is_motor_active(self, motor_id: str) -> bool:
         '''
@@ -1953,7 +1965,7 @@ class driveR_four:
             bool: Is it still valid (True), or not (False)
         '''
         with self._motor_lock:
-            return self._active_motor_id == motor_id
+            return self._motor_stoppers.get(motor_id, False)
 
     # ======================== SET INSTANCES ========================
 
@@ -3203,12 +3215,12 @@ class driveR_four:
         except Exception as e:
             log(str(e), important=True, in_exception=True)
 
-    def break_all_motors(self) -> None:
+    def break_all_motors(self, stop:bool = False) -> None:
         '''
         immediately stop all motors
 
         Args:
-            None
+            stop (bool, optional): If it should be turned off completly and everywhere (True), or just stop driving (False, default)
 
         Returns:
             None
@@ -3217,13 +3229,16 @@ class driveR_four:
         k.freeze(self.port_wheel_fr)
         k.freeze(self.port_wheel_bl)
         k.freeze(self.port_wheel_br)
+        if stop:
+            self._manage_motor_stopper(False)
 
-    def wait_motor_done(self, *args) -> bool:
+    def wait_motor_done(self, *args, stop:bool = False) -> bool:
         '''
         Waits until all specified motors have completed their rotations.
 
         Args:
             *args (int): Ports of the motors to wait for.
+            stop (bool, optional): If it should wait completly and everywhere (True), or just wait in the thread (False, default)
 
         Returns:
             bool: True when all specified motors are done.
@@ -3236,7 +3251,10 @@ class driveR_four:
                     if k.get_motor_done(motor):
                         pending.remove(motor)
 
+            if stop:
+                self._manage_motor_stopper(False)
             return True
+
 
         except Exception as e:
             log(str(e), important=True, in_exception=True)

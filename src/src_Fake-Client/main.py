@@ -16,11 +16,6 @@ try:
     import subprocess
     from commU import WifiConnector  # selfmade
     from RoboComm import RobotCommunicator  # selfmade
-    from util import Util  # selfmade
-    from distance_sensor import DistanceSensor  # selfmade
-    from light_sensor import LightSensor  # selfmade
-    from digital import Digital  # selfmade
-    from fileR import FileR  # selfmade
     from fake import FakeR  # selfmade
     from driveR import *  # selfmade
 except Exception as e:
@@ -42,10 +37,10 @@ pause_event = threading.Event()
 
 
 # ===== PORTS MOTORS =====
-PORT_MOTOR_FR = XX
-PORT_MOTOR_FL = XX
-PORT_MOTOR_BR = XX
-PORT_MOTOR_BL = XX
+#PORT_MOTOR_FR = XX
+#PORT_MOTOR_FL = XX
+#PORT_MOTOR_BR = XX
+#PORT_MOTOR_BL = XX
 
 # ===== PORTS SERVOS =====
 
@@ -75,16 +70,17 @@ def Comm_Setup(p_event, Communication_instance):
 
 def Instancer_Setup():
     try:
+        print('you can delete this line from now on and uncomment the global variable', flush=True)
         # ============ Ports Initializing ===========
 
         # ================== Util ===================
 
         # ================= DriveR ==================
-        globals()['Noris'] = driveR_four(Port_front_right_wheel=PORT_MOTOR_FR, 
-                                         Port_front_left_wheel=PORT_MOTOR_FL,
-                                         Port_back_right_wheel=PORT_MOTOR_BR,
-                                         Port_back_left_wheel=PORT_MOTOR_BL,
-					                     controller_standing=XX)
+        #globals()['Noris'] = driveR_four(Port_front_right_wheel=PORT_MOTOR_FR,
+        #                                 Port_front_left_wheel=PORT_MOTOR_FL,
+        #                                 Port_back_right_wheel=PORT_MOTOR_BR,
+        #                                 Port_back_left_wheel=PORT_MOTOR_BL,
+		#			                     controller_standing=XX)
         # ============== DistanceSensor =============
 
         # =============== LightSensor ===============
@@ -112,7 +108,8 @@ def setup(pause_instance, Communication_instance):
 
 # ======================== IMPORTANT FUNCTIONS =======================
 def end_main(communication_instance):
-    #communication_instance.disconnect()  # uncomment here as well
+    #if isinstance(communication_instance, RobotCommunicator):  # if you do not want communication, you can remove this line, otherwise you can implement this line
+    #	communication_instance.disconnect()  # if you do not want communication, you can remove this line, otherwise you can implement this line
     log('PROGRAM FINISHED')
 
 # ======================== CUSTOM METHODS =======================
@@ -123,9 +120,8 @@ def drift():
         print('drifts done: ', i, flush=True)
         Noris.drive_straight(300, -2100)
 
-def handle_high_priority(msg):
+def handle_high_priority():
 	try:
-		log(f'HIGH PRIORITY MESSAGE RECEIVED: {msg}')
 		drift()
 		log('continue with program...')
 	except Exception as e:
@@ -140,7 +136,7 @@ def another_main():
     except Exception as e:
         log(f'Another main Exception: {str(e)}', important=True, in_exception=True)
     finally:
-        end_main(communication)  # very important, you need to tell the main when to end (its important for communication, so if you do not need communication, you can remove this)
+        end_main(None)  # very important, you need to tell the main when to end (its important for communication, so if you do not need communication, you can remove this)
 
 
 # ======================== MAIN =======================

@@ -10,8 +10,6 @@
 
 ## Overview
 
-
-
 ---
 
 ## Requirements
@@ -220,7 +218,7 @@ def is_it_pressed():
     while not TestButton.is_pressed():
         continue
 
-def handle_high_priority(msg):
+def handle_high_priority():
     try:
         log(f'HIGH PRIORITY MESSAGE RECEIVED: {msg}')
         is_it_pressed()

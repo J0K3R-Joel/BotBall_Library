@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import os, sys
+
 sys.path.append("/usr/lib")
 
 from logger import *  # selfmade
@@ -76,7 +77,7 @@ class RobotCommunicator:
         '''
         if not isinstance(self.pause_event, threading.Event):
             log('pause_event is not defined!', in_exception=True)
-            raise Exception('pause_event is not defined!')
+            raise TypeError('pause_event is not defined!')
         return True
 
     # ======================== PRIVATE METHODS ========================
@@ -159,8 +160,13 @@ class RobotCommunicator:
 
     def __handle_high_priority(self, msg: str) -> None:
         '''
-        Function to handle high priority messages.
-        Only passes exactly what the user registered via on_high_priority().
+        Function to handle high priority messages. Only passes exactly what the user registered via on_high_priority().
+
+        Args:
+            msg (str): The message which the other robot sent
+
+        Returns:
+            None
         '''
         self.check_pause_event_instance()
         if self.pause_event:
@@ -168,10 +174,7 @@ class RobotCommunicator:
 
         if self.high_priority_callback:
             try:
-                # msg einfach anzeigen
                 log(f"[HIGH PRIORITY] {msg}", important=True)
-
-                # Callback mit exakt den registrierten Args/Kwargs ausführen
                 self.high_priority_callback(
                     *self.high_priority_args,
                     **self.high_priority_kwargs
@@ -186,8 +189,7 @@ class RobotCommunicator:
 
     def __handle_new_main(self, msg: str) -> None:
         '''
-        Function to determine what should happen if there was a new_main priority message.
-        Will stop the main() thread and start a new one instead.
+        Function to determine what should happen if there was a new_main priority message. Will execute the other main function which was last defined via on_new_main().
 
         Args:
             msg (str): the message sent from the sender
@@ -195,23 +197,27 @@ class RobotCommunicator:
         Returns:
             None
         '''
-        log("new main will be executed...")
+        print('here')
         stop_manager.emergency_stop()
-        if self.new_main_callback:
-            try:
-                log(f"[NEW MAIN] {msg}", important=True)
-
-                self.new_main_callback(
-                    *self.new_main_args,
-                    **self.new_main_kwargs
-                )
-
-            except Exception as e:
-                log(f'Exception in new_main_callback: {str(e)}',
-                    important=True, in_exception=True)
-
-        log("new main has finished. Exiting thread...")
-        os._exit(0)
+        #log("new main will be executed...")
+        #self.check_pause_event_instance()
+        #if self.pause_event:
+        #    self.pause_event.clear()
+            
+        #if self.new_main_callback:
+        #    try:
+        #        log(f"[NEW MAIN] {msg}", important=True)
+        #        self.new_main_callback(
+        #            *self.new_main_args,
+        #            **self.new_main_kwargs
+        #        )
+        #
+        #    except Exception as e:
+        #        log(f'Exception in new_main_callback: {str(e)}',
+        #            important=True, in_exception=True)
+        #    finally:
+        #        log("new main has finished. Exiting thread...")
+        #        stop_manager.sys_end()
 
     # ======================== PUBLIC METHODS ========================
 
@@ -239,6 +245,23 @@ class RobotCommunicator:
         except Exception as e:
             log(str(e), important=True, in_exception=True)
             self.disconnect()
+
+    def execute_last_main(self) -> None:
+        log("new main will be executed...")
+
+        if self.new_main_callback:
+            try:
+                self.new_main_callback(
+                    *self.new_main_args,
+                    **self.new_main_kwargs
+                )
+
+            except Exception as e:
+                log(f'Exception in new_main_callback: {str(e)}',
+                    important=True, in_exception=True)
+            finally:
+                log("new main has finished. Exiting thread...")
+                stop_manager.sys_end()
 
     def has_new_message(self) -> bool:
         '''
@@ -380,7 +403,6 @@ class RobotCommunicator:
             If it is currently connected (True), or not (False)
         '''
         return self.connected
-
 
     def disconnect(self) -> None:
         '''

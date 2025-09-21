@@ -77,7 +77,7 @@ class RobotCommunicator:
         '''
         if not isinstance(self.pause_event, threading.Event):
             log('pause_event is not defined!', in_exception=True)
-            raise Exception('pause_event is not defined!')
+            raise TypeError('pause_event is not defined!')
         return True
 
     # ======================== PRIVATE METHODS ========================
@@ -160,8 +160,13 @@ class RobotCommunicator:
 
     def __handle_high_priority(self, msg: str) -> None:
         '''
-        Function to handle high priority messages.
-        Only passes exactly what the user registered via on_high_priority().
+        Function to handle high priority messages. Only passes exactly what the user registered via on_high_priority().
+
+        Args:
+            msg (str): The message which the other robot sent
+
+        Returns:
+            None
         '''
         self.check_pause_event_instance()
         if self.pause_event:
@@ -184,8 +189,7 @@ class RobotCommunicator:
 
     def __handle_new_main(self, msg: str) -> None:
         '''
-        Function to determine what should happen if there was a new_main priority message.
-        Will stop the main() thread and start a new one instead.
+        Function to determine what should happen if there was a new_main priority message. Will execute the other main function which was last defined via on_new_main().
 
         Args:
             msg (str): the message sent from the sender
@@ -246,7 +250,6 @@ class RobotCommunicator:
         log("new main will be executed...")
 
         if self.new_main_callback:
-            stop_manager.emergency_stop()
             try:
                 self.new_main_callback(
                     *self.new_main_args,

@@ -88,7 +88,7 @@ class Util:
         '''
         if not isinstance(self.light_sensor_start, LightSensor):
             log('Distance sensor is not initialized!', in_exception=True)
-            raise Exception('Distance sensor start is not initialized!')
+            raise TypeError('Distance sensor start is not initialized!')
         return True
 
     def check_instance_light_sensor_start(self) -> bool:
@@ -103,7 +103,7 @@ class Util:
         '''
         if not isinstance(self.light_sensor_start, LightSensor):
             log('Light sensor start is not initialized!', in_exception=True)
-            raise Exception('Light sensor start is not initialized!')
+            raise TypeError('Light sensor start is not initialized!')
         return True
 
     def check_instance_button_fr(self) -> bool:
@@ -118,7 +118,7 @@ class Util:
         '''
         if not isinstance(self.button_fr, Digital):
             log('Button front right is not initialized!', in_exception=True)
-            raise Exception('Button front right is not initialized!')
+            raise TypeError('Button front right is not initialized!')
         return True
 
     # ======================== Normal methods =======================
@@ -139,12 +139,12 @@ class Util:
         self.check_instance_distance_sensor()
         if mm_to_object > 800 or mm_to_object < 10:
             log('Exception: You can only put a value in range of 10 - 800 for the distance parameter!', in_exception=True)
-            raise Exception(
+            raise ValueError(
                 'wait_til_distance_reached() Exception: You can only put a value in range of 10 - 800 for the distance parameter!')
 
         if sideways and mm_to_object < 20:
             log('Exception: You can only put a value higher than 20 for the distance parameter, if you are driving sideways!', in_exception=True)
-            raise Exception(
+            raise ValueError(
                 'wait_til_distance_reached() Exception: You can only put a value higher than 20 for the distance parameter, if you are driving sideways!')
 
         self.isClose = False

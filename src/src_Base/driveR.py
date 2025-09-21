@@ -77,7 +77,7 @@ class driveR_two():
         self._next_id = 0
         self._motor_lock = threading.Lock()
 
-        stop_manager.register_motor(self)
+        stop_manager.register_driver(self)
 
         self._set_values()
 
@@ -351,15 +351,15 @@ class driveR_two():
         '''
         if not isinstance(self.light_sensor_front, LightSensor):
             log('Light sensor front is not initialized!', in_exception=True)
-            raise Exception('Light sensor front is not initialized!')
+            raise TypeError('Light sensor front is not initialized!')
 
         if not isinstance(self.light_sensor_back, LightSensor):
             log('Light sensor back is not initialized!', in_exception=True)
-            raise Exception('Light sensor back is not initialized!')
+            raise TypeError('Light sensor back is not initialized!')
 
         if not isinstance(self.light_sensor_side, LightSensor):
             log('Light sensor side is not initialized!', in_exception=True)
-            raise Exception('Light sensor side is not initialized!')
+            raise TypeError('Light sensor side is not initialized!')
         return True
 
     def check_instance_light_sensors_middle(self) -> bool:
@@ -374,11 +374,11 @@ class driveR_two():
         '''
         if not isinstance(self.light_sensor_front, LightSensor):
             log('Light sensor front is not initialized!', in_exception=True)
-            raise Exception('Light sensor front is not initialized!')
+            raise TypeError('Light sensor front is not initialized!')
 
         if not isinstance(self.light_sensor_back, LightSensor):
             log('Light sensor back is not initialized!', in_exception=True)
-            raise Exception('Light sensor back is not initialized!')
+            raise TypeError('Light sensor back is not initialized!')
         return True
 
     def check_instance_light_sensor_front(self) -> bool:
@@ -393,7 +393,7 @@ class driveR_two():
         '''
         if not isinstance(self.light_sensor_front, LightSensor):
             log('Light sensor front is not initialized!', in_exception=True)
-            raise Exception('Light sensor front is not initialized!')
+            raise TypeError('Light sensor front is not initialized!')
         return True
 
     def check_instance_light_sensor_back(self) -> bool:
@@ -408,7 +408,7 @@ class driveR_two():
         '''
         if not isinstance(self.light_sensor_back, LightSensor):
             log('Light sensor back is not initialized!', in_exception=True)
-            raise Exception('Light sensor back is not initialized!')
+            raise TypeError('Light sensor back is not initialized!')
         return True
 
     def check_instance_light_sensor_side(self) -> bool:
@@ -423,7 +423,7 @@ class driveR_two():
         '''
         if not isinstance(self.light_sensor_side, LightSensor):
             log('Light sensor side is not initialized!', in_exception=True)
-            raise Exception('Light sensor side is not initialized!')
+            raise TypeError('Light sensor side is not initialized!')
         return True
 
     def check_instance_distance_sensor(self) -> bool:
@@ -438,7 +438,7 @@ class driveR_two():
         '''
         if not isinstance(self.distance_sensor, DistanceSensor):
             log('Distance sensor is not initialized!', in_exception=True)
-            raise Exception('Distance sensor is not initialized!')
+            raise TypeError('Distance sensor is not initialized!')
         return True
 
     def check_instance_button_fl(self) -> bool:
@@ -453,7 +453,7 @@ class driveR_two():
         '''
         if not isinstance(self.button_fl, Digital):
             log('Button front left is not initialized!', in_exception=True)
-            raise Exception('Button front left is not initialized!')
+            raise TypeError('Button front left is not initialized!')
         return True
 
     def check_instance_button_fr(self) -> bool:
@@ -468,7 +468,7 @@ class driveR_two():
         '''
         if not isinstance(self.button_fr, Digital):
             log('Button front right is not initialized!', in_exception=True)
-            raise Exception('Button front right is not initialized!')
+            raise TypeError('Button front right is not initialized!')
         return True
 
     def check_instance_button_bl(self) -> bool:
@@ -483,7 +483,7 @@ class driveR_two():
         '''
         if not isinstance(self.button_bl, Digital):
             log('Button back left is not initialized!', in_exception=True)
-            raise Exception('Button back left is not initialized!')
+            raise TypeError('Button back left is not initialized!')
         return True
 
     def check_instance_button_br(self) -> bool:
@@ -498,7 +498,7 @@ class driveR_two():
         '''
         if not isinstance(self.button_br, Digital):
             log('Button back right is not initialized!', in_exception=True)
-            raise Exception('Button back right is not initialized!')
+            raise TypeError('Button back right is not initialized!')
         return True
 
     def check_instances_buttons_front(self) -> bool:
@@ -513,11 +513,11 @@ class driveR_two():
         '''
         if not isinstance(self.button_fl, Digital):
             log('Button front left is not initialized!', in_exception=True)
-            raise Exception('Button front left is not initialized!')
+            raise TypeError('Button front left is not initialized!')
 
         if not isinstance(self.button_fr, Digital):
             log('Button front right is not initialized!', in_exception=True)
-            raise Exception('Button front right is not initialized!')
+            raise TypeError('Button front right is not initialized!')
 
         return True
 
@@ -533,11 +533,11 @@ class driveR_two():
         '''
         if not isinstance(self.button_bl, Digital):
             log('Button back left is not initialized!', in_exception=True)
-            raise Exception('Button back left is not initialized!')
+            raise TypeError('Button back left is not initialized!')
 
         if not isinstance(self.button_br, Digital):
             log('Button back right is not initialized!', in_exception=True)
-            raise Exception('Button back right is not initialized!')
+            raise TypeError('Button back right is not initialized!')
 
         return True
 
@@ -553,19 +553,19 @@ class driveR_two():
         '''
         if not isinstance(self.button_fl, Digital):
             log('Button front left is not initialized!', in_exception=True)
-            raise Exception('Button front left is not initialized!')
+            raise TypeError('Button front left is not initialized!')
 
         if not isinstance(self.button_fr, Digital):
             log('Button front right is not initialized!', in_exception=True)
-            raise Exception('Button front right is not initialized!')
+            raise TypeError('Button front right is not initialized!')
 
         if not isinstance(self.button_bl, Digital):
             log('Button back left is not initialized!', in_exception=True)
-            raise Exception('Button back left is not initialized!')
+            raise TypeError('Button back left is not initialized!')
 
         if not isinstance(self.button_br, Digital):
             log('Button back right is not initialized!', in_exception=True)
-            raise Exception('Button back right is not initialized!')
+            raise TypeError('Button back right is not initialized!')
 
         return True
 
@@ -1222,7 +1222,7 @@ class driveR_two():
                 k.msleep(millis)
         else:
             log('Only "right" and "left" are valid commands for the direction!', in_exception=True)
-            raise Exception(
+            raise ValueError(
                 'turn_black_line() Exception: Only "right" and "left" are valid commands for the direction!')
         k.ao()
         self._manage_motor_stopper(False)
@@ -1251,7 +1251,7 @@ class driveR_two():
             if direction != 'left' and direction != 'right':
                 log('If the Wombat is not on the line, please tell it which direction it should face when it is on the line ("right" or "left")',
                     in_exception=True)
-                raise Exception(
+                raise ValueError(
                     'align_line() Exception: If the Wombat is not on the line, please tell it which direction it should face when it is on the line ("right" or "left")')
 
             ports = self.light_sensor_back, self.light_sensor_front
@@ -1452,13 +1452,13 @@ class driveR_two():
             if direction != 'vertical' and direction != 'horizontal':
                 log('Only "vertical" or "horizontal" are valid options for the "direction" parameter',
                     in_exception=True)
-                raise Exception(
+                raise ValueError(
                     'align_on_black_line() Exception: Only "vertical" or "horizontal" are valid options for the "direction" parameter')
 
             if leaning_side != None and leaning_side != 'right' and leaning_side != 'left':
                 log('Only "right", "left" or None / nothing are valid options for the "leaning_side" parameter',
                     in_exception=True)
-                raise Exception(
+                raise ValueError(
                     'align_on_black_line() Exception: Only "right", "left" or None / nothing are valid options for the "leaning_side" parameter')
 
             if not crossing:
@@ -1674,7 +1674,7 @@ class driveR_two():
         motor_id = self._manage_motor_stopper(True)
         if mm_to_object > 800 or mm_to_object < 10:
             log('You can only put a value in range of 10 - 800 for the distance parameter!', in_exception=True)
-            raise Exception(
+            raise ValueError(
                 'drive_til_distance() Exception: You can only put a value in range of 10 - 800 for the distance parameter!')
 
         self.isClose = False
@@ -1792,12 +1792,12 @@ class driveR_two():
         motor_id = self._manage_motor_stopper(True)
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
-            raise Exception(
+            raise ValueError(
                 'turn_degrees_far() Exception: Only "right" or "left" are valid options for the "direction" parameter')
 
         if degree > 180 and degree < 0:
             log('Only values from range 0 - 180 are valid for the "degree" parameter', in_exception=True)
-            raise Exception(
+            raise ValueError(
                 'turn_degrees_far() Exception: Only values from range 0 - 180 are valid for the "degree" parameter')
 
         div = 180 / degree
@@ -1831,12 +1831,12 @@ class driveR_two():
         motor_id = self._manage_motor_stopper(True)
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
-            raise Exception(
+            raise ValueError(
                 'turn_degrees() Exception: Only "right" or "left" are valid options for the "direction" parameter')
 
         if degree > 180 and degree < 1:
             log('Only values from range 1 - 180 are valid for the "degree" parameter', in_exception=True)
-            raise Exception(
+            raise ValueError(
                 'turn_degrees() Exception: Only values from range 1 - 180 are valid for the "degree" parameter')
 
         div = 180 / degree
@@ -1905,7 +1905,7 @@ class driveR_four:
         self._motor_stoppers = {}
         self._next_motor_id = 0
 
-        stop_manager.register_motor(self)
+        stop_manager.register_driver(self)
         self._set_values()
 
     # ======================== HELPER  ========================
@@ -2177,15 +2177,15 @@ class driveR_four:
         '''
         if not isinstance(self.light_sensor_front, LightSensor):
             log('Light sensor front is not initialized!', in_exception=True)
-            raise Exception('Light sensor front is not initialized!')
+            raise TypeError('Light sensor front is not initialized!')
 
         if not isinstance(self.light_sensor_back, LightSensor):
             log('Light sensor back is not initialized!', in_exception=True)
-            raise Exception('Light sensor back is not initialized!')
+            raise TypeError('Light sensor back is not initialized!')
 
         if not isinstance(self.light_sensor_side, LightSensor):
             log('Light sensor side is not initialized!', in_exception=True)
-            raise Exception('Light sensor side is not initialized!')
+            raise TypeError('Light sensor side is not initialized!')
         return True
 
     def check_instance_light_sensors_middle(self) -> bool:
@@ -2200,11 +2200,11 @@ class driveR_four:
         '''
         if not isinstance(self.light_sensor_front, LightSensor):
             log('Light sensor front is not initialized!', in_exception=True)
-            raise Exception('Light sensor front is not initialized!')
+            raise TypeError('Light sensor front is not initialized!')
 
         if not isinstance(self.light_sensor_back, LightSensor):
             log('Light sensor back is not initialized!', in_exception=True)
-            raise Exception('Light sensor back is not initialized!')
+            raise TypeError('Light sensor back is not initialized!')
         return True
 
     def check_instance_light_sensor_front(self) -> bool:
@@ -2219,7 +2219,7 @@ class driveR_four:
         '''
         if not isinstance(self.light_sensor_front, LightSensor):
             log('Light sensor front is not initialized!', in_exception=True)
-            raise Exception('Light sensor front is not initialized!')
+            raise TypeError('Light sensor front is not initialized!')
         return True
 
     def check_instance_light_sensor_back(self) -> bool:
@@ -2234,7 +2234,7 @@ class driveR_four:
         '''
         if not isinstance(self.light_sensor_back, LightSensor):
             log('Light sensor back is not initialized!', in_exception=True)
-            raise Exception('Light sensor back is not initialized!')
+            raise TypeError('Light sensor back is not initialized!')
         return True
 
     def check_instance_light_sensor_side(self) -> bool:
@@ -2249,7 +2249,7 @@ class driveR_four:
         '''
         if not isinstance(self.light_sensor_side, LightSensor):
             log('Light sensor side is not initialized!', in_exception=True)
-            raise Exception('Light sensor side is not initialized!')
+            raise TypeError('Light sensor side is not initialized!')
         return True
 
     def check_instance_distance_sensor(self) -> bool:
@@ -2264,7 +2264,7 @@ class driveR_four:
         '''
         if not isinstance(self.distance_sensor, DistanceSensor):
             log('Distance sensor is not initialized!', in_exception=True)
-            raise Exception('Distance sensor is not initialized!')
+            raise TypeError('Distance sensor is not initialized!')
         return True
 
     def check_instance_button_fl(self) -> bool:
@@ -2279,7 +2279,7 @@ class driveR_four:
         '''
         if not isinstance(self.button_fl, Digital):
             log('Button front left is not initialized!', in_exception=True)
-            raise Exception('Button front left is not initialized!')
+            raise TypeError('Button front left is not initialized!')
         return True
 
     def check_instance_button_fr(self) -> bool:
@@ -2294,7 +2294,7 @@ class driveR_four:
         '''
         if not isinstance(self.button_fr, Digital):
             log('Button front right is not initialized!', in_exception=True)
-            raise Exception('Button front right is not initialized!')
+            raise TypeError('Button front right is not initialized!')
         return True
 
     def check_instance_button_bl(self) -> bool:
@@ -2309,7 +2309,7 @@ class driveR_four:
         '''
         if not isinstance(self.button_bl, Digital):
             log('Button back left is not initialized!', in_exception=True)
-            raise Exception('Button back left is not initialized!')
+            raise TypeError('Button back left is not initialized!')
         return True
 
     def check_instance_button_br(self) -> bool:
@@ -2324,7 +2324,7 @@ class driveR_four:
         '''
         if not isinstance(self.button_br, Digital):
             log('Button back right is not initialized!', in_exception=True)
-            raise Exception('Button back right is not initialized!')
+            raise TypeError('Button back right is not initialized!')
         return True
 
     def check_instances_buttons_front(self) -> bool:
@@ -2339,11 +2339,11 @@ class driveR_four:
         '''
         if not isinstance(self.button_fl, Digital):
             log('Button front left is not initialized!', in_exception=True)
-            raise Exception('Button front left is not initialized!')
+            raise TypeError('Button front left is not initialized!')
 
         if not isinstance(self.button_fr, Digital):
             log('Button front right is not initialized!', in_exception=True)
-            raise Exception('Button front right is not initialized!')
+            raise TypeError('Button front right is not initialized!')
 
         return True
 
@@ -2359,11 +2359,11 @@ class driveR_four:
         '''
         if not isinstance(self.button_bl, Digital):
             log('Button back left is not initialized!', in_exception=True)
-            raise Exception('Button back left is not initialized!')
+            raise TypeError('Button back left is not initialized!')
 
         if not isinstance(self.button_br, Digital):
             log('Button back right is not initialized!', in_exception=True)
-            raise Exception('Button back right is not initialized!')
+            raise TypeError('Button back right is not initialized!')
 
         return True
 
@@ -2379,19 +2379,19 @@ class driveR_four:
         '''
         if not isinstance(self.button_fl, Digital):
             log('Button front left is not initialized!', in_exception=True)
-            raise Exception('Button front left is not initialized!')
+            raise TypeError('Button front left is not initialized!')
 
         if not isinstance(self.button_fr, Digital):
             log('Button front right is not initialized!', in_exception=True)
-            raise Exception('Button front right is not initialized!')
+            raise TypeError('Button front right is not initialized!')
 
         if not isinstance(self.button_bl, Digital):
             log('Button back left is not initialized!', in_exception=True)
-            raise Exception('Button back left is not initialized!')
+            raise TypeError('Button back left is not initialized!')
 
         if not isinstance(self.button_br, Digital):
             log('Button back right is not initialized!', in_exception=True)
-            raise Exception('Button back right is not initialized!')
+            raise TypeError('Button back right is not initialized!')
 
         return True
 
@@ -2750,7 +2750,7 @@ class driveR_four:
                 theta += (k.gyro_y() - self.bias_gyro_y) * 3
         else:
             log('Only "right" and "left" are valid commands for the direction!', in_exception=True)
-            raise Exception('drive_side() Exception: Only "right" and "left" are valid commands for the direction!')
+            raise ValueError('drive_side() Exception: Only "right" and "left" are valid commands for the direction!')
 
         k.ao()
         self._manage_motor_stopper(False)
@@ -2815,12 +2815,12 @@ class driveR_four:
         motor_id = self._manage_motor_stopper(True)
         if end != 'front' and end != 'back':
             log('Only "front" or "back" are valid options for the "end" parameter', in_exception=True)
-            raise Exception(
+            raise ValueError(
                 'drive_diagonal() Exception: Only "front" or "back" are valid options for the "end" parameter')
 
         if side != 'right' and side != 'left':
             log('Only "right" or "left" are valid options for the "side" parameter', in_exception=True)
-            raise Exception(
+            raise ValueError(
                 'drive_diagonal() Exception: Only "right" or "left" are valid options for the "side" parameter')
 
         points = 0
@@ -2903,12 +2903,12 @@ class driveR_four:
         '''
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
-            raise Exception(
+            raise ValueError(
                 'turn_degrees_far() Exception: Only "right" or "left" are valid options for the "direction" parameter')
 
         if degree > 180 and degree < 0:
             log('Only values from range 0 - 180 are valid for the "degree" parameter', in_exception=True)
-            raise Exception(
+            raise ValueError(
                 'turn_degrees_far() Exception: Only values from range 0 - 180 are valid for the "degree" parameter')
         motor_id = self._manage_motor_stopper(True)
         div = 180 / degree
@@ -2940,12 +2940,12 @@ class driveR_four:
         '''
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
-            raise Exception(
+            raise ValueError(
                 'turn_degrees() Exception: Only "right" or "left" are valid options for the "direction" parameter')
 
         if degree > 180 and degree < 1:
             log('Only values from range 1 - 180 are valid for the "degree" parameter', in_exception=True)
-            raise Exception(
+            raise ValueError(
                 'turn_degrees_far() Exception: Only values from range 1 - 180 are valid for the "degree" parameter')
         motor_id = self._manage_motor_stopper(True)
         div = 180 / degree
@@ -2986,7 +2986,7 @@ class driveR_four:
             speed = self.ds_speed
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
-            raise Exception(
+            raise ValueError(
                 'drive_side_til_mm_found() Exception: Only "right" or "left" are valid options for the "direction" parameter')
 
         th_distance_waiter = threading.Thread(target=wait_til_distance_reached, args=(mm_to_object, True))
@@ -3075,7 +3075,7 @@ class driveR_four:
             speed = self.ds_speed
         if mm_to_object > 800 or mm_to_object < 10:
             log('You can only put a value in range of 10 - 800 for the distance parameter!', in_exception=True)
-            raise Exception(
+            raise ValueError(
                 'drive_til_distance() Exception: You can only put a value in range of 10 - 800 for the distance parameter!')
 
         self.check_instances_buttons_back()
@@ -3385,7 +3385,7 @@ class driveR_four:
             speed = self.ds_speed
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid arguments for the direction parameter!', in_exception=True)
-            raise Exception(
+            raise ValueError(
                 'drive_side_condition_analog() Exception: Only "right" or "left" are valid arguments for the direction parameter! ')
 
         startTime: float = k.seconds()
@@ -3780,13 +3780,13 @@ class driveR_four:
             if direction != 'vertical' and direction != 'horizontal':
                 log('Only "vertical" or "horizontal" are valid options for the "direction" parameter',
                     in_exception=True)
-                raise Exception(
+                raise ValueError(
                     'align_on_black_line() Exception: Only "vertical" or "horizontal" are valid options for the "direction" parameter')
 
             if leaning_side != None and leaning_side != 'right' and leaning_side != 'left':
                 log('Only "right", "left" or None / nothing are valid options for the "leaning_side" parameter',
                     in_exception=True)
-                raise Exception(
+                raise ValueError(
                     'align_on_black_line() Exception: Only "right", "left" or None / nothing are valid options for the "leaning_side" parameter')
 
             if not crossing:
@@ -4025,7 +4025,7 @@ class driveR_four:
                 k.msleep(millis)
         else:
             log('Only "right" and "left" are valid commands for the direction!', in_exception=True)
-            raise Exception(
+            raise ValueError(
                 'turn_black_line() Exception: Only "right" and "left" are valid commands for the direction!')
         k.ao()
         self._manage_motor_stopper(False)
@@ -4055,7 +4055,7 @@ class driveR_four:
             if direction != 'left' and direction != 'right':
                 log('If the Wombat is not on the line, please tell it which direction it should face when it is on the line ("right" or "left")',
                     in_exception=True)
-                raise Exception(
+                raise ValueError(
                     'align_line() Exception: If the Wombat is not on the line, please tell it which direction it should face when it is on the line ("right" or "left")')
 
             ports = self.light_sensor_front, self.light_sensor_back
@@ -4282,7 +4282,7 @@ class driveR_four:
         self.check_instance_distance_sensor()
         if degree > 90:
             log('Only a value under 91 is acceptable for the degree!', in_exception=True)
-            raise Exception('scan_front() Exception: Only a value under 91 is acceptable for the degree')
+            raise ValueError('scan_front() Exception: Only a value under 91 is acceptable for the degree')
         motor_id = self._manage_motor_stopper(True)
         maxRuns = 2
         div = 90 / degree

@@ -196,7 +196,7 @@ class WifiConnector:
         '''
         if self.ssid == None or self.password == None:
             log('You need to tell the constructor the SSID and password of the WIFI you are trying to connect to!', in_exception=True)
-            raise Exception('You need to tell the constructor the SSID and password of the WIFI you are trying to connect to!')
+            raise RuntimeError('You need to tell the constructor the SSID and password of the WIFI you are trying to connect to!')
         try:
             subprocess.run(
                 ["nmcli", "dev", "wifi", "connect", self.ssid, "password", self.password],
@@ -236,7 +236,7 @@ class WifiConnector:
         '''
         if self.ssid == None or self.password == None:
             log('You need to tell the constructor the SSID and password of the WIFI you are trying to connect to!', in_exception=True)
-            raise Exception(
+            raise RuntimeError(
                 'You need to tell the constructor the SSID and password of the WIFI you are trying to connect to!')
 
         # Step1: Set wallaby to client mode

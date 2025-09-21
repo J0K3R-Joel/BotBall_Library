@@ -24,7 +24,7 @@ class ServoX:
         self.min_value = minValue
         self._servo_lock = threading.Lock()
         self._active_servo_id = None
-        stop_manager.register_servo(self)
+        stop_manager.register_servox(self)
 
     # ======================== PRIVATE METHODS ========================
     def _manage_servo_stopper(self, beginning: bool) -> str:
@@ -94,10 +94,10 @@ class ServoX:
         Returns:
             bool: If it is a valid number (True), else it raises an exception
         '''
-        num =  self.min_value <= value <= self.max_value
-        if not num:
+        in_range =  self.min_value <= value <= self.max_value
+        if not in_range:
             log(f"{value} is out of range, where the range is between {self.min_value} to {self.max_value}", important=True, in_exception=True)
-            raise Exception(f"{num} is out of range, where the range is between {self.min_value} to {self.max_value}")
+            raise ValueError(f"{value} is out of range, where the range is between {self.min_value} to {self.max_value}")
         return num
 
     def _set_pos_internal(self, value: int, enabler_needed: bool=True) -> None:

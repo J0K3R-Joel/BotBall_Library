@@ -91,7 +91,7 @@ class FakeR():
         '''
         if not isinstance(self.thread_instance, Event):
             log('The thread instance is not initialized!', in_exception=True)
-            raise Exception('The thread instance is not initialized!')
+            raise TypeError('The thread instance is not initialized!')
         return True
 
     def check_instance_comm(self) -> bool:
@@ -106,18 +106,18 @@ class FakeR():
         '''
         if not isinstance(self.comm_instance, RobotCommunicator):
             log('The Communicator instance is not initialized!', in_exception=True)
-            raise Exception('The Communicator instance is not initialized!')
+            raise TypeError('The Communicator instance is not initialized!')
         return True
 
 
     # ======================== PRIVATE METHODS ========================
 
-    def __late_import(self, original:bool = True):
+    def __late_import(self, original:bool = True) -> None:
         '''
         All the imports that have to be done after initializing of the class
 
         Args:
-            actual (bool, optional): If it should focus on the original or the fake file
+            original (bool, optional): If it should focus on the original file (True) or the new "fake" file (False)
 
         Returns:
             None
@@ -157,13 +157,13 @@ class FakeR():
 
     def __insert_valid_markers_in_file(self, file_path: str) -> None:
         '''
-        Inserts pause-event markers into 'main()' and all functions registered via 'on_new_main', but only if the function has a parameter named "p_event".
+        Inserts important markers inside of the code
 
         Args:
             file_path (str): The file to modify.
 
         Returns:
-            None. Overwrites the file.
+            None
         '''
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
@@ -176,8 +176,8 @@ class FakeR():
             for node in tree.body:
                 if isinstance(node, ast.FunctionDef) and node.name in target_functions:
                     param_names = [arg.arg for arg in node.args.args]
-                    if "p_event" not in param_names:  # @TODO -> change this to self.inserted_line.replace(self. ....)
-                        log(f"[SKIP] '{node.name}' has no parameter 'p_event'. No marker will be added.", important=True)
+                    if self.inserted_line.replace(self.inserted_method, '') not in param_names:
+                        log(f"[SKIP] '{node.name}' has no parameter '{self.inserted_line.replace(self.inserted_method, '')}'. No marker will be added.", important=True)
                         continue
 
                     first_stmt = node.body[0] if node.body else None
@@ -229,11 +229,13 @@ class FakeR():
 
     def __merge_functions_back_into_text(self, entire_text: str) -> str:
         '''
-        Reads each function file saved in self.another_main_file_names and replaces the original
-        function definition in entire_text with the (possibly modified) function code from the file.
+        Reads each function file saved in self.another_main_file_names and replaces the original function definition in entire_text with the (possibly modified) function code from the file.
+
+        Args:
+            entire_text (str): the text that should be overwritten
 
         Returns:
-            The updated entire_text with functions replaced by their updated versions.
+            str: The updated entire_text with functions replaced by their updated versions.
         '''
         # split lines once for easier slicing
         lines = entire_text.splitlines()
@@ -295,7 +297,7 @@ class FakeR():
         return '\n'.join(lines)
 
     def __insert_beginning_in_code(self, code_str: str, is_new_main: bool = False) -> str:
-        """
+        '''
         Insert pre-defined code at the beginning of a code snippet.
 
         Args:
@@ -304,7 +306,7 @@ class FakeR():
 
         Returns:
             str: The changed code with the new pre-defined lines.
-        """
+        '''
         lines = code_str.splitlines()
         tree = ast.parse(code_str)
 
@@ -333,7 +335,6 @@ class FakeR():
                     new_main_params = self.__get_param_names_from_text(code_str)
 
                 if is_new_main:
-                    insert_lines.append(indent + 'stop_manager.emergency_stop()')
                     insert_lines.append(indent + 'stop_manager.change_stopped(False)')
 
 
@@ -391,6 +392,15 @@ class FakeR():
         return param_names
 
     def __get_param_names_from_text(self, code_str:str) -> list:
+        '''
+        Let's you get all parameter names of a text (preferably one function only)
+
+        Args:
+            code_str (str): the function you want to get the params from
+
+        Returns:
+            List[str]: The parameters of the functions
+        '''
         tree = ast.parse(code_str)
         func_def = tree.body[0]
         params = [arg.arg for arg in func_def.args.args]
@@ -502,17 +512,17 @@ class FakeR():
         return re.sub(pattern, replacement, text)
 
     def setup(self):
-        """
+        '''
         Setting up the main function in another file and modifying the file accordingly (for communication).
 
         Steps:
-        1. Copy source to target folder.
-        2. Extract new main functions and save as separate files.
-        3. Insert valid markers into all new main functions.
-        4. Merge updated new main functions back into entire text.
-        5. Insert beginning code in main and new main functions as required.
-        6. Write final main.py to target folder.
-        """
+            1. Copy source to target folder.
+            2. Extract new main functions and save as separate files.
+            3. Insert valid markers into all new main functions.
+            4. Merge updated new main functions back into entire text.
+            5. Insert beginning code in main and new main functions as required.
+            6. Write final main.py to target folder.
+        '''
         try:
             if self.working_dir != self.target_dir:
                 self.working_dir = os.path.join(self.working_dir, 'src')
@@ -641,7 +651,7 @@ class FakeR():
 
     def start(self):
         '''
-        executing the main in the other directory
+        executing the "fake" main in the other directory
 
         Args:
             None

@@ -92,11 +92,11 @@ class Digital:
         '''
         if self.pressed_at == 0:
             log(f'If you want to know how long the button was (not) pressed, please initialize the beginning of the time to count!', in_exception=True)
-            raise Exception('If you want to know how long the button was (not) pressed, please initialize the beginning of the time to count!')
+            raise RuntimeError('If you want to know how long the button was (not) pressed, please initialize the beginning of the time to count!')
 
         if self.state_timer == self.current_value():
             log(f'The button is in the same state as it was when the beginner function got called! Time counting still continues though...', in_exception=True)
-            raise Exception('The button is in the same state as it was when the beginner function got called! Time counting still continues though...')
+            raise RuntimeError('The button is in the same state as it was when the beginner function got called! Time counting still continues though...')
 
 
         return k.seconds() - self.pressed_at

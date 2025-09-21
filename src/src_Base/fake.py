@@ -39,6 +39,7 @@ class FakeR():
         self.inserted_method = ".wait()"
         self.replacer_method = '.set()' 
         self.inserted_line = ''
+        self.communicator_instance_name = ''
         self.another_main_function_names = list()
         self.another_main_file_names = list()
         self.thread_instance = thread_instance
@@ -164,59 +165,67 @@ class FakeR():
         Returns:
             None. Overwrites the file.
         '''
-        with open(file_path, 'r', encoding='utf-8') as f:
-            code = f.read()
-        lines = code.splitlines()
-        tree = ast.parse(code)
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                code = f.read()
+            lines = code.splitlines()
+            tree = ast.parse(code)
 
-        target_functions = ['main'] + getattr(self, 'another_main_function_names', [])
+            target_functions = ['main'] + getattr(self, 'another_main_function_names', [])
 
-        for node in tree.body:
-            if isinstance(node, ast.FunctionDef) and node.name in target_functions:
-                param_names = [arg.arg for arg in node.args.args]
-                if "p_event" not in param_names:  # @TODO -> change this to self.inserted_line.replace(self. ....)
-                    log(f"[SKIP] '{node.name}' has no parameter 'p_event'. No marker will be added.", important=True)
-                    continue
+            for node in tree.body:
+                if isinstance(node, ast.FunctionDef) and node.name in target_functions:
+                    param_names = [arg.arg for arg in node.args.args]
+                    if "p_event" not in param_names:  # @TODO -> change this to self.inserted_line.replace(self. ....)
+                        log(f"[SKIP] '{node.name}' has no parameter 'p_event'. No marker will be added.", important=True)
+                        continue
 
-                first_stmt = node.body[0] if node.body else None
-                if isinstance(first_stmt, ast.Try):
-                    inserts = []
+                    first_stmt = node.body[0] if node.body else None
+                    if isinstance(first_stmt, ast.Try):
+                        inserts = []
 
-                    def collect_statements_in_try(try_node):
-                        result = []
+                        def collect_statements_in_try(try_node):
+                            result = []
 
-                        def visit(n):
-                            if isinstance(n, ast.stmt) and hasattr(n, 'lineno'):
-                                end_lineno = getattr(n, 'end_lineno', n.lineno)
-                                result.append(end_lineno)
-                            for child in ast.iter_child_nodes(n):
-                                visit(child)
+                            def visit(n):
+                                if isinstance(n, ast.stmt) and hasattr(n, 'lineno'):
+                                    end_lineno = getattr(n, 'end_lineno', n.lineno)
+                                    result.append(end_lineno)
+                                for child in ast.iter_child_nodes(n):
+                                    visit(child)
 
-                        for stmt in try_node.body:
-                            visit(stmt)
-                        return result
+                            for stmt in try_node.body:
+                                visit(stmt)
+                            return result
 
-                    inserts = collect_statements_in_try(first_stmt)
-                    for lineno in sorted(inserts, reverse=True):
-                        code_line = lines[lineno - 1]
-                        indent = code_line[:len(code_line) - len(code_line.lstrip())]
-                        blank_line_count = 0
-                        next_line_index = lineno
-                        while next_line_index < len(lines) and lines[next_line_index].strip() == '':
-                            blank_line_count += 1
-                            next_line_index += 1
-                        insert_at = lineno + blank_line_count
-                        lines.insert(insert_at, indent + self.inserted_line)
-                else:
-                    log(f"try/except was not found as the first statement in function '{node.name}'. Writing marker in the first line instead. ADD a try/except block at the very beginning of the function!",
-                        important=True)
-                    func_start = node.lineno
-                    indent = lines[func_start][:len(lines[func_start]) - len(lines[func_start].lstrip())]
-                    lines.insert(func_start, indent + self.inserted_line)
-                    print(f"'{node.name}': Marker inserted in the first line, since there is no try/except as the first statement", flush=True)
+                        inserts = collect_statements_in_try(first_stmt)
+                        for lineno in sorted(inserts, reverse=True):
+                            code_line = lines[lineno - 1]
+                            indent = code_line[:len(code_line) - len(code_line.lstrip())]
+                            blank_line_count = 0
+                            next_line_index = lineno
+                            while next_line_index < len(lines) and lines[next_line_index].strip() == '':
+                                blank_line_count += 1
+                                next_line_index += 1
+                            insert_at = lineno + blank_line_count
+                            lines.insert(insert_at, indent + 'if stop_manager.check_stopped():')
+                            lines.insert(insert_at + 1, indent + '    ' + f'{self.communicator_instance_name}.execute_last_main()')
+                            lines.insert(insert_at + 2, indent + self.inserted_line)
+                    else:
+                        log(f"try/except was not found as the first statement in function '{node.name}'. Writing marker in the first line instead. ADD a try/except block at the very beginning of the function!",
+                            important=True)
+                        func_start = node.lineno
+                        indent = lines[func_start][:len(lines[func_start]) - len(lines[func_start].lstrip())]
+                        print(func_start, flush=True)
+                        lines.insert(func_start, indent + 'if stop_manager.check_stopped():')
+                        lines.insert(func_start + 1, îndent + '    ' + f'{self.communicator_instance_name}.execute_last_main()')
+                        lines.insert(func_start + 2, indent + self.inserted_line)
+                        print(f"'{node.name}': Marker inserted in the first line, since there is no try/except as the first statement", flush=True)
 
-        with open(file_path, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(lines))
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(lines))
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
 
     def __merge_functions_back_into_text(self, entire_text: str) -> str:
         '''
@@ -285,15 +294,13 @@ class FakeR():
 
         return '\n'.join(lines)
 
-    def __insert_beginning_in_code(self, code_str: str, is_new_main: bool = False,
-                                   new_main_params: list = None) -> str:
+    def __insert_beginning_in_code(self, code_str: str, is_new_main: bool = False) -> str:
         """
         Insert pre-defined code at the beginning of a code snippet.
 
         Args:
             code_str (str): The code that has to be changed.
             is_new_main (bool): Whether this is a new main function or the original main.
-            new_main_params (list): List of parameter names for new main.
 
         Returns:
             str: The changed code with the new pre-defined lines.
@@ -321,12 +328,16 @@ class FakeR():
                 indent = first_line[:len(first_line) - len(first_line.lstrip())]
 
                 insert_lines = []
+                new_main_params = []
+                if is_new_main:
+                    new_main_params = self.__get_param_names_from_text(code_str)
 
                 if is_new_main:
                     insert_lines.append(indent + 'stop_manager.emergency_stop()')
+                    insert_lines.append(indent + 'stop_manager.change_stopped(False)')
 
-                if is_new_main and new_main_params and self.inserted_line.replace(self.inserted_method,
-                                                                                  '') in new_main_params:
+
+                if is_new_main and new_main_params and self.inserted_line.replace(self.inserted_method, '') in new_main_params:
                     insert_lines.append(
                         indent + f'{self.inserted_line.replace(self.inserted_method, self.replacer_method)}')
 
@@ -378,6 +389,12 @@ class FakeR():
             setattr(self, name, None)
 
         return param_names
+
+    def __get_param_names_from_text(self, code_str:str) -> list:
+        tree = ast.parse(code_str)
+        func_def = tree.body[0]
+        params = [arg.arg for arg in func_def.args.args]
+        return params
 
     def __replace_first_valid_event_assignment(self, code: str) -> str:
         '''
@@ -528,9 +545,10 @@ class FakeR():
                 elif len(params) == 1:
                     self.comm_wanted = False
                     log('Only one parameter found in main(), if you use communication you will need 2! Starting the main not in a thread...')
-                elif len(params) == 2:
+                elif len(params) >= 2:
                     self.comm_wanted = True
                     self.inserted_line = params[0] + self.inserted_method
+                    self.communicator_instance_name = params[1]
 
                 # Replace pause_event assignments
                 old_entire_text = self.__replace_first_valid_event_assignment(old_entire_text)
@@ -544,6 +562,9 @@ class FakeR():
                 # Insert valid markers in all new main function files first
                 for file_path in self.another_main_file_names:
                     self.__insert_valid_markers_in_file(file_path)
+                    code = self.file_Manager.reader(file_path)
+                    edited_code = self.__insert_beginning_in_code(code_str=code, is_new_main=True)
+                    self.file_Manager.writer(file_path, "w", edited_code)
 
                 # Merge updated new main functions back into entire text
                 entire_text = self.__merge_functions_back_into_text(old_entire_text)
@@ -638,6 +659,7 @@ class FakeR():
             if self.comm_wanted:
                 t = Thread(target=self.fake_main, args=(self.thread_instance, self.comm_instance,))
                 t.start()
+                t.join()
             else:
                 from main import main
                 main()

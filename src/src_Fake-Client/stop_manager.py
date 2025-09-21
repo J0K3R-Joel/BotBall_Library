@@ -17,6 +17,7 @@ class StopManager:
         self.motors = []
         self.servos = []
         self._lock = threading.Lock()
+        self.is_stopped = False
         
         try:
             result = subprocess.run(["pwd"], capture_output=True, text=True, check=True)
@@ -41,19 +42,23 @@ class StopManager:
             except Exception as e:
                 log(f"Error stopping motor: {e}", important=True, in_exception=True)
 
-        for s in self.servos:
+        for s in self.servos: 
             try:
                 s._servo_disabler()
             except Exception as e:
                 log(f"Error stopping servo: {e}", important=True, in_exception=True)
-
+        self.is_stopped = True
         log("Everything stopped!", important=True)
 
+    def check_stopped(self):
+        return self.is_stopped
+
+    def change_stopped(self, is_stopped:bool) -> None:
+        self.is_stopped = is_stopped
+
     def sys_end(self):
-        print('trying: ', self.working_dir + '/src/__pycache__', flush=True)
         try:
             if os.path.exists(self.working_dir + '/src/__pycache__') and os.path.isdir(self.working_dir + '/src/__pycache__'):
-                print('works', flush=True)
                 shutil.rmtree(self.working_dir + '/src/__pycache__')
             else:
                 print(self.working_dir + '/src/__pycache__', flush=True)

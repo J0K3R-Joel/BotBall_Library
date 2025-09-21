@@ -193,25 +193,27 @@ class RobotCommunicator:
         Returns:
             None
         '''
-        log("new main will be executed...")
-        self.check_pause_event_instance()
-        if self.pause_event:
-            self.pause_event.clear()
+        print('here')
+        stop_manager.emergency_stop()
+        #log("new main will be executed...")
+        #self.check_pause_event_instance()
+        #if self.pause_event:
+        #    self.pause_event.clear()
             
-        if self.new_main_callback:
-            try:
-                log(f"[NEW MAIN] {msg}", important=True)
-                self.new_main_callback(
-                    *self.new_main_args,
-                    **self.new_main_kwargs
-                )
-
-            except Exception as e:
-                log(f'Exception in new_main_callback: {str(e)}',
-                    important=True, in_exception=True)
-
-        log("new main has finished. Exiting thread...")
-        stop_manager.sys_end()
+        #if self.new_main_callback:
+        #    try:
+        #        log(f"[NEW MAIN] {msg}", important=True)
+        #        self.new_main_callback(
+        #            *self.new_main_args,
+        #            **self.new_main_kwargs
+        #        )
+        #
+        #    except Exception as e:
+        #        log(f'Exception in new_main_callback: {str(e)}',
+        #            important=True, in_exception=True)
+        #    finally:
+        #        log("new main has finished. Exiting thread...")
+        #        stop_manager.sys_end()
 
     # ======================== PUBLIC METHODS ========================
 
@@ -239,6 +241,24 @@ class RobotCommunicator:
         except Exception as e:
             log(str(e), important=True, in_exception=True)
             self.disconnect()
+
+    def execute_last_main(self) -> None:
+        log("new main will be executed...")
+
+        if self.new_main_callback:
+            stop_manager.emergency_stop()
+            try:
+                self.new_main_callback(
+                    *self.new_main_args,
+                    **self.new_main_kwargs
+                )
+
+            except Exception as e:
+                log(f'Exception in new_main_callback: {str(e)}',
+                    important=True, in_exception=True)
+            finally:
+                log("new main has finished. Exiting thread...")
+                stop_manager.sys_end()
 
     def has_new_message(self) -> bool:
         '''

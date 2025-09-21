@@ -18,6 +18,7 @@ try:
     from threading import Thread, Event
     from RoboComm import RobotCommunicator  # selfmade
     from fileR import FileR  # selfmade
+    from stop_manager import stop_manager  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}',  important=True, in_exception=True)
 
@@ -25,10 +26,20 @@ except Exception as e:
 class FakeR():
     def __init__(self, thread_instance: Event = None, comm_instance: RobotCommunicator = None):
         self.file_Manager = FileR()
-        self.working_dir = '/home/kipr/Documents/KISS/Base/actual'
+
+        try:
+            result = subprocess.run(["pwd"], capture_output=True, text=True, check=True)
+            current_dir = result.stdout.strip()
+            self.working_dir = os.path.dirname(current_dir)
+        except Exception as e:
+            log(f"Error while fetching for directory: {e}", important=True, in_exception=True)
+            self.working_dir = os.getcwd()
+
         self.target_dir = '/home/kipr/Joel'
         self.inserted_method = ".wait()"
+        self.replacer_method = '.set()' 
         self.inserted_line = ''
+        self.communicator_instance_name = ''
         self.another_main_function_names = list()
         self.another_main_file_names = list()
         self.thread_instance = thread_instance
@@ -37,7 +48,7 @@ class FakeR():
         self.fake_main = None
         self.kipr_module_name = ''
         self.setup()
-        
+
 
     # ======================== SET INSTANCES ========================
 
@@ -101,19 +112,25 @@ class FakeR():
 
     # ======================== PRIVATE METHODS ========================
 
-    def __late_import(self):
+    def __late_import(self, original:bool = True):
         '''
         All the imports that have to be done after initializing of the class
 
         Args:
-            None
+            actual (bool, optional): If it should focus on the original or the fake file
 
         Returns:
             None
        '''
-        sys.path.append(f"{self.target_dir}/src")
+        if original:
+            wanted_dir = self.working_dir
+        else:
+            wanted_dir = self.target_dir + '/src'
+
+        sys.path.append(f"{wanted_dir}")
         try:
-            main_module = self.__import_main_from_path(self.target_dir + '/src/main.py')
+            print(wanted_dir + '/main.py', flush=True)
+            main_module = self.__import_main_from_path(wanted_dir + '/main.py')
             self.fake_main = main_module.main
         except Exception as e:
             log(str(e), important=True, in_exception=True)
@@ -140,8 +157,7 @@ class FakeR():
 
     def __insert_valid_markers_in_file(self, file_path: str) -> None:
         '''
-        Inserts pause-event markers into 'main()' and all functions registered via 'on_new_main',
-        but only if the function has a parameter named "p_event".
+        Inserts pause-event markers into 'main()' and all functions registered via 'on_new_main', but only if the function has a parameter named "p_event".
 
         Args:
             file_path (str): The file to modify.
@@ -149,65 +165,67 @@ class FakeR():
         Returns:
             None. Overwrites the file.
         '''
-        with open(file_path, 'r', encoding='utf-8') as f:
-            code = f.read()
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                code = f.read()
+            lines = code.splitlines()
+            tree = ast.parse(code)
 
-        lines = code.splitlines()
-        tree = ast.parse(code)
+            target_functions = ['main'] + getattr(self, 'another_main_function_names', [])
 
-        target_functions = ['main'] + getattr(self, 'another_main_function_names', [])
+            for node in tree.body:
+                if isinstance(node, ast.FunctionDef) and node.name in target_functions:
+                    param_names = [arg.arg for arg in node.args.args]
+                    if "p_event" not in param_names:  # @TODO -> change this to self.inserted_line.replace(self. ....)
+                        log(f"[SKIP] '{node.name}' has no parameter 'p_event'. No marker will be added.", important=True)
+                        continue
 
-        for node in tree.body:
-            if isinstance(node, ast.FunctionDef) and node.name in target_functions:
-                param_names = [arg.arg for arg in node.args.args]
-                if "p_event" not in param_names:
-                    log(f"[SKIP] '{node.name}' has no parameter 'p_event'. No marker will be added.", important=True)
-                    continue
+                    first_stmt = node.body[0] if node.body else None
+                    if isinstance(first_stmt, ast.Try):
+                        inserts = []
 
-                first_stmt = node.body[0] if node.body else None
+                        def collect_statements_in_try(try_node):
+                            result = []
 
-                if isinstance(first_stmt, ast.Try):
-                    inserts = []
+                            def visit(n):
+                                if isinstance(n, ast.stmt) and hasattr(n, 'lineno'):
+                                    end_lineno = getattr(n, 'end_lineno', n.lineno)
+                                    result.append(end_lineno)
+                                for child in ast.iter_child_nodes(n):
+                                    visit(child)
 
-                    def collect_statements_in_try(try_node):
-                        result = []
+                            for stmt in try_node.body:
+                                visit(stmt)
+                            return result
 
-                        def visit(n):
-                            if isinstance(n, ast.stmt) and hasattr(n, 'lineno'):
-                                end_lineno = getattr(n, 'end_lineno', n.lineno)
-                                result.append(end_lineno)
-                            for child in ast.iter_child_nodes(n):
-                                visit(child)
+                        inserts = collect_statements_in_try(first_stmt)
+                        for lineno in sorted(inserts, reverse=True):
+                            code_line = lines[lineno - 1]
+                            indent = code_line[:len(code_line) - len(code_line.lstrip())]
+                            blank_line_count = 0
+                            next_line_index = lineno
+                            while next_line_index < len(lines) and lines[next_line_index].strip() == '':
+                                blank_line_count += 1
+                                next_line_index += 1
+                            insert_at = lineno + blank_line_count
+                            lines.insert(insert_at, indent + 'if stop_manager.check_stopped():')
+                            lines.insert(insert_at + 1, indent + '    ' + f'{self.communicator_instance_name}.execute_last_main()')
+                            lines.insert(insert_at + 2, indent + self.inserted_line)
+                    else:
+                        log(f"try/except was not found as the first statement in function '{node.name}'. Writing marker in the first line instead. ADD a try/except block at the very beginning of the function!",
+                            important=True)
+                        func_start = node.lineno
+                        indent = lines[func_start][:len(lines[func_start]) - len(lines[func_start].lstrip())]
+                        print(func_start, flush=True)
+                        lines.insert(func_start, indent + 'if stop_manager.check_stopped():')
+                        lines.insert(func_start + 1, îndent + '    ' + f'{self.communicator_instance_name}.execute_last_main()')
+                        lines.insert(func_start + 2, indent + self.inserted_line)
+                        print(f"'{node.name}': Marker inserted in the first line, since there is no try/except as the first statement", flush=True)
 
-                        for stmt in try_node.body:
-                            visit(stmt)
-                        return result
-
-                    inserts = collect_statements_in_try(first_stmt)
-
-                    for lineno in sorted(inserts, reverse=True):
-                        code_line = lines[lineno - 1]
-                        indent = code_line[:len(code_line) - len(code_line.lstrip())]
-
-                        blank_line_count = 0
-                        next_line_index = lineno
-                        while next_line_index < len(lines) and lines[next_line_index].strip() == '':
-                            blank_line_count += 1
-                            next_line_index += 1
-
-                        insert_at = lineno + blank_line_count
-                        lines.insert(insert_at, indent + self.inserted_line)
-
-                else:
-                    log(f"try/except was not found as the first statement in function '{node.name}'. Writing marker in the first line instead. ADD a try/except block at the very beginning of the function!",
-                        important=True)
-                    func_start = node.lineno
-                    indent = lines[func_start][:len(lines[func_start]) - len(lines[func_start].lstrip())]
-                    lines.insert(func_start, indent + self.inserted_line)
-                    print(f"'{node.name}': Marker inserted in the first line, since there is no try/except as the first statement", flush=True)
-
-        with open(file_path, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(lines))
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(lines))
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
 
     def __merge_functions_back_into_text(self, entire_text: str) -> str:
         '''
@@ -217,7 +235,6 @@ class FakeR():
         Returns:
             The updated entire_text with functions replaced by their updated versions.
         '''
-        import ast
         # split lines once for easier slicing
         lines = entire_text.splitlines()
 
@@ -230,7 +247,6 @@ class FakeR():
             log(f"Could not parse entire_text for merging functions: {e}", important=True)
             return entire_text
 
-        # map function name -> (start_line, end_line)
         func_positions = {}
         for node in tree.body:
             if isinstance(node, ast.FunctionDef) and node.name in self.another_main_function_names:
@@ -278,52 +294,60 @@ class FakeR():
 
         return '\n'.join(lines)
 
-    def __insert_beginning_in_code(self, code_str: str) -> str:
-        '''
-        Insert pre-defined code in the beginning of a code snippet in the beginning in the main
+    def __insert_beginning_in_code(self, code_str: str, is_new_main: bool = False) -> str:
+        """
+        Insert pre-defined code at the beginning of a code snippet.
 
         Args:
-            code_str (str): the code that has to be changed
+            code_str (str): The code that has to be changed.
+            is_new_main (bool): Whether this is a new main function or the original main.
 
         Returns:
-           The changed code with the new pre-defined lines
-        '''
+            str: The changed code with the new pre-defined lines.
+        """
         lines = code_str.splitlines()
         tree = ast.parse(code_str)
 
         for node in tree.body:
-            if isinstance(node, ast.FunctionDef) and node.name == 'main':
+            if isinstance(node, ast.FunctionDef) and node.name == 'main' or is_new_main:
+                try_block = None
                 for child in node.body:
                     if isinstance(child, ast.Try):
                         try_block = child
                         break
-                else:
-                    log("No 'try:'-block found in main().", important=True)
+                if try_block is None:
+                    log(f"No 'try:'-block found in {'new main' if is_new_main else 'main'}().", important=True)
                     return code_str
-                break
-        else:
-            log("No main()-function found.", important=True)
-            return code_str
 
-        if not try_block.body:
-            log("Try-block is empty.", important=True)
-            return code_str
+                if not try_block.body:
+                    log("Try-block is empty.", important=True)
+                    return code_str
 
-        first_statement_line = try_block.body[0].lineno
-        first_line = lines[first_statement_line - 1]
-        indent = first_line[:len(first_line) - len(first_line.lstrip())]
+                first_statement_line = try_block.body[0].lineno
+                first_line = lines[first_statement_line - 1]
+                indent = first_line[:len(first_line) - len(first_line.lstrip())]
 
-        if self.kipr_module_name != '':
-            insert_lines = [
-                indent + f'{self.kipr_module_name}.console_clear()'
-            ]
-        else:
-            insert_lines = [
-                indent + ''
-            ]
+                insert_lines = []
+                new_main_params = []
+                if is_new_main:
+                    new_main_params = self.__get_param_names_from_text(code_str)
 
-        lines = lines[:first_statement_line - 1] + insert_lines + lines[first_statement_line - 1:]
-        return '\n'.join(lines)
+                if is_new_main:
+                    insert_lines.append(indent + 'stop_manager.emergency_stop()')
+                    insert_lines.append(indent + 'stop_manager.change_stopped(False)')
+
+
+                if is_new_main and new_main_params and self.inserted_line.replace(self.inserted_method, '') in new_main_params:
+                    insert_lines.append(
+                        indent + f'{self.inserted_line.replace(self.inserted_method, self.replacer_method)}')
+
+                if not is_new_main and self.kipr_module_name != '':
+                    insert_lines.append(indent + f'{self.kipr_module_name}.console_clear()')
+
+                lines = lines[:first_statement_line - 1] + insert_lines + lines[first_statement_line - 1:]
+                return '\n'.join(lines)
+
+        return code_str
 
     def __import_main_from_path(self, path_to_main_py : str) -> None:
         '''
@@ -335,15 +359,18 @@ class FakeR():
         Returns:
            The module that needs to be imported
         '''
-        module_name = "fake_main"
-        spec = importlib.util.spec_from_file_location(module_name, path_to_main_py)
-        if spec is None:
-            log(f"No spec could be created on {path_to_main_py}.", in_exception=True)
-            raise ImportError(f"No spec could be created on {path_to_main_py}.")
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[module_name] = module
-        spec.loader.exec_module(module)
-        return module
+        try:
+            module_name = "fake_main"
+            spec = importlib.util.spec_from_file_location(module_name, path_to_main_py)
+            if spec is None:
+                log(f"No spec could be created on {path_to_main_py}.", in_exception=True)
+                raise ImportError(f"No spec could be created on {path_to_main_py}.")
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            spec.loader.exec_module(module)
+            return module
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
 
     def __extract_params_and_assign(self, method) -> list:
         '''
@@ -362,6 +389,12 @@ class FakeR():
             setattr(self, name, None)
 
         return param_names
+
+    def __get_param_names_from_text(self, code_str:str) -> list:
+        tree = ast.parse(code_str)
+        func_def = tree.body[0]
+        params = [arg.arg for arg in func_def.args.args]
+        return params
 
     def __replace_first_valid_event_assignment(self, code: str) -> str:
         '''
@@ -399,14 +432,8 @@ class FakeR():
         Returns:
             None
         '''
-
-        import ast
-        import os
-
         tree = ast.parse(code)
-
         functions_found = {}
-
         for node in tree.body:
             if isinstance(node, ast.FunctionDef) and node.name in self.another_main_function_names:
                 start_line = node.lineno - 1  # ast lines are 1-based
@@ -434,25 +461,21 @@ class FakeR():
             [3, None]                       -> Module nor class found
         '''
         if class_name:
-            # from modulename import classname as alias
             pattern_with_as = rf'from\s+{re.escape(module_name)}\s+import\s+{re.escape(class_name)}\s+as\s+(\w+)'
             match = re.search(pattern_with_as, code)
             if match:
                 return [0, match.group(1)]
 
-            # from modulename import classname
             pattern_without_as = rf'from\s+{re.escape(module_name)}\s+import\s+{re.escape(class_name)}(\s|$)'
             if re.search(pattern_without_as, code):
                 return [1, f"{module_name}.{class_name}"]
 
         else:
-            # import modulename as alias
             pattern_with_as = rf'import\s+{re.escape(module_name)}\s+as\s+(\w+)'
             match = re.search(pattern_with_as, code)
             if match:
                 return [0, match.group(1)]
 
-            # import modulename
             pattern_without_as = rf'import\s+{re.escape(module_name)}(\s|$)'
             if re.search(pattern_without_as, code):
                 return [2, module_name]
@@ -479,105 +502,115 @@ class FakeR():
         return re.sub(pattern, replacement, text)
 
     def setup(self):
-        '''
-        setting up the main in another file and change the file accordingly (to the commnunication)
+        """
+        Setting up the main function in another file and modifying the file accordingly (for communication).
 
-        Args:
-            None
-
-        Returns:
-           None
-        '''
+        Steps:
+        1. Copy source to target folder.
+        2. Extract new main functions and save as separate files.
+        3. Insert valid markers into all new main functions.
+        4. Merge updated new main functions back into entire text.
+        5. Insert beginning code in main and new main functions as required.
+        6. Write final main.py to target folder.
+        """
         try:
             if self.working_dir != self.target_dir:
-                self.working_dir = self.working_dir + '/src/'
+                self.working_dir = os.path.join(self.working_dir, 'src')
                 print('setting up fake main...', flush=True)
 
-                main_text_filename = 'main_only_text.py'
-                main_text_filepath = os.path.join(self.target_dir, 'src', main_text_filename)
+                # Prepare paths
+                target_src_dir = os.path.join(self.target_dir, 'src')
+                main_text_filepath = os.path.join(target_src_dir, 'main_only_text.py')
+                os.makedirs(target_src_dir, exist_ok=True)
 
-                # Setting up the target path
-                subprocess.run(['mkdir', '-p', os.path.join(self.target_dir, 'src')])
-                subprocess.run(['cp', '-R', self.working_dir, os.path.join(self.target_dir)])
-                subprocess.run(['sudo', 'chmod', '-R', '777', os.path.join(self.target_dir)])
+                # Copy source to target folder
+                subprocess.run(['cp', '-R', self.working_dir, self.target_dir])
+                subprocess.run(['sudo', 'chmod', '-R', '777', self.target_dir])
 
-                # Setting up main_only_text.py
-                subprocess.run(['touch', main_text_filepath])
+                # Initialize main_only_text.py
+                open(main_text_filepath, 'a').close()
 
-                # read old main.py
+                # Read old main.py
                 main_py_path = os.path.join(self.working_dir, 'main.py')
                 old_entire_text = self.file_Manager.reader(main_py_path)
 
-                # import the old main on the new directory into this class
-                self.__late_import()
+                # Late import of old main
+                self.__late_import(True)
                 params = self.__extract_params_and_assign(self.fake_main)
+
+                # Determine communication usage
                 if len(params) == 0:
                     self.comm_wanted = False
                     log('No parameters in main() found, starting the main not in a thread...')
-                    return
                 elif len(params) == 1:
                     self.comm_wanted = False
-                    log('Only one parameter found in main(), if you use communication you wil need 2! Starting the main not in a thread...')
-                    return
-                elif len(params) == 2:
+                    log('Only one parameter found in main(), if you use communication you will need 2! Starting the main not in a thread...')
+                elif len(params) >= 2:
                     self.comm_wanted = True
                     self.inserted_line = params[0] + self.inserted_method
+                    self.communicator_instance_name = params[1]
 
-                # replace every pause_event = threading.Event() with or without .set()
-                pattern = r'(^\s*pause_event\s*=\s*)threading\.Event\(\)(\.set\(\))?'
-                replacement = r'\1None'
+                # Replace pause_event assignments
+                old_entire_text = self.__replace_first_valid_event_assignment(old_entire_text)
 
-                entire_text = self.__replace_first_valid_event_assignment(old_entire_text)
-                self.another_main_function_names = self.__extract_on_new_main_functions(entire_text)
-                self.__save_functions_to_files(entire_text, os.path.join(self.target_dir, 'src'))
+                # Extract additional new main functions
+                self.another_main_function_names = self.__extract_on_new_main_functions(old_entire_text)
 
-                for file in self.another_main_file_names:
-                    self.__insert_valid_markers_in_file(file)
+                # Save new main functions to separate files
+                self.__save_functions_to_files(old_entire_text, target_src_dir)
 
-                entire_text = self.__merge_functions_back_into_text(entire_text)
+                # Insert valid markers in all new main function files first
+                for file_path in self.another_main_file_names:
+                    self.__insert_valid_markers_in_file(file_path)
+                    code = self.file_Manager.reader(file_path)
+                    edited_code = self.__insert_beginning_in_code(code_str=code, is_new_main=True)
+                    self.file_Manager.writer(file_path, "w", edited_code)
 
-                # find positions of main() and end_main()
-                main_start = entire_text.find('def main(')
-                if main_start == -1:
-                    log('main() function not found!', in_exception=True)
+                # Merge updated new main functions back into entire text
+                entire_text = self.__merge_functions_back_into_text(old_entire_text)
+
+                # Now handle main() function
+                tree = ast.parse(entire_text)
+                main_node = None
+                for node in tree.body:
+                    if isinstance(node, ast.FunctionDef) and node.name == 'main':
+                        main_node = node
+                        break
+
+                if not main_node:
+                    log('main() function not found!', important=True)
                     raise Exception('main() function not found!')
 
-                main_end_relative = entire_text[main_start:].find('end_main(')
-                if main_end_relative == -1:
-                    log('"end_main()" function not found in main!', in_exception=True)
-                    raise Exception('"end_main()" function not found in main!')
+                main_start = main_node.lineno - 1
+                main_end = getattr(main_node, 'end_lineno', main_node.lineno) - 1
+                main_lines = entire_text.splitlines()[main_start:main_end + 1]
+                main_code = "\n".join(main_lines)
 
-                main_end_newLine = entire_text[main_start + main_end_relative:].find('\n')
+                # Write temp main file to insert markers in main
+                temp_main_path = os.path.join(target_src_dir, 'main_temp.py')
+                with open(temp_main_path, 'w', encoding='utf-8') as f:
+                    f.write(main_code)
 
-                main_end = main_start + main_end_relative + main_end_newLine
+                # Insert markers in temp main file
+                self.__insert_valid_markers_in_file(temp_main_path)
 
+                # Read back main with markers
+                with open(temp_main_path, 'r', encoding='utf-8') as f:
+                    main_code_with_markers = f.read()
 
-                # get the name of the kipr module
-                kpr = self.__resolve_import_alias("_kipr", "", entire_text[0:main_start])
-                if kpr[0] != 3:
-                    self.kipr_module_name = kpr[1]
+                # Insert beginning code in main
+                main_code_with_markers = self.__insert_beginning_in_code(main_code_with_markers)
 
-                # extract and save main() in the new file
-                changed_main = entire_text[main_start:main_end]
-                self.file_Manager.writer(main_text_filepath, 'w', changed_main)
+                # Merge modified main back into entire text
+                lines = entire_text.splitlines()
+                new_entire_text = lines[:main_start] + main_code_with_markers.splitlines() + lines[main_end + 1:]
+                final_entire_text = "\n".join(new_entire_text)
 
-                # Insert marker
-                self.__insert_valid_markers_in_file(main_text_filepath)
-
-                # read main() from the new file
-                old_main_from_file = self.file_Manager.reader(main_text_filepath)
-
-                # addoing the lines for a clean beginning
-                main_from_file = self.__insert_beginning_in_code(old_main_from_file)
-
-                # build new text: replace old main with new one
-                new_entire_text = entire_text[:main_start] + main_from_file + entire_text[main_end:]
-
-                final_entire_text = self.replace_exact_word(new_entire_text, 'comm', 'AkommunikatorA')  # this is only to avoid further problems
-
-                # write in target main.py
-                target_main_path = os.path.join(self.target_dir, 'src', 'main.py')
+                # Write final main.py
+                target_main_path = os.path.join(target_src_dir, 'main.py')
                 self.file_Manager.writer(target_main_path, 'w', final_entire_text)
+
+                log(f"Setup completed. Final main.py written to {target_main_path}", important=True)
 
             else:
                 log('Normal main will be executed...')
@@ -619,13 +652,14 @@ class FakeR():
         try:
             self.check_instance_thread()
             self.check_instance_comm()
-            self.__late_import()
+            self.__late_import(False)
             if self.fake_main is None:
                 log("main could not be found", important=True)
                 return
             if self.comm_wanted:
                 t = Thread(target=self.fake_main, args=(self.thread_instance, self.comm_instance,))
                 t.start()
+                t.join()
             else:
                 from main import main
                 main()

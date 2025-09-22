@@ -105,13 +105,6 @@ def setup(pause_instance, Communication_instance):
     except Exception as e:
         log(f'Setup Exception: {str(e)}', important=True, in_exception=True)
 
-
-# ======================== IMPORTANT FUNCTIONS =======================
-def end_main(communication_instance):
-    #if isinstance(communication_instance, RobotCommunicator):  # if you do not want communication, you can remove this line, otherwise you can implement this line
-    #	communication_instance.disconnect()  # if you do not want communication, you can remove this line, otherwise you can implement this line
-    log('PROGRAM FINISHED')
-
 # ======================== CUSTOM METHODS =======================
 
 def drift():
@@ -135,9 +128,6 @@ def another_main():
         time.sleep(1)
     except Exception as e:
         log(f'Another main Exception: {str(e)}', important=True, in_exception=True)
-    finally:
-        end_main(None)  # very important, you need to tell the main when to end (its important for communication, so if you do not need communication, you can remove this)
-
 
 # ======================== MAIN =======================
 
@@ -159,9 +149,6 @@ def main(p_event, communication):  # leave it as it is, just write in the try / 
 
     except Exception as e:
         log(f'Main Exception: {str(e)}', important=True, in_exception=True)
-    finally:
-        end_main(communication)  # very important, you need to tell the main when to end (its important for communication, so if you do not need communication, you can remove this)
-
 
 if __name__ == "__main__":
     try:

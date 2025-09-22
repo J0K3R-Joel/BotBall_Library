@@ -25,7 +25,7 @@ def log(message: str, with_print: bool = True, important: bool = False, in_excep
         message (str): The message that should be written into the file
         with_print (bool, optional): If True (default), it prints out the message as well, otherwise it just writes into the log file
         important (bool, optional): If True, it will be marked with some "=", otherwise (False, default) just the message given to the function
-        in_exception (bool, optional): If True, the additional label will tell you that an exception was thrown, otherwise (False, default) it tells you that it's only an information
+        in_exception (bool, optional): If True, the additional label will tell you that an exception was thrown and also sets important automatically to True, otherwise (False, default) it tells you that it's only an information
 
     Returns:
         None
@@ -37,7 +37,11 @@ def log(message: str, with_print: bool = True, important: bool = False, in_excep
     func_name = caller_frame.f_code.co_name
     class_name = None
 
-    label = "INFO" if not in_exception else "EXCEPTION"
+    if in_exception:
+        important = True
+        label = "EXCEPTION"
+    else:
+        label = "INFO"
 
     if "self" in caller_frame.f_locals:
         class_name = caller_frame.f_locals["self"].__class__.__name__
@@ -45,19 +49,30 @@ def log(message: str, with_print: bool = True, important: bool = False, in_excep
     if class_name:
         location = f"{class_name}.{func_name}"
     else:
-        if func_name == "<module>":
-            filename = os.path.basename(caller_frame.f_code.co_filename)
-            location = filename
+        filename = caller_frame.f_code.co_filename
+        if in_exception:
+            if func_name == "<module>":
+                location = filename
+            else:
+                location = f"{filename}.{func_name}"
         else:
-            location = func_name
+            if func_name == "<module>":
+                location = os.path.basename(filename)
+            else:
+                location = func_name
 
     message = str(message)
     if important:
         message = '=' * 10 + message + '=' * 10
 
     log_entry = f"{now} [{location}] - [{label}] {message}\n"
+
     if in_exception:
-        print_text = f"=================================\n[{location}] - [{label}] {message}\n================================="
+        print_text = (
+            "=================================\n"
+            f"[{location}] - [{label}] {message}\n"
+            "================================="
+        )
     else:
         print_text = f"[{location}] - [{label}] {message}"
 
@@ -66,8 +81,6 @@ def log(message: str, with_print: bool = True, important: bool = False, in_excep
 
     if with_print:
         print(print_text, flush=True)
-
-    __log_handler()
 
 
 def __log_handler(max_entries: int = 10000, trim_size: int = 500) -> None:

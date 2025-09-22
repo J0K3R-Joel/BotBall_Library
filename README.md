@@ -27,6 +27,8 @@ This repository provides a set of utility classes and communication tools design
 
 - High-level utility functions (`Util`)
 
+- Stopping activity that runs on new main execution(`stop_manager`)
+
 These components simplify programming robots by providing structured interfaces, callback systems, and comprehensive handling of sensors and messaging.
 
 ---
@@ -74,6 +76,8 @@ The repository is organized as follows:
   - `FileR` – File management
   
   - `logger` – Custom logging functions
+  
+  - `stop_manager` - Stops certain activity
 
 - **Documentation:**
   
@@ -112,6 +116,8 @@ Detailed explanations of the classes are included in the repository:
 - [object_detector_explainer.md](./doc/object_detector_explainer.md) - Full explanation and usage guide for the `CameraObjectDetector` class
 
 - [camera_manager_explainer.md](./doc/camera_manager_explainer.md) - Full explanation and usage guide for the `CameraManager` class
+
+- [stop_manager_explainer.md](./doc/stop_manager_explainer.md) - Full explanation and usage guide for the `stop_manager` functions
 
 ---
 
@@ -166,6 +172,8 @@ Other classes that got an entire user as test purpose:
 
 - `COMM` -> `RobotCommunicator` 
 
+- `Fake-Client` & `Fake-Server` -> `FakeR`, `stop_manager`, `RobotRommunicato`,...
+
 ---
 
 ## Additional Information
@@ -190,7 +198,7 @@ Other classes that got an entire user as test purpose:
 
 - If you get into the `driveR.py` file, you will find `gyro_z` and `gyro_y`. While they are getting explained, there is still `gyro_x`, which is not in use yet. This value is for the following: If the controller is (for example) laying down and then it is on the way of standing up, then `gyro_x` changes. You will also find the `accel_x` value. `accel_y` and `accel_z` get explained, but not `accel_x`. This value (`accel_x`) is changing, when the controller is (for example) lying down and then getting moved left or right. 
 
-- You will find in every `main.py` file which is somehow connected with communication `p_event` and `communication` parameters. You will need those parameters everywhere, where you want communication. `p_event` is the short form of "pause_event". With this parameter you are able to pause the main everytime a `high` priority message gets sent to you. On the other hand the `communication` parameter is for reading and sending messages to the other robot. More on that in [./doc/user_server_client_fake_explaner.md](./doc/user_server_client_fake_explaner.md)
+- You will find in every `main.py` file which is somehow connected with communication `p_event` and `communication` parameters. You will need those parameters everywhere, where you want communication. `p_event` is the short form of "pause_event". With this parameter you are able to pause the main everytime a `high` priority message gets sent to you. On the other hand the `communication` parameter is for reading and sending messages to the other robot. More on that in [./doc/user_server_client_fake_explaner.md](./doc/user_server_client_fake_explaner.md). **HINT:** Name those parameters everywhere the same! It would be the best though, if you keep those names the same, but you are still able to rename those as you wish
 
 ----
 

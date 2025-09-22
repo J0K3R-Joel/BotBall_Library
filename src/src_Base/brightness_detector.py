@@ -8,6 +8,7 @@ from logger import *  # selfmade
 # Email: kalkusch.joel@gmail.com
 # Notice: feel free to write me for questions or help!
 # Date of creation: 2025-09-15
+
 try:
     import cv2
     import numpy as np

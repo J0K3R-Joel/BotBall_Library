@@ -7,10 +7,8 @@ from logger import *  # selfmade
 
 try:
     import threading
-    import inspect
     import shutil
-    import driveR  # selfmade
-    from servo import ServoX  # selfmade
+    import subprocess
 except Exception as e:
     log(f'Import Exception: {str(e)}', in_exception=True, important=True)
 
@@ -21,7 +19,8 @@ class StopManager:
         self.servos = []
         self._lock = threading.Lock()
         self.is_stopped = False
-        self.driver_classes = [obj for name, obj in inspect.get_members(driveR, inspect.isclass) if obj.__module__ == driveR.__name__]
+        self.driver_classes = []
+        self.servo_classes = []
         
         try:
             result = subprocess.run(["pwd"], capture_output=True, text=True, check=True)
@@ -30,6 +29,36 @@ class StopManager:
         except Exception as e:
             log(f"Error while fetching for directory: {e}", important=True, in_exception=True)
             self.working_dir = os.getcwd()
+
+    # ======================== LAZY CLASS LOADING ========================
+    def _load_driver_classes(self):
+        '''
+        lazy import of specific classes
+
+        Args:
+            None
+
+        Returns:
+            None
+        '''
+        import inspect, driveR
+        self.driver_classes = [
+            obj for name, obj in inspect.getmembers(driveR, inspect.isclass)
+            if obj.__module__ == driveR.__name__
+        ]
+
+    def _load_servo_classes(self):
+        '''
+        lazy import of specific classes
+
+        Args:
+            None
+
+        Returns:
+            None
+        '''
+        from servo import ServoX
+        self.servo_classes = [ServoX]
 
     # ======================== CHECK INSTANCES ========================
 
@@ -43,9 +72,32 @@ class StopManager:
         Returns:
             Either a TypeError if invalid or None
         '''
+        if not self.driver_classes:
+            self._load_driver_classes()
+
         if not isinstance(driver, tuple(self.driver_classes)):
-            log(f"{driver} is not a valid driveR-class: {self.driver_classes}", important=True, in_exception=True)
-            raise TypeError(f"{driver} is not a valid driveR-class: {self.driver_classes}")
+            valid = [cls.__name__ for cls in self.driver_classes]
+            log(f"{driver} is not a valid driveR-class. Valid: {valid}", important=True, in_exception=True)
+            raise TypeError(f"{driver} is not a valid driveR-class. Valid: {valid}")
+
+
+    def check_servo_instance(self, servox) -> None:
+        '''
+        Checks, if the wanted servo is a ServoX instance
+
+        Args:
+            servox (ServoX instance): the class that should be checked
+
+        Returns:
+            Either a TypeError if invalid or None
+        '''
+        if not self.servo_classes:
+            self._load_servo_classes()
+
+        if not isinstance(servox, tuple(self.servo_classes)):
+            valid = [cls.__name__ for cls in self.servo_classes]
+            log(f"{servox} is not a valid ServoX-class. Valid: {valid}", important=True, in_exception=True)
+            raise TypeError(f"{servox} is not a valid ServoX-class. Valid: {valid}")
 
 
     # ======================== PUBLIC METHODS ========================
@@ -72,6 +124,7 @@ class StopManager:
         Returns:
             None
         '''
+        self.check_servo_instance(servox)
         with self._lock:
             self.servos.append(servox)
 

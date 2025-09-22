@@ -197,27 +197,7 @@ class RobotCommunicator:
         Returns:
             None
         '''
-        print('here')
         stop_manager.emergency_stop()
-        #log("new main will be executed...")
-        #self.check_pause_event_instance()
-        #if self.pause_event:
-        #    self.pause_event.clear()
-            
-        #if self.new_main_callback:
-        #    try:
-        #        log(f"[NEW MAIN] {msg}", important=True)
-        #        self.new_main_callback(
-        #            *self.new_main_args,
-        #            **self.new_main_kwargs
-        #        )
-        #
-        #    except Exception as e:
-        #        log(f'Exception in new_main_callback: {str(e)}',
-        #            important=True, in_exception=True)
-        #    finally:
-        #        log("new main has finished. Exiting thread...")
-        #        stop_manager.sys_end()
 
     # ======================== PUBLIC METHODS ========================
 

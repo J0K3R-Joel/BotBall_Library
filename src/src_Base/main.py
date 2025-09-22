@@ -141,14 +141,6 @@ def setup(pause_instance, Communication_instance):
     except Exception as e:
         log(f'Setup Exception: {str(e)}', important=True, in_exception=True)
 
-
-# ======================== IMPORTANT FUNCTIONS =======================
-def end_main(communication_instance):
-    #if isinstance(communication_instance, RobotCommunicator): # if you do not want communication, you can remove this line, otherwise you can implement this line
-        #communication_instance.disconnect()  # if you do not want communication, you can remove this line, otherwise you can implement this line
-    #camera_man.release()  # if you want to use the camera, you should release it as well
-    log('PROGRAM FINISHED')
-
 # ======================== CUSTOM METHODS =======================
 
 def is_it_pressed():
@@ -171,15 +163,13 @@ def do_something():
 
 def another_main(p_event, communication):  # every new main should have the p_event and communication instances (except you do not need communication from this moment on)
     try:
-		communication.send('I am in the new main now!')
-		log('breathing...')
-		time.sleep(1)
+        communication.send('I am in the new main now!')
+        log('breathing...')
+        time.sleep(1)
 		log('exhaling...')
 		time.sleep(1)
 	except Exception as e:
 		log(f'Another main exception: {str(e)}', in_exception=True, important=True)
-	finally:
-		end_main(communication)
 
 
 # ======================== MAIN =======================
@@ -199,8 +189,6 @@ def main(p_event, communication):  # leave it as it is, just write in the try / 
 
     except Exception as e:
         log(f'Main Exception: {str(e)}', important=True, in_exception=True)
-    finally:
-        end_main(communication)  # very important, you need to tell the main when to end (its important for communication, so if you do not need communication, you can remove this)
 
 
 if __name__ == "__main__":

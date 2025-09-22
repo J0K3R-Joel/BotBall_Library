@@ -570,6 +570,31 @@ class driveR_two():
         return True
 
     # ===================== CALIBRATE BIAS =====================
+    def calibrate(self) -> None:
+        '''
+        Calibrates all necessairy bias depending on the controller standing or laying down
+
+        Args:
+            None
+
+        Returns:
+            None. Writes bias into files
+        '''
+        if self.standing:
+            self.calibrate_gyro_y(counter=1, max=2)
+            self.calibrate_accel_z(counter=2, max=2)
+            self.bias_gyro_y = self.get_bias_gyro_y(True)
+            self.bias_accel_z = self.get_bias_accel_y(True)
+        else:
+            self.calibrate_gyro_z(counter=1, max=2)
+            self.calibrate_accel_y(counter=2, max=2)
+            self.bias_gyro_z = self.get_bias_gyro_z(True)
+            self.bias_accel_y = self.get_bias_accel_y(True)
+        self.calibrate_degrees()
+        self.ONEEIGHTY_DEGREES_SECS = get_degrees(True)
+        self.NINETY_DEGREES_SECS =  self.ONEEIGHTY_DEGREES_SECS / 2
+        log('CALIBRATION DONE', important=True)
+
 
     def calibrate_gyro_z(self, counter: int, max: int) -> None:
         '''
@@ -2396,6 +2421,30 @@ class driveR_four:
         return True
 
     # ===================== CALIBRATE BIAS =====================
+    def calibrate(self) -> None:
+        '''
+        Calibrates all necessairy bias depending on the controller standing or laying down
+
+        Args:
+            None
+
+        Returns:
+            None. Writes bias into files
+        '''
+        if self.standing:
+            self.calibrate_gyro_y(counter=1, max=2)
+            self.calibrate_accel_z(counter=2, max=2)
+            self.bias_gyro_y = self.get_bias_gyro_y(True)
+            self.bias_accel_z = self.get_bias_accel_y(True)
+        else:
+            self.calibrate_gyro_z(counter=1, max=2)
+            self.calibrate_accel_y(counter=2, max=2)
+            self.bias_gyro_z = self.get_bias_gyro_z(True)
+            self.bias_accel_y = self.get_bias_accel_y(True)
+        self.calibrate_degrees()
+        self.ONEEIGHTY_DEGREES_SECS = get_degrees(True)
+        self.NINETY_DEGREES_SECS =  self.ONEEIGHTY_DEGREES_SECS / 2
+        log('CALIBRATION DONE', important=True)
 
     def calibrate_degrees(self) -> None:
         '''

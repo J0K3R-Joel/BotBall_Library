@@ -570,12 +570,28 @@ class driveR_two():
         return True
 
     # ===================== CALIBRATE BIAS =====================
-    def calibrate(self) -> None:
+    def auto_calibration(self, times:int) -> None:
+        '''
+        Automatically calibrates as often as you wish
+
+        Args:
+            times (int): The number of times it should calibrate
+
+        Returns:
+            None
+        '''
+        for i in range(times):
+            self.calibrate(False)
+            self.break_all_motors()
+            print(f'=== {i} / {times} times calibrated ===', flush=True)
+        log('AUTO CALIBRATION DONE')
+
+    def calibrate(self, output:bool = True) -> float:
         '''
         Calibrates all necessairy bias depending on the controller standing or laying down
 
         Args:
-            None
+            output (bool): If it should make an output, that it is done calibrating (True, default) or not (False)
 
         Returns:
             None. Writes bias into files
@@ -593,7 +609,8 @@ class driveR_two():
         self.calibrate_degrees()
         self.ONEEIGHTY_DEGREES_SECS = get_degrees(True)
         self.NINETY_DEGREES_SECS =  self.ONEEIGHTY_DEGREES_SECS / 2
-        log('CALIBRATION DONE', important=True)
+        if output:
+            log('CALIBRATION DONE', important=True)
 
 
     def calibrate_gyro_z(self, counter: int, max: int) -> None:
@@ -682,7 +699,6 @@ class driveR_two():
 
     def calibrate_degrees(self) -> None:
         '''
-        ==== NEEDS IMPROVEMENT ====
         The wombat has to be aligned on the black line. Afterwards it turns 180 degrees to see how long it takes for a full 180 degrees turn
         Improvement: Drives straight and after it recognises a black line it turns right (or left) to be aligned with the line. Afterwards doing a full 180 degrees turn to know how long it takes for a 180B0 turn
 
@@ -2425,12 +2441,33 @@ class driveR_four:
         return True
 
     # ===================== CALIBRATE BIAS =====================
-    def calibrate(self) -> None:
+    def auto_calibration(self, times: int, on_line: bool) -> None:
+        '''
+        Automatically calibrates as often as you wish
+
+        Args:
+            times (int): The number of times it should calibrate
+            on_line (bool): If it is already perfectly aligned in the middle of a black line (True) or if it still has to align itself (False)
+
+        Returns:
+            None
+        '''
+        line_found = on_line
+        for i in range(times):
+            self.calibrate(on_line=line_found, output=False)
+            self.break_all_motors()
+            line_found = True
+            print(f'=== {i} / {times} times calibrated ===', flush=True)
+        log('AUTO CALIBRATION DONE')
+
+
+    def calibrate(self, on_line:bool = False, output:bool = True) -> float:
         '''
         Calibrates all necessairy bias depending on the controller standing or laying down
 
         Args:
-            None
+            on_line (bool): If it is already perfectly aligned in the middle of a black line (True) or if it still has to align itself (False, default)
+            output (bool): If it should make an output, that it is done calibrating (True, default) or not (False)
 
         Returns:
             None. Writes bias into files
@@ -2445,25 +2482,27 @@ class driveR_four:
             self.calibrate_accel_y(counter=2, max=2)
             self.bias_gyro_z = self.get_bias_gyro_z(True)
             self.bias_accel_y = self.get_bias_accel_y(True)
-        self.calibrate_degrees()
+        self.calibrate_degrees(on_line=on_line, output=output)
         self.ONEEIGHTY_DEGREES_SECS = get_degrees(True)
         self.NINETY_DEGREES_SECS =  self.ONEEIGHTY_DEGREES_SECS / 2
-        log('CALIBRATION DONE', important=True)
+        if output:
+            log('CALIBRATION DONE', important=True)
 
-    def calibrate_degrees(self) -> None:
+    def calibrate_degrees(self, on_line: bool = False, output:bool = True) -> None:
         '''
-        drive to the side until a black line was found and then slowly turn 180B0 to know how long it takes to make one 180B0 turn
+        drive to the side until a black line was found and then slowly turn 180 degrees to know how long it takes to make one 180B0 turn
 
         Args:
-            None
+            on_line (bool): If it is already perfectly aligned in the middle of a black line (True) or if it still has to align itself (False, default)
+            output (bool): If it should make an output, that it is done calibrating (True, default) or not (False)
 
        Returns:
             None (but sets a class variable)
         '''
         self.check_instance_light_sensors_middle()
-        self.drive_side_condition_analog('left', self.light_sensor_front, '<',
-                                         self.light_sensor_front.get_value_black(), speed=self.ds_speed // 2)
-        k.msleep(1000)
+        if not on_line:
+            self.drive_side_condition_analog('left', self.light_sensor_front, '<', self.light_sensor_front.get_value_black(), speed=self.ds_speed // 2)
+            k.msleep(1000)
         startTime = k.seconds()
         while k.seconds() - startTime < (1200) / 1000:
             k.mav(self.port_wheel_fl, self.ds_speed // 2)
@@ -2484,7 +2523,8 @@ class driveR_four:
         endTime = k.seconds()
         self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime) / 1.5
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
-        log('DEGREES CALIBRATED')
+        if output:
+            log('DEGREES CALIBRATED')
 
     def calibrate_gyro_z(self, counter: int = None, max: int = None) -> None:
         '''

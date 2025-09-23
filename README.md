@@ -7,6 +7,13 @@
 
 ---
 
+## Getting Started
+
+If this is your first time using the project, please read the [Introduction](./doc/Introduction.md). 
+It will walk you through the basics of setting up and understanding the core concepts of this library.
+
+---
+
 ## Overview
 
 This repository provides a set of utility classes and communication tools designed for robotics projects using the KIPR framework. It covers:
@@ -154,7 +161,7 @@ sudo bash config.sh
 
 > Notice: sometimes there is an error in the beginning. If so, then press "Ctrl + c" (for canceling the installation) and afterwards just re-execute the configuration script, then you should be good to go
 
-12. The installation is complete.
+12. The installation is complete. You can check the log file in "**/usr/lib/logger_log/log_file.txt**". This will get edited all the time.
 
 ---
 
@@ -200,6 +207,8 @@ Other classes that got an entire user as test purpose:
 
 - You will find in every `main.py` file which is somehow connected with communication `p_event` and `communication` parameters. You will need those parameters everywhere, where you want communication. `p_event` is the short form of "pause_event". With this parameter you are able to pause the main everytime a `high` priority message gets sent to you. On the other hand the `communication` parameter is for reading and sending messages to the other robot. More on that in [./doc/user_server_client_fake_explaner.md](./doc/user_server_client_fake_explaner.md). **HINT:** Name those parameters everywhere the same! It would be the best though, if you keep those names the same, but you are still able to rename those as you wish
 
+- You need to make sure that if the values of the motor position gets positive, then the motors have to make the robot move forward. All `driveR` functions are expecting, that his works and is the case
+
 ----
 
 ## License
@@ -210,9 +219,9 @@ This project is open for personal or educational use. For commercial use or redi
 
 ## Closing Words
 
-Since I am the only contributor, tester and author of this library, I am sorry for every problem that might occur.  
-In case there are problems that cannot be solved, feel free to contact me.  
-I am very thankful and happy that you took your time using or at least considering this library.  
+Since I am the only contributor, tester and author of this library, I am sorry for every problem that might occur. 
+In case there are problems that cannot be solved, feel free to contact me. 
+I am very thankful and happy that you took your time using or at least considering this library. 
 This way, my time did not go to waste. I wish you the greatest luck and most importantly: fun.  
 
 ---

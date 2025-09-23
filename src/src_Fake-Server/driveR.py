@@ -1022,11 +1022,13 @@ class driveR_two():
         Returns:
             None
         '''
+        start_time = time.time()
         if direction == 'left':
-            k.mav(self.port_wheel_right, speed)
+            while (time.time() - start_time) / 1000 < millis:
+                k.mav(self.port_wheel_right, speed)
         elif direction == 'right':
-            k.mav(self.port_wheel_left, speed)
-        k.msleep(millis)
+            while (time.time() - start_time) / 1000 < millis:
+                k.mav(self.port_wheel_left, speed)
 
     def drive_straight_condition_analog(self, Instance, condition: str, value: int, millis: int = 9999999,
                                         speed: int = None) -> None:
@@ -1831,12 +1833,13 @@ class driveR_two():
             div = 90 / degree
             value = self.NINETY_DEGREES_SECS / div
         self.break_all_motors()
+        start_time = time.time()
         if direction == 'right':
-            k.mav(self.port_wheel_left, speed)
-            time.sleep(2 * value)
+            while time.time() - start_time < 2 * value and self.is_motor_active(motor_id):
+                k.mav(self.port_wheel_left, speed)
         elif direction == 'left':
-            k.mav(self.port_wheel_right, speed)
-            time.sleep(2 * value)
+            while time.time() - start_time < 2 * value and self.is_motor_active(motor_id):
+                k.mav(self.port_wheel_right, speed)
         self.break_all_motors()
         self._manage_motor_stopper(False)
 
@@ -1870,14 +1873,15 @@ class driveR_two():
             div = 90 / degree
             value = self.NINETY_DEGREES_SECS / div
 
+        start_time = time.time()
         if direction == 'right':
-            k.mav(self.port_wheel_left, self.ds_speed)
-            k.mav(self.port_wheel_right, -self.ds_speed)
-            time.sleep(value)
+            while time.time() - start_time < value and self.is_motor_active(motor_id):
+                k.mav(self.port_wheel_left, self.ds_speed)
+                k.mav(self.port_wheel_right, -self.ds_speed)
         elif direction == 'left':
-            k.mav(self.port_wheel_left, -self.ds_speed)
-            k.mav(self.port_wheel_right, self.ds_speed)
-            time.sleep(value)
+            while time.time() - start_time < value and self.is_motor_active(motor_id):
+                k.mav(self.port_wheel_left, -self.ds_speed)
+                k.mav(self.port_wheel_right, self.ds_speed)
         k.ao()
         self._manage_motor_stopper(False)
 
@@ -2966,14 +2970,15 @@ class driveR_four:
             div = 90 / degree
             value = self.NINETY_DEGREES_SECS / div
 
+        start_time = time.time()
         if direction == 'right':
-            k.mav(self.port_wheel_fl, 3600)
-            k.mav(self.port_wheel_bl, 3600)
-            time.sleep(2 * value)
+            while time.time() - start_time < 2 * value and self.is_motor_active(motor_id):
+                k.mav(self.port_wheel_fl, 3600)
+                k.mav(self.port_wheel_bl, 3600)
         elif direction == 'left':
-            k.mav(self.port_wheel_fr, 3600)
-            k.mav(self.port_wheel_br, 3600)
-            time.sleep(2 * value)
+            while time.time() - start_time < 2 * value and self.is_motor_active(motor_id):
+                k.mav(self.port_wheel_fr, 3600)
+                k.mav(self.port_wheel_br, 3600)
         self._manage_motor_stopper(False)
 
     def turn_degrees(self, direction: str, degree: int) -> None:
@@ -3003,18 +3008,19 @@ class driveR_four:
             div = 90 / degree
             value = self.NINETY_DEGREES_SECS / div
 
+        start_time = time.time()
         if direction == 'right':
-            k.mav(self.port_wheel_fl, 3600)
-            k.mav(self.port_wheel_fr, -3600)
-            k.mav(self.port_wheel_bl, 3600)
-            k.mav(self.port_wheel_br, -3600)
-            time.sleep(value)
+            while time.time() - start_time < value and self.is_motor_active(motor_id):
+                k.mav(self.port_wheel_fl, 3600)
+                k.mav(self.port_wheel_fr, -3600)
+                k.mav(self.port_wheel_bl, 3600)
+                k.mav(self.port_wheel_br, -3600)
         elif direction == 'left':
-            k.mav(self.port_wheel_fl, -3600)
-            k.mav(self.port_wheel_fr, 3600)
-            k.mav(self.port_wheel_bl, -3600)
-            k.mav(self.port_wheel_br, 3600)
-            time.sleep(value)
+            while time.time() - start_time < value and self.is_motor_active(motor_id):
+                k.mav(self.port_wheel_fl, -3600)
+                k.mav(self.port_wheel_fr, 3600)
+                k.mav(self.port_wheel_bl, -3600)
+                k.mav(self.port_wheel_br, 3600)
         k.ao()
         self._manage_motor_stopper(False)
 

@@ -166,10 +166,10 @@ def another_main(p_event, communication):  # every new main should have the p_ev
         communication.send('I am in the new main now!')
         log('breathing...')
         time.sleep(1)
-		log('exhaling...')
-		time.sleep(1)
-	except Exception as e:
-		log(f'Another main exception: {str(e)}', in_exception=True, important=True)
+        log('exhaling...')
+        time.sleep(1)
+    except Exception as e:
+        log(f'Another main exception: {str(e)}', in_exception=True, important=True)
 
 
 # ======================== MAIN =======================

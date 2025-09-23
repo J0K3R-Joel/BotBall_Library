@@ -41,37 +41,76 @@ Before you start, consider that you have access the following points:
 
 1. Plug in and turn on the controller
 
-2. Once it booted,  
+2. Once it booted, you can either go to the fourth step (**4. Controller - Explanation**) or follow along this third step
 
+3. Make sure your PC is in the same wifi as the controller
 
+4. Get the IP-Adress of the controller (in this example I will use the `192.168.0.10` IP-Adress)
 
+5. Open your browser
 
+6. Type in the IP-Adress of the controller alongside the Port `8888`. In conclusion, the URL has to look like this: `192.168.0.10:8888` 
 
-## 5. Spieleablauf
+7. Afterwards you will get to the website that looks something like this
+   
+   [Pic einfügen]
 
-- seeding
+8. To start programming look for the "KISS IDE" button and press it.
 
-- double elim
-
-- paper
-
-- documentation
-
-## 4. Projekt starten
-
-Starte das Projekt im Entwicklungsmodus:
-
-`npm run dev`
-
-Danach kannst du die Anwendung normalerweise hier aufrufen:  
-👉 [http://localhost:3000](http://localhost:3000)
+9. In the new window you are able to change the user, project and the code
+   
+   [Pic einfügen]
 
 ---
 
-## 5. Nächste Schritte
+## 4. Running a program
 
-- Schaue dir den Code im Ordner `src/` an – dort findest du den Kern des Projekts.
+1. `Compile` the program
 
-- Lies dir die Kommentare im Code durch, um die Struktur zu verstehen.
+2. Make sure, there are no Exceptions / Errors
 
-- Weitere Infos findest du auch in der README.md.
+3. Press the `Run` button
+
+**HINT**: a very common error in python (at least in the KISS IDE) is the `TabError` or `inconsistent use of tabs`. This is because the KISS IDE distinguishes between using 4 spaces or one tab. Normally this does not matter but unfortunately in the KISS IDE it does.
+
+---
+
+## 5. Playthrough
+
+Since the day of the creation of this file the entire tournament is split into a few main categories. Every category is important for scoring points therefore you should always try your best. Short story time for evidence: My team was the second best team (overall) in ECER, but since our team did not submit the paper, we got placed in the third place overall - even though we beat the official second place overall 4 out of 4 times when playing against each other. 
+
+These (at this time) four categories of scoring points are unequally destributed: 
+
+- **Seeding**: Score as many points as possible on one game table side without an opponent as possible
+
+- **Double Elimination**: Get more points on one game table side than your opponent
+
+- **Paper**: Pre-scientific document about something related to robotic / MINT / ...
+
+- **Documentation**: Is seperated into three categories. (Typically word document or video)
+  
+  - Team Management
+  
+  - Goals / Tasks
+  
+  - Construction of robots
+
+---
+
+## 6. Next steps
+
+- Try out sensors. This is since only with sensors you can consistantly complete tasks
+
+- If you want to code in python, then feel free to read my documentations so you get an idea of how I solved some problems. Also you sure are allowed to use my library as much as you wish. 
+
+- A team member of mine created a VSCode Extension. His name is Markus Weberndorfer and [this](https://marketplace.visualstudio.com/items?itemName=markusweberndorfer0.kipr-wombat-vscode-extension) is the Extension's link. This could make your life easier in programming
+
+- **Do not be scared** of editing my code. Noone is perfect, neither am I, so I also can make mistakes. Also, if something is deprecated many things will not work anymore, so it is in your hands to create a new solution
+
+- **Do not be scared** of adding new classes / code / software / interfaces /... 
+
+- **Do not be scared** of creating hardware
+
+- **Do not be scared** of failure. Failure is the first step to success 
+
+- **Do not be scared** of anything. It is an event for having fun, competing with other teams and establish connections between other people. Everyone is beginning the same, has the same problems. The only difference is how you handle failure and how to solve certain problems. 

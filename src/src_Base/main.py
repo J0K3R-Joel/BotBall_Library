@@ -102,13 +102,13 @@ def Instancer_Setup():
 
         # ================== Util ===================
 
-        # ================= DriveR ==================
-
         # ================= ServoX ==================
     
         # ============== DistanceSensor =============
 
         # =============== LightSensor ===============
+
+        # ================= DriveR ==================
     except Exception as e:
         log(f'Instancer Exception: {str(e)}', important=True, in_exception=True)
 

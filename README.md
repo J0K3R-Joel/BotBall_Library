@@ -219,10 +219,10 @@ This project is open for personal or educational use. For commercial use or redi
 
 ## Closing Words
 
-Since I am the only contributor, tester and author of this library, I am sorry for every problem that might occur. 
-In case there are problems that cannot be solved, feel free to contact me. 
-I am very thankful and happy that you took your time using or at least considering this library. 
-This way, my time did not go to waste. I wish you the greatest luck and most importantly: fun.  
+Since I am the only contributor, tester and author of this library, I am sorry for every problem that might occur.  
+In case there are problems that cannot be solved, feel free to contact me.  
+I am very thankful and happy that you took your time using or at least considering this library.  
+This way, my time did not go to waste. I wish you the greatest luck and most importantly: fun.  
 
 ---
 

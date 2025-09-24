@@ -4,6 +4,11 @@ sys.path.append("/usr/lib")
 
 from logger import *  # selfmade
 
+# Author: Joel Kalkusch
+# Email: kalkusch.joel@gmail.com
+# Notice: feel free to write me for questions or help!
+# Date of creation: 2025-07-29
+
 try:
     from commU import WifiConnector  # selfmade
 except Exception as e:

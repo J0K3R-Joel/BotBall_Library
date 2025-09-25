@@ -179,7 +179,7 @@ Other classes that got an entire user as test purpose:
 
 - `COMM` -> `RobotCommunicator` 
 
-- `Fake-Client` & `Fake-Server` -> `FakeR`, `stop_manager`, `RobotRommunicato`,...
+- `Fake-Client` & `Fake-Server` -> `FakeR`, `stop_manager`, `RobotCommunicator`,...
 
 ---
 

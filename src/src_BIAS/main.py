@@ -10,7 +10,8 @@ from logger import *  # selfmade
 # Date of creation: 2025-09-24
 
 try:
-    from driveR import *
+    import time
+    from driveR import *  # selfmade
     from light_sensor import LightSensor  # selfmade
     from digital import Digital  # selfmade
 except Exception as e:
@@ -37,8 +38,8 @@ def Instance_Setup():
         globals()['AcceptButton'] = Digital(PORT_BUTTON)
 
         # ============== DistanceSensor =============
-        globals()['LightSensorFront'] = LightSensor(position='front', PORT_LIGHT_SENSOR_FRONT, bias=500)
-        globals()['LightSensorBack'] = LightSensor(position='back', PORT_LIGHT_SENSOR_BACK, bias=500)
+        globals()['LightSensorFront'] = LightSensor('front', PORT_LIGHT_SENSOR_FRONT, bias=500)
+        globals()['LightSensorBack'] = LightSensor('back', PORT_LIGHT_SENSOR_BACK, bias=500)
 
         # ================= DriveR ==================
         globals()['MechanumWheeler'] = driveR_four(Port_front_right_wheel=PORT_MOTOR_FR,
@@ -60,6 +61,7 @@ def register_light_values():
     white_front_val = LightSensorFront.current_value()
     white_back_val = LightSensorBack.current_value()
 
+    time.sleep(2)
     print('Please press the Accept button to set the value for the front AND back BLACK values ...', flush=True)
     while not AcceptButton.is_pressed():
         continue
@@ -72,11 +74,24 @@ def register_light_values():
     LightSensorBack.save_value_white(white_back_val)  # saving the value into the file
     LightSensorBack.save_value_black(black_back_val)  # saving the value into the file
 
+    time.sleep(2)
+    print('Please press the Accept button to go on to the next step', flush=True)
+    while not AcceptButton.is_pressed():
+        continue
+
 # ======================== MAIN =======================
 def main():
     try:
         print('uncomment to start. Do not forget to change the invalid params (like XX)', flush=True)
-        #Instancer_Setup()
+        #Instance_Setup()
         #register_light_values()
-        #MechanumWheeler.auto_calibration(times=50, on_line=XX)
+        #MechanumWheeler.auto_calibration(times=10, on_line=XX)
 
+    except Exception as e:
+        log(f'Main Exception {str(e)}', important=True, in_exception=True)
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception as e:
+        log(str(e), important=True, in_exception=True)

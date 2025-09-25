@@ -13,6 +13,7 @@ try:
     import _kipr as k
     import threading
     import uuid
+    from typing import Optional
     from stop_manager import stop_manager  # selfmade
 except Exception as e:
     log(f'Import Exception in WifiConnector: {str(e)}', important=True, in_exception=True)
@@ -27,7 +28,7 @@ class ServoX:
         stop_manager.register_servox(self)
 
     # ======================== PRIVATE METHODS ========================
-    def _manage_servo_stopper(self, beginning: bool) -> str:
+    def _manage_servo_stopper(self, beginning: bool) -> Optional[str]:
         '''
         Manages the Lock of every class method, so if it (for example) gets spun clockwise and counterclockwise at the same time, the one that was sent through high priority will get executed and the other one does not
 

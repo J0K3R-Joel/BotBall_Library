@@ -67,7 +67,7 @@ fi
 cp -r "$USB_SRC_COMM"/* "$DEST/bin/"
 cp -r "$USB_SRC_COMM"/* "$DEST/src/"
 
-chmod -R 777 "$DEST_BASE/"*  # PRISM7k's glory idea -> lets you compile and run the programs (I had this as my only problem)
+chmod -R 777 "$DEST_BASE/"*  # Manuel Zöttel's glory idea -> lets you compile and run the programs (I had this as my only problem)
 
 echo "Base files copied to bin/ and src/."
 

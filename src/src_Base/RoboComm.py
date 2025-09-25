@@ -15,6 +15,7 @@ try:
     import threading
     import json
     import time
+    from typing import Optional
     from stop_manager import stop_manager  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
@@ -357,7 +358,7 @@ class RobotCommunicator:
         '''
         return len(self.position_history)
 
-    def get_position_at(self, i) -> str:
+    def get_position_at(self, i) -> Optional[str]:
         '''
         lets you see the message of a position priority message at a certain point
 
@@ -365,7 +366,7 @@ class RobotCommunicator:
             i (int): the element from all positions in the position history that you want to access
 
        Returns:
-            the chosen element on the chosen place
+            List[str]: the chosen element on the chosen place
         '''
         if 0 <= i < len(self.position_history):
             return self.position_history[i]

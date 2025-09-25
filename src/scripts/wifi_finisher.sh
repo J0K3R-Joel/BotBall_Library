@@ -17,4 +17,4 @@ else
     exit 1
 fi
 
-chmod -R 777 "$DEST_BASE/"*   # PRISM7k's glory idea -> lets you compile and run the programs (I had this as my only problem)
+chmod -R 777 "$DEST_BASE/"*   # Manuel Zöttel's glory idea -> lets you compile and run the programs (I had this as my only problem)

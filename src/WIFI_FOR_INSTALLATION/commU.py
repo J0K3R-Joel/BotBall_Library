@@ -13,9 +13,10 @@ try:
     import subprocess
     import socket
     import time
+    from typing import Optional
     from fileR import FileR  # selfmade
 except Exception as e:
-    log(f'Import Exception in WifiConnector: {str(e)}', important=True, in_exception=True)
+    log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 class WifiConnector:
     file_path_std_wifi_conf = '/usr/lib/LOCAL_STD_WIFI.conf'
@@ -196,7 +197,7 @@ class WifiConnector:
         '''
         if self.ssid == None or self.password == None:
             log('You need to tell the constructor the SSID and password of the WIFI you are trying to connect to!', in_exception=True)
-            raise Exception('You need to tell the constructor the SSID and password of the WIFI you are trying to connect to!')
+            raise RuntimeError('You need to tell the constructor the SSID and password of the WIFI you are trying to connect to!')
         try:
             subprocess.run(
                 ["nmcli", "dev", "wifi", "connect", self.ssid, "password", self.password],
@@ -224,7 +225,7 @@ class WifiConnector:
         except Exception as e:
             log(f'No IP-Adresse found: {str(e)}', important=True, in_exception=True)
 
-    def run(self):
+    def run(self) -> None:
         '''
         Starts the connection with the chosen wifi with the chosen ssid and password
 
@@ -236,19 +237,16 @@ class WifiConnector:
         '''
         if self.ssid == None or self.password == None:
             log('You need to tell the constructor the SSID and password of the WIFI you are trying to connect to!', in_exception=True)
-            raise Exception(
+            raise RuntimeError(
                 'You need to tell the constructor the SSID and password of the WIFI you are trying to connect to!')
 
-        # Step1: Set wallaby to client mode
         if self.get_mode() != self.CLIENT_MODE:
             log("Change to client mode ...")
             self.set_mode(self.CLIENT_MODE)
 
-        # Step2: Connect to wifi
         if not self.is_connected_to_ssid():
             log(f"Not connected with {self.ssid} . Connecting ...")
             self.connect_to_wifi()
 
-        # Step3: show IP-Address
         ip = self.get_ip_address()
         log(f"Connected. IP-Address: {ip}")

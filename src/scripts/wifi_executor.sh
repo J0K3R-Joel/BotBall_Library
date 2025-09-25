@@ -11,10 +11,10 @@ DEST_BASE="/home/kipr/Documents/KISS"
 USERS_FILE="/home/kipr/Documents/KISS/users.json"
 SRC_WIFI_FOLDER_NAME="src_WIFI"
 
-# ==== Skript-Verzeichnis bestimmen ====
+# ==== Declare Script Folder ====
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC_DIR="$(realpath "$SCRIPT_DIR/..")"
-ROOT_DIR="$(realpath "$SCRIPT_DIR/../..")"   # zwei Ebenen hoch = Projekt-Stammverzeichnis
+ROOT_DIR="$(realpath "$SCRIPT_DIR/../..")"   
 
 WIFI_INIT_SCRIPT="$SRC_DIR/WIFI_FOR_INSTALLATION/main.py"
 
@@ -77,7 +77,7 @@ fi
 cp -r "$USB_SRC_WIFI"/* "$DEST/bin/"
 cp -r "$USB_SRC_WIFI"/* "$DEST/src/"
 
-chmod -R 777 "$DEST_BASE/"*   # PRISM7k's glory idea -> lets you compile and run the programs
+chmod -R 777 "$DEST_BASE/"*   # Manuel Zöttel's glory idea -> lets you compile and run the programs
 
 echo "Copied and chmod applied to $DEST"
 

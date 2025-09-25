@@ -10,6 +10,7 @@ from logger import *  # selfmade
 # Date of creation: 2025-07-28
 
 try:
+    from typing import Optional
     import _kipr as k
     from fileR import FileR  # selfmade
 except Exception as e:
@@ -34,13 +35,31 @@ class LightSensor:
             self.val_black = self._black_load_from_file()
 
     # ======================== Helper =======================
-    def _black_load_from_file(self):
+    def _black_load_from_file(self) -> Optional[int]:
+        '''
+        Loads the last average value of black
+
+        Args:
+            None
+
+        Returns:
+            int | None: If the file exists, it returns an int, otherwise it returns None
+        '''
         file_path = os.path.join(self.BIAS_FOLDER, self.std_black_file_name + self.position + '.txt')
         if os.path.exists(file_path):
             return int(self.file_manager.reader(file_path))
         return None
 
-    def _white_load_from_file(self):
+    def _white_load_from_file(self) -> Optional[int]:
+        '''
+        Loads the last average value of white
+
+        Args:
+            None
+
+        Returns:
+            int | None: If the file exists, it returns an int, otherwise it returns None
+        '''
         file_path = os.path.join(self.BIAS_FOLDER, self.std_white_file_name + self.position + '.txt')
         if os.path.exists(file_path):
             return int(self.file_manager.reader(file_path))

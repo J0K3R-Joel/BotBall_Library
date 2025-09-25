@@ -138,7 +138,7 @@ class driveR_two():
         Returns:
             bool: Is it still valid (True), or not (False)
         '''
-        with self._stopper_lock:
+        with self._motor_lock:
             return self._motor_stoppers.get(motor_id, False)
 
 
@@ -607,7 +607,7 @@ class driveR_two():
             self.bias_gyro_z = self.get_bias_gyro_z(True)
             self.bias_accel_y = self.get_bias_accel_y(True)
         self.calibrate_degrees()
-        self.ONEEIGHTY_DEGREES_SECS = get_degrees(True)
+        self.ONEEIGHTY_DEGREES_SECS = self.get_degrees(True)
         self.NINETY_DEGREES_SECS =  self.ONEEIGHTY_DEGREES_SECS / 2
         if output:
             log('CALIBRATION DONE', important=True)
@@ -709,20 +709,20 @@ class driveR_two():
             None (but sets a class variable)
         '''
         self.check_instance_light_sensors_middle()
-        startTime = k.seconds()
+        startTime = time.time()
         while k.seconds() - startTime < (1200) / 1000:
-            k.mav(self.port_wheel_left, self.ds_speed // 3)
-            k.mav(self.port_wheel_right, -self.ds_speed // 3)
+            k.mav(self.port_wheel_left, self.ds_speed // 2)
+            k.mav(self.port_wheel_right, -self.ds_speed // 2)
         while not self.light_sensor_front.sees_Black():
-            k.mav(self.port_wheel_left, self.ds_speed // 3)
-            k.mav(self.port_wheel_right, -self.ds_speed // 3)
+            k.mav(self.port_wheel_left, self.ds_speed // 2)
+            k.mav(self.port_wheel_right, -self.ds_speed // 2)
         while not self.light_sensor_back.sees_Black():
-            k.mav(self.port_wheel_left, self.ds_speed // 3)
-            k.mav(self.port_wheel_right, -self.ds_speed // 3)
+            k.mav(self.port_wheel_left, self.ds_speed // 2)
+            k.mav(self.port_wheel_right, -self.ds_speed // 2)
         self.break_all_motors()
-        endTime = k.seconds()
-        self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime) / 1.5
-        self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
+        endTime = time.time()
+        self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime) * 0.93
+        self.NINETY_DEGREES_SECS = endTime - startTime
         log('DEGREES CALIBRATED')
 
     # ================== GET / OVERWRITE BIAS ==================
@@ -736,10 +736,7 @@ class driveR_two():
         Returns:
             int: the gyro_z or gyro_y value
         '''
-        if self.standing:
-            return k.gyro_y()
-        else:
-            return k.gyro_z()
+        return k.gyro_y() if self.standing else k.gyro_z()
 
     def get_degrees(self, calibrated: bool = False) -> float:
         '''
@@ -948,22 +945,21 @@ class driveR_two():
 
         startTime: float = k.seconds()
         while k.seconds() - startTime < (millis) / 1000 and self.is_motor_active(motor_id):
-            if ports[2].is_Pressed() and ports[3].is_Pressed():
+            if ports[2].is_pressed() and ports[3].is_pressed():
                 break
-            elif ports[2].is_Pressed():
+            elif ports[2].is_pressed():
                 k.mav(ports[1], 0)
                 k.mav(ports[0], velocity)
-            elif ports[3].is_Pressed():
+            elif ports[3].is_pressed():
                 k.mav(ports[0], 0)
                 k.mav(ports[1], velocity)
             else:
                 k.mav(ports[0], velocity)
                 k.mav(ports[1], velocity)
-        k.ao()
         if drive_dir:
             self.drive_straight(200, -speed)
-        self._manage_motor_stopper(False)
         self.break_all_motors()
+        self._manage_motor_stopper(False)
 
     def align_drive_front(self, drive_bw: bool = True) -> None:
         '''
@@ -979,22 +975,22 @@ class driveR_two():
         motor_id = self._manage_motor_stopper(True)
         startTime: float = k.seconds()
         while k.seconds() - startTime < (1500) / 1000 and self.is_motor_active(motor_id):
-            if self.button_fl.is_Pressed() and self.button_fr.is_Pressed():
+            if self.button_fl.is_pressed() and self.button_fr.is_pressed():
                 break
-            elif self.button_fl.is_Pressed():
+            elif self.button_fl.is_pressed():
                 k.mav(self.port_wheel_left, -2000)
                 k.mav(self.port_wheel_right, 3600)
-            elif self.button_fr.is_Pressed():
+            elif self.button_fr.is_pressed():
                 k.mav(self.port_wheel_right, -2000)
                 k.mav(self.port_wheel_left, 3600)
             else:
                 k.mav(self.port_wheel_right, 2000)
                 k.mav(self.port_wheel_left, 2000)
-        k.ao()
         if drive_bw:
             self.drive_straight(200, -500)
-        self._manage_motor_stopper(False)
         self.break_all_motors()
+        self._manage_motor_stopper(False)
+
 
     def align_drive_back(self, drive_fw: bool = True) -> None:
         '''
@@ -1010,12 +1006,12 @@ class driveR_two():
         motor_id = self._manage_motor_stopper(True)
         startTime: float = k.seconds()
         while k.seconds() - startTime < (2000) / 1000 and self.is_motor_active(motor_id):
-            if self.button_br.is_Pressed() and self.button_bl.is_Pressed():
+            if self.button_br.is_pressed() and self.button_bl.is_pressed():
                 break
-            elif self.button_br.is_Pressed():
+            elif self.button_br.is_pressed():
                 k.mav(self.port_wheel_left, -500)
                 k.mav(self.port_wheel_right, 3600)
-            elif self.button_bl.is_Pressed():
+            elif self.button_bl.is_pressed():
                 k.mav(self.port_wheel_right, -500)
                 k.mav(self.port_wheel_left, 3600)
             else:
@@ -1023,8 +1019,8 @@ class driveR_two():
                 k.mav(self.port_wheel_left, -2000)
         if drive_fw:
             self.drive_straight(200, -500)
-        self._manage_motor_stopper(False)
         self.break_all_motors()
+        self._manage_motor_stopper(False)
 
     def turn_wheel(self, direction: str, speed: int, millis: int) -> None:
         '''
@@ -1039,12 +1035,15 @@ class driveR_two():
             None
         '''
         start_time = time.time()
+        motor_id = self._manage_motor_stopper(True)
         if direction == 'left':
-            while (time.time() - start_time) / 1000 < millis:
+            while (time.time() - start_time) / 1000 < millis and self.is_motor_active(motor_id):
                 k.mav(self.port_wheel_right, speed)
         elif direction == 'right':
-            while (time.time() - start_time) / 1000 < millis:
+            while (time.time() - start_time) / 1000 < millis and self.is_motor_active(motor_id):
                 k.mav(self.port_wheel_left, speed)
+        self.break_all_motors()
+        self._manage_motor_stopper(False)
 
     def drive_straight_condition_analog(self, Instance, condition: str, value: int, millis: int = 9999999,
                                         speed: int = None) -> None:
@@ -1073,8 +1072,8 @@ class driveR_two():
             ports = self.port_wheel_left, self.port_wheel_right, self.button_bl, self.button_br
 
         if condition == 'let' or condition == '<=':  # let -> less or equal than
-            while Instance.current_value() <= value and (not ports[2].is_Pressed() and not ports[
-                3].is_Pressed()) and k.seconds() - startTime < millis / 1000 and self.is_motor_active(motor_id):
+            while Instance.current_value() <= value and (not ports[2].is_pressed() and not ports[
+                3].is_pressed()) and k.seconds() - startTime < millis / 1000 and self.is_motor_active(motor_id):
                 if theta < 1000 and theta > -1000:  # left
                     k.mav(ports[0], speed)
                     k.mav(ports[1], speed)
@@ -1088,8 +1087,8 @@ class driveR_two():
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 2
 
         elif condition == 'het' or condition == '>=':  # het -> higher or equal than
-            while Instance.current_value() >= value and (not ports[2].is_Pressed() and not ports[
-                3].is_Pressed()) and k.seconds() - startTime < millis / 1000 and self.is_motor_active(motor_id):
+            while Instance.current_value() >= value and (not ports[2].is_pressed() and not ports[
+                3].is_pressed()) and k.seconds() - startTime < millis / 1000 and self.is_motor_active(motor_id):
                 if theta < 1000 and theta > -1000:  # left
                     k.mav(ports[0], speed)
                     k.mav(ports[1], speed)
@@ -1103,8 +1102,8 @@ class driveR_two():
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 2
 
         elif condition == 'ht' or condition == '>':  # ht -> higher than
-            while Instance.current_value() > value and (not ports[2].is_Pressed() and not ports[
-                3].is_Pressed()) and k.seconds() - startTime < millis / 1000 and self.is_motor_active(motor_id):
+            while Instance.current_value() > value and (not ports[2].is_pressed() and not ports[
+                3].is_pressed()) and k.seconds() - startTime < millis / 1000 and self.is_motor_active(motor_id):
                 if theta < 1000 and theta > -1000:  # left
                     k.mav(ports[0], speed)
                     k.mav(ports[1], speed)
@@ -1118,8 +1117,8 @@ class driveR_two():
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 2
 
         elif condition == 'lt' or condition == '<':  # lt -> less than
-            while Instance.current_value() < value and (not ports[2].is_Pressed() and not ports[
-                3].is_Pressed()) and k.seconds() - startTime < millis / 1000 and self.is_motor_active(motor_id):
+            while Instance.current_value() < value and (not ports[2].is_pressed() and not ports[
+                3].is_pressed()) and k.seconds() - startTime < millis / 1000 and self.is_motor_active(motor_id):
                 if theta < 1000 and theta > -1000:  # left
                     k.mav(ports[0], speed)
                     k.mav(ports[1], speed)
@@ -1131,6 +1130,7 @@ class driveR_two():
                     k.mav(ports[1], speed - adjuster)
                 k.msleep(10)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 2
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
     def drive_straight_side_checker(self, follow: bool, speed: int, millis: int) -> None:
@@ -1201,12 +1201,12 @@ class driveR_two():
             k.msleep(1)
         else:
             while k.seconds() - startTime < (millis) / 1000 and (
-                    not ports[0].is_Pressed() and not ports[1].is_Pressed()) and self.is_motor_active(motor_id):
+                    not ports[0].is_pressed() and not ports[1].is_pressed()) and self.is_motor_active(motor_id):
                 theta = 0.0
                 adjuster = 1600
                 if speed < 0:
                     adjuster = -adjuster
-                while self.light_sensor_side.sees_Black() and (not ports[0].is_Pressed() and not ports[1].is_Pressed()) and self.is_motor_active(motor_id):
+                while self.light_sensor_side.sees_Black() and (not ports[0].is_pressed() and not ports[1].is_pressed()) and self.is_motor_active(motor_id):
                     if theta < 1000 and theta > -1000 :
                         k.mav(ports[5], speed)
                         k.mav(ports[4], speed)
@@ -1231,6 +1231,7 @@ class driveR_two():
                         scenario2()
                 k.ao()
                 k.msleep(200)
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
     def turn_to_black_line(self, direction: str, millis: str = 80, speed: int = None) -> None:
@@ -1267,7 +1268,7 @@ class driveR_two():
             log('Only "right" and "left" are valid commands for the direction!', in_exception=True)
             raise ValueError(
                 'turn_black_line() Exception: Only "right" and "left" are valid commands for the direction!')
-        k.ao()
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
     def align_line(self, onLine: bool, direction: str = None, speed: int = None) -> None:
@@ -1301,13 +1302,12 @@ class driveR_two():
             if speed < 0:
                 ports = self.light_sensor_front, self.light_sensor_back
 
-            self.drive_straight_condition_analog(ports[1], '<=', ports[1].get_value_black(),
-                                                 speed=speed)  # Front -> 3500
+            self.drive_straight_condition_analog(ports[1], '<=', ports[1].get_value_black() - ports[1].get_bias(),
+                                                 speed=speed)
             start_time = k.seconds()
-            self.drive_straight_condition_analog(ports[0], '<=', ports[0].get_value_black(),
-                                                 speed=speed)  # Front -> 3300
+            self.drive_straight_condition_analog(ports[0], '<=', ports[0].get_value_black() - ports[0].get_bias(), speed=speed)
             end_time = k.seconds()
-            k.ao()
+            self.break_all_motors()
 
             seconds = end_time - start_time
 
@@ -1331,8 +1331,9 @@ class driveR_two():
                 if ports[4].sees_Black():  # Front -> 3500
                     self.turn_to_black_line(direction[1], 20)
                     break
-                if ports[2].is_Pressed() or ports[3].is_Pressed():
+                if ports[2].is_pressed() or ports[3].is_pressed():
                     break
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
     def black_line(self, millis: int, speed: int = None) -> None:
@@ -1358,13 +1359,14 @@ class driveR_two():
         if speed < 0:
             ports = self.button_bl, self.button_br, self.light_sensor_back
 
-        while k.seconds() - startTime < (millis) / 1000 and (not ports[0].is_Pressed() and not ports[1].is_Pressed()) and self.is_motor_active(motor_id):
-            self.drive_straight_condition_analog(ports[2], '>=', ports[2].get_value_black(), speed=speed,
-                                                 millis=100)  # Front -> 3500
+        while k.seconds() - startTime < (millis) / 1000 and (not ports[0].is_pressed() and not ports[1].is_pressed()) and self.is_motor_active(motor_id):
+            self.drive_straight_condition_analog(ports[2], '>=', ports[2].get_value_black() - ports[2].get_bias(), speed=speed, millis=100)
 
             if not ports[2].sees_Black():
                 self.align_line(True, speed=speed)
+        self.break_all_motors()
         self._manage_motor_stopper(False)
+
 
     def drive_straight(self, millis: int, speed: int = None) -> None:
         '''
@@ -1399,7 +1401,7 @@ class driveR_two():
                 k.mav(ports[1], speed - adjuster)
             k.msleep(10)
             theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
-        k.ao()
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
     def next_to_onto_line(self, leaning_side: str = None) -> None:
@@ -1428,9 +1430,7 @@ class driveR_two():
                 k.mav(ports[1], self.ds_speed // 2)
                 k.msleep(1)
 
-            self.break_all_motors()
-
-        if not self.light_sensor_back.sees_White():  # hinten ist oben
+        if not self.light_sensor_back.sees_White():
             while not self.light_sensor_front.sees_Black() and self.is_motor_active(motor_id):
                 k.mav(ports[0], -self.ds_speed)
                 k.mav(ports[1], -self.ds_speed)
@@ -1447,7 +1447,6 @@ class driveR_two():
             while not self.light_sensor_front.sees_Black() and self.is_motor_active(motor_id):
                 k.mav(ports[1], -1500)
                 k.mav(ports[0], -200)
-            self.break_all_motors()
 
         elif not self.light_sensor_front.sees_White():
             while not self.light_sensor_back.sees_Black() and self.is_motor_active(motor_id):
@@ -1472,7 +1471,7 @@ class driveR_two():
                 while self.light_sensor_back.sees_White() and self.is_motor_active(motor_id):
                     k.mav(ports[1], -1500)
                     k.mav(ports[0], 1500)
-            self.break_all_motors()
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
     def align_on_black_line(self, crossing: bool, direction: str = 'vertical', leaning_side: str = None) -> None:
@@ -1693,6 +1692,7 @@ class driveR_two():
                         self.break_all_motors()
 
                     self.drive_side(d, 5)
+            self.break_all_motors()
             self._manage_motor_stopper(False)
 
 
@@ -1725,7 +1725,7 @@ class driveR_two():
         adjuster = 1600
         if self.distance_sensor.current_value() > 1800:
             while self.distance_sensor.current_value() > 1800 and (
-                    not self.button_bl.is_Pressed() and not self.button_br.is_Pressed()) and self.is_motor_active(motor_id):
+                    not self.button_bl.is_pressed() and not self.button_br.is_pressed()) and self.is_motor_active(motor_id):
                 if theta < 1000 and theta > -1000:
                     k.mav(self.port_wheel_left, -speed)
                     k.mav(self.port_wheel_right, -speed)
@@ -1738,7 +1738,6 @@ class driveR_two():
                 k.msleep(10)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
             if theta != 0.0:
-                # break_all_motors()
                 k.mav(self.port_wheel_left, speed)
                 k.mav(self.port_wheel_right, speed)
                 k.msleep(20)
@@ -1798,7 +1797,6 @@ class driveR_two():
                     theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
                 self.break_all_motors()
-                k.ao()
 
         if mm_to_object <= 200:
             counter = 200
@@ -1816,7 +1814,7 @@ class driveR_two():
                 time.sleep(0.0023)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
-            self.break_all_motors()
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
     def turn_degrees_far(self, direction: str, degree: int, speed: int = None) -> None:
@@ -1898,7 +1896,7 @@ class driveR_two():
             while time.time() - start_time < value and self.is_motor_active(motor_id):
                 k.mav(self.port_wheel_left, -self.ds_speed)
                 k.mav(self.port_wheel_right, self.ds_speed)
-        k.ao()
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
 
@@ -1939,13 +1937,8 @@ class driveR_four:
         self.distance_sensor = Instance_distance_sensor
 
         self.ds_speed = DS_SPEED
-        self.bias_gyro_z = None
-        self.bias_gyro_y = None
-        self.bias_accel_z = None  # There are no function where you can do anything with the accel x -> you need to invent them by yourself
-        self.bias_accel_y = None  # There are no function where you can do anything with the accel y -> you need to invent them by yourself
+
         self.isClose = False
-        self.ONEEIGHTY_DEGREES_SECS = None
-        self.NINETY_DEGREES_SECS = None
         self._motor_lock = threading.Lock()
         self._motor_stoppers = {}
         self._next_motor_id = 0
@@ -1968,15 +1961,23 @@ class driveR_four:
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
         self.bias_gyro_z = self.get_bias_gyro_z()
         self.bias_gyro_y = self.get_bias_gyro_y()
-        self.bias_accel_z = self.get_bias_accel_z()
-        self.bias_accel_y = self.get_bias_accel_y()
+        self.bias_accel_z = self.get_bias_accel_z()  # There are no function where you can do anything with the accel y -> you need to invent them by yourself
+        self.bias_accel_y = self.get_bias_accel_y()  # There are no function where you can do anything with the accel y -> you need to invent them by yourself
+        self._handle_standard_bias()
 
+
+    def _handle_standard_bias(self):
         if self.standing:
             self.standard_bias_gyro = self.bias_gyro_y
             self.standard_bias_accel = self.bias_accel_z
+            self.rev_standard_bias_gyro = self.bias_gyro_z
+            self.rev_standard_bias_accel = self.bias_gyro_y
         else:
             self.standard_bias_gyro = self.bias_gyro_z
             self.standard_bias_accel = self.bias_accel_y
+            self.rev_standard_bias_gyro = self.bias_gyro_y
+            self.rev_standard_bias_accel = self.bias_gyro_z
+
 
     def _manage_motor_stopper(self, beginning: bool) -> str:
         '''
@@ -2038,6 +2039,7 @@ class driveR_four:
             None
         '''
         self.bias_gyro_z = bias
+        self._handle_standard_bias()
 
     def set_gyro_y(self, bias:float) -> None:
         '''
@@ -2050,6 +2052,7 @@ class driveR_four:
             None
         '''
         self.bias_gyro_y = bias
+        self._handle_standard_bias()
 
     def set_accel_z(self, bias:float) -> None:
         '''
@@ -2062,6 +2065,7 @@ class driveR_four:
             None
         '''
         self.bias_accel_z = bias
+        self._handle_standard_bias()
 
     def set_accel_y(self, bias:float) -> None:
         '''
@@ -2074,6 +2078,7 @@ class driveR_four:
             None
         '''
         self.bias_accel_y = bias
+        self._handle_standard_bias()
 
     def set_instance_distance_sensor(self, Instance_distance_sensor: DistanceSensor) -> None:
         '''
@@ -2463,7 +2468,7 @@ class driveR_four:
 
     def calibrate(self, on_line:bool = False, output:bool = True) -> float:
         '''
-        Calibrates all necessairy bias depending on the controller standing or laying down
+        Calibrates all necessairy bias
 
         Args:
             on_line (bool): If it is already perfectly aligned in the middle of a black line (True) or if it still has to align itself (False, default)
@@ -2472,18 +2477,16 @@ class driveR_four:
         Returns:
             None. Writes bias into files
         '''
-        if self.standing:
-            self.calibrate_gyro_y(counter=1, max=2)
-            self.calibrate_accel_z(counter=2, max=2)
-            self.bias_gyro_y = self.get_bias_gyro_y(True)
-            self.bias_accel_z = self.get_bias_accel_y(True)
-        else:
-            self.calibrate_gyro_z(counter=1, max=2)
-            self.calibrate_accel_y(counter=2, max=2)
-            self.bias_gyro_z = self.get_bias_gyro_z(True)
-            self.bias_accel_y = self.get_bias_accel_y(True)
+        self.calibrate_gyro_y(counter=1, max=4)
+        self.calibrate_accel_z(counter=2, max=4)
+        self.calibrate_gyro_z(counter=3, max=4)
+        self.calibrate_accel_y(counter=4, max=4)
+        self.bias_gyro_y = self.get_bias_gyro_y(True)
+        self.bias_accel_z = self.get_bias_accel_y(True)
+        self.bias_gyro_z = self.get_bias_gyro_z(True)
+        self.bias_accel_y = self.get_bias_accel_y(True)
         self.calibrate_degrees(on_line=on_line, output=output)
-        self.ONEEIGHTY_DEGREES_SECS = get_degrees(True)
+        self.ONEEIGHTY_DEGREES_SECS = self.get_degrees(True)
         self.NINETY_DEGREES_SECS =  self.ONEEIGHTY_DEGREES_SECS / 2
         if output:
             log('CALIBRATION DONE', important=True)
@@ -2501,9 +2504,9 @@ class driveR_four:
         '''
         self.check_instance_light_sensors_middle()
         if not on_line:
-            self.drive_side_condition_analog('left', self.light_sensor_front, '<', self.light_sensor_front.get_value_black(), speed=self.ds_speed // 2)
+            self.drive_side_condition_analog('left', self.light_sensor_front, '<', self.light_sensor_front.get_value_black() - self.light_sensor_front.get_bias(), speed=self.ds_speed // 2)
             k.msleep(1000)
-        startTime = k.seconds()
+        startTime = time.time()
         while k.seconds() - startTime < (1200) / 1000:
             k.mav(self.port_wheel_fl, self.ds_speed // 2)
             k.mav(self.port_wheel_fr, -self.ds_speed // 2)
@@ -2519,10 +2522,10 @@ class driveR_four:
             k.mav(self.port_wheel_fr, -self.ds_speed // 2)
             k.mav(self.port_wheel_bl, self.ds_speed // 2)
             k.mav(self.port_wheel_br, -self.ds_speed // 2)
-        k.ao()
-        endTime = k.seconds()
-        self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime) / 1.5
-        self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
+        endTime = time.time()
+        self.break_all_motors()
+        self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime) * 0.73
+        self.NINETY_DEGREES_SECS = endTime - startTime
         if output:
             log('DEGREES CALIBRATED')
 
@@ -2615,20 +2618,20 @@ class driveR_four:
             log(f'{counter}/{max} - ACCEL Y CALIBRATED')
 
     # ================== GET / OVERWRITE BIAS ==================
-    def get_current_standard_gyro(self) -> int:
+    def get_current_standard_gyro(self, reverse: bool = False) -> int:
         '''
         Getting the current value of the bias depending on if the controller is standing or laying down
 
         Args:
-            None
+            reverse (bool): it it should return the reversed value or not
 
         Returns:
             int: the gyro_z or gyro_y value
         '''
-        if self.standing:
-            return k.gyro_y()
-        else:
-            return k.gyro_z()
+        if reverse:
+            return k.gyro_z() if self.standing else k.gyro_y()
+        return k.gyro_y() if self.standing else k.gyro_z()
+
         
     def get_degrees(self, calibrated: bool = False) -> float:
         '''
@@ -2809,7 +2812,7 @@ class driveR_four:
                     theta = 0
 
                 k.msleep(t)
-                theta += (k.gyro_y() - self.bias_gyro_y) * 3
+                theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
 
         elif direction == 'left':
             while k.seconds() - startTime < (millis) / 1000 and self.is_motor_active(motor_id):
@@ -2840,12 +2843,12 @@ class driveR_four:
                     theta = 0
 
                 k.msleep(t)
-                theta += (k.gyro_y() - self.bias_gyro_y) * 3
+                theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
         else:
             log('Only "right" and "left" are valid commands for the direction!', in_exception=True)
             raise ValueError('drive_side() Exception: Only "right" and "left" are valid commands for the direction!')
 
-        k.ao()
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
 
@@ -2885,7 +2888,7 @@ class driveR_four:
                 k.mav(self.port_wheel_br, speed - adjuster)
             k.msleep(10)
             theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
-        k.ao()
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
     def drive_diagonal(self, end: str, side: str, millis: int, speed: int = None) -> None:
@@ -2980,7 +2983,7 @@ class driveR_four:
                 k.msleep(t)
                 theta_z += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
-        k.ao()
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
     def turn_degrees_far(self, direction: str, degree: int) -> None:
@@ -3019,6 +3022,7 @@ class driveR_four:
             while time.time() - start_time < 2 * value and self.is_motor_active(motor_id):
                 k.mav(self.port_wheel_fr, 3600)
                 k.mav(self.port_wheel_br, 3600)
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
     def turn_degrees(self, direction: str, degree: int) -> None:
@@ -3061,7 +3065,7 @@ class driveR_four:
                 k.mav(self.port_wheel_fr, 3600)
                 k.mav(self.port_wheel_bl, -3600)
                 k.mav(self.port_wheel_br, 3600)
-        k.ao()
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
     def drive_side_til_mm_found(self, mm_to_object: int, direction: str, speed: int = None) -> None:
@@ -3118,7 +3122,7 @@ class driveR_four:
                     k.mav(self.port_wheel_br, speed - adjuster)
 
                 k.msleep(t)
-                theta += (k.gyro_y() - self.bias_gyro_y) * 3
+                theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
 
 
         elif direction == 'left':
@@ -3149,7 +3153,7 @@ class driveR_four:
                     k.mav(self.port_wheel_bl, speed - adjuster)
                     k.mav(self.port_wheel_br, -speed + adjuster)
                 k.msleep(t)
-                theta += (k.gyro_y() - self.bias_gyro_y) * 3
+                theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
 
         self.break_all_motors()
         self._manage_motor_stopper(False)
@@ -3180,7 +3184,7 @@ class driveR_four:
         adjuster = 1600
         if self.distance_sensor.current_value() > 1800:
             while self.distance_sensor.current_value() > 1800 and (
-                    not self.button_bl.is_Pressed() and not self.button_br.is_Pressed()) and self.is_motor_active(motor_id):
+                    not self.button_bl.is_pressed() and not self.button_br.is_pressed()) and self.is_motor_active(motor_id):
                 if theta < 1000 and theta > -1000:  # left
                     k.mav(self.port_wheel_fl, -speed)
                     k.mav(self.port_wheel_fr, -speed)
@@ -3395,14 +3399,14 @@ class driveR_four:
         motor_id = self._manage_motor_stopper(True)
         startTime: float = k.seconds()
         while k.seconds() - startTime < (2000) / 1000 and self.is_motor_active(motor_id):
-            if self.button_fl.is_Pressed() and self.button_fr.is_Pressed():
+            if self.button_fl.is_pressed() and self.button_fr.is_pressed():
                 break
-            elif self.button_fl.is_Pressed():
-                k.ao()
+            elif self.button_fl.is_pressed():
+                self.break_all_motors()
                 k.mav(self.port_wheel_fl, -self.ds_speed // 4)
                 k.mav(self.port_wheel_fr, self.ds_speed // 2)
-            elif self.button_fr.is_Pressed():
-                k.ao()
+            elif self.button_fr.is_pressed():
+                self.break_all_motors()
                 k.mav(self.port_wheel_fr, -self.ds_speed // 4)
                 k.mav(self.port_wheel_fl, self.ds_speed // 2)
             else:
@@ -3416,7 +3420,7 @@ class driveR_four:
             k.mav(self.port_wheel_br, -self.ds_speed)
             k.mav(self.port_wheel_bl, -self.ds_speed)
             k.msleep(100)
-        k.ao()
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
     def align_drive_back(self, drive_fw: bool = True) -> None:
@@ -3433,14 +3437,14 @@ class driveR_four:
         motor_id = self._manage_motor_stopper(True)
         startTime: float = k.seconds()
         while k.seconds() - startTime < (2000) / 1000 and self.is_motor_active(motor_id):
-            if self.button_br.is_Pressed() and self.button_bl.is_Pressed():
+            if self.button_br.is_pressed() and self.button_bl.is_pressed():
                 break
-            elif self.button_br.is_Pressed():
-                k.ao()
+            elif self.button_br.is_pressed():
+                self.break_all_motors()
                 k.mav(self.port_wheel_bl, -self.ds_speed // 2)
                 k.mav(self.port_wheel_br, self.ds_speed // 4)
-            elif self.button_bl.is_Pressed():
-                k.ao()
+            elif self.button_bl.is_pressed():
+                self.break_all_motors()
                 k.mav(self.port_wheel_br, -self.ds_speed // 2)
                 k.mav(self.port_wheel_bl, self.ds_speed // 4)
             else:
@@ -3448,7 +3452,7 @@ class driveR_four:
                 k.mav(self.port_wheel_fl, -self.ds_speed // 2)
                 k.mav(self.port_wheel_br, -self.ds_speed // 2)
                 k.mav(self.port_wheel_bl, -self.ds_speed // 2)
-        k.ao()
+        self.break_all_motors()
         k.msleep(20)
         if drive_fw:
             k.mav(self.port_wheel_fr, self.ds_speed)
@@ -3456,7 +3460,7 @@ class driveR_four:
             k.mav(self.port_wheel_br, self.ds_speed)
             k.mav(self.port_wheel_bl, self.ds_speed)
             k.msleep(50)
-            k.ao()
+            self.break_all_motors()
         self._manage_motor_stopper(False)
 
     def drive_side_condition_analog(self, direction: str, Instance, condition: str, value: int, millis: int = 9999999,
@@ -3521,7 +3525,7 @@ class driveR_four:
                         theta = 0
 
                     k.msleep(t)
-                    theta += (k.gyro_y() - self.bias_gyro_y) * 3
+                    theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
 
 
                 elif direction == 'left':
@@ -3551,7 +3555,7 @@ class driveR_four:
                         k.mav(self.port_wheel_bl, 3600)
                         theta = 0
                     k.msleep(t)
-                    theta += (k.gyro_y() - self.bias_gyro_y) * 3
+                    theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
 
 
         elif condition == 'het' or condition == '>=':  # het -> higher or equal than
@@ -3584,7 +3588,7 @@ class driveR_four:
                         theta = 0
 
                     k.msleep(t)
-                    theta += (k.gyro_y() - self.bias_gyro_y) * 3
+                    theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
 
 
                 elif direction == 'left':
@@ -3614,7 +3618,7 @@ class driveR_four:
                         k.mav(self.port_wheel_bl, 3600)
                         theta = 0
                     k.msleep(t)
-                    theta += (k.gyro_y() - self.bias_gyro_y) * 3
+                    theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
 
         elif condition == 'ht' or condition == '>':  # ht -> higher than
             while (Instance.current_value() > value) and (k.seconds() - startTime < (millis) / 1000) and self.is_motor_active(motor_id):
@@ -3646,7 +3650,7 @@ class driveR_four:
                         theta = 0
 
                     k.msleep(t)
-                    theta += (k.gyro_y() - self.bias_gyro_y) * 3
+                    theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
 
 
                 elif direction == 'left':
@@ -3676,7 +3680,7 @@ class driveR_four:
                         k.mav(self.port_wheel_bl, 3600)
                         theta = 0
                     k.msleep(t)
-                    theta += (k.gyro_y() - self.bias_gyro_y) * 3
+                    theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
 
         elif condition == 'lt' or condition == '<':  # lt -> less than
             while (Instance.current_value() < value) and (k.seconds() - startTime < (millis) / 1000) and self.is_motor_active(motor_id):
@@ -3708,7 +3712,7 @@ class driveR_four:
                         theta = 0
 
                     k.msleep(t)
-                    theta += (k.gyro_y() - self.bias_gyro_y) * 3
+                    theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
 
 
                 elif direction == 'left':
@@ -3738,8 +3742,8 @@ class driveR_four:
                         k.mav(self.port_wheel_bl, 3600)
                         theta = 0
                     k.msleep(t)
-                    theta += (k.gyro_y() - self.bias_gyro_y) * 3
-        k.ao()
+                    theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
     def drive_straight_condition_analog(self, Instance, condition: str, value: int, millis: int = 9999999,
@@ -3769,8 +3773,8 @@ class driveR_four:
             ports = self.button_bl, self.button_br
 
         if condition == 'let' or condition == '<=':  # let -> less or equal than
-            while (Instance.current_value() <= value) and (not ports[0].is_Pressed() and not ports[
-                1].is_Pressed()) and k.seconds() - startTime < millis / 1000 and self.is_motor_active(motor_id):
+            while (Instance.current_value() <= value) and (not ports[0].is_pressed() and not ports[
+                1].is_pressed()) and k.seconds() - startTime < millis / 1000 and self.is_motor_active(motor_id):
                 if theta < 1000 and theta > -1000:
                     k.mav(self.port_wheel_fl, speed)
                     k.mav(self.port_wheel_fr, speed)
@@ -3790,8 +3794,8 @@ class driveR_four:
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
         elif condition == 'het' or condition == '>=':  # het -> higher or equal than
-            while (Instance.current_value() >= value) and (not ports[0].is_Pressed() and not ports[
-                1].is_Pressed()) and k.seconds() - startTime < millis / 1000 and self.is_motor_active(motor_id):
+            while (Instance.current_value() >= value) and (not ports[0].is_pressed() and not ports[
+                1].is_pressed()) and k.seconds() - startTime < millis / 1000 and self.is_motor_active(motor_id):
                 if theta < 1000 and theta > -1000:
                     k.mav(self.port_wheel_fl, speed)
                     k.mav(self.port_wheel_fr, speed)
@@ -3811,8 +3815,8 @@ class driveR_four:
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
         elif condition == 'ht' or condition == '>':  # ht -> higher than
-            while (Instance.current_value() > value) and (not ports[0].is_Pressed() and not ports[
-                1].is_Pressed() and k.seconds()) - startTime < millis / 1000 and self.is_motor_active(motor_id):
+            while (Instance.current_value() > value) and (not ports[0].is_pressed() and not ports[
+                1].is_pressed() and k.seconds()) - startTime < millis / 1000 and self.is_motor_active(motor_id):
                 if theta < 1000 and theta > -1000:
                     k.mav(self.port_wheel_fl, speed)
                     k.mav(self.port_wheel_fr, speed)
@@ -3832,8 +3836,8 @@ class driveR_four:
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
         elif condition == 'lt' or condition == '<':  # lt -> less than
-            while (Instance.current_value() < value) and (not ports[0].is_Pressed() and not ports[
-                1].is_Pressed()) and k.seconds() - startTime < millis / 1000 and self.is_motor_active(motor_id):
+            while (Instance.current_value() < value) and (not ports[0].is_pressed() and not ports[
+                1].is_pressed()) and k.seconds() - startTime < millis / 1000 and self.is_motor_active(motor_id):
                 if theta < 1000 and theta > -1000:
                     k.mav(self.port_wheel_fl, speed)
                     k.mav(self.port_wheel_fr, speed)
@@ -3851,7 +3855,7 @@ class driveR_four:
                     k.mav(self.port_wheel_br, speed - adjuster)
                 k.msleep(10)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
-        k.ao()
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
     def align_on_black_line(self, crossing: bool, direction: str = 'vertical', leaning_side: str = None,
@@ -3928,8 +3932,7 @@ class driveR_four:
                 k.ao()
                 k.msleep(10)
                 if not self.light_sensor_back.sees_Black() and not self.light_sensor_front.sees_Black():
-                    self.drive_side_condition_analog('left', self.light_sensor_front, '<',
-                                                     self.light_sensor_front.get_value_black())
+                    self.drive_side_condition_analog('left', self.light_sensor_front, '<', self.light_sensor_front.get_value_black() - self.light_sensor_front.get_bias())
 
             else:
                 ports = self.port_wheel_fl, self.port_wheel_fr, self.port_wheel_bl, self.port_wheel_br
@@ -4122,7 +4125,7 @@ class driveR_four:
             log('Only "right" and "left" are valid commands for the direction!', in_exception=True)
             raise ValueError(
                 'turn_black_line() Exception: Only "right" and "left" are valid commands for the direction!')
-        k.ao()
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
     def align_line(self, onLine: bool, direction: str = None, speed: int = None,
@@ -4157,13 +4160,11 @@ class driveR_four:
             if speed < 0:
                 ports = self.light_sensor_back, self.light_sensor_front
 
-            self.drive_straight_condition_analog(ports[0], '<=', ports[0].get_value_black(),
-                                                 speed=speed)  # Front -> 3500
+            self.drive_straight_condition_analog(ports[0], '<=', ports[0].get_value_black() - ports[0].get_bias(), speed=speed)
             start_time = k.seconds()
-            self.drive_straight_condition_analog(ports[1], '<=', ports[1].get_value_black(),
-                                                 speed=speed)  # Front -> 3300
+            self.drive_straight_condition_analog(ports[1], '<=', ports[1].get_value_black() - ports[1].get_bias(), speed=speed)
             end_time = k.seconds()
-            k.ao()
+            self.break_all_motors()
 
             seconds = end_time - start_time
             self.drive_straight((seconds * 1000) // 2 + 100, -speed)  # 100 just a random constant
@@ -4190,13 +4191,13 @@ class driveR_four:
                     k.ao()
                     self.turn_to_black_line(direction[0], 15, speed=speed)
                     break
-                if ports[4].is_Pressed() or ports[5].is_Pressed():
+                if ports[4].is_pressed() or ports[5].is_pressed():
                     if speed < 0:
                         self.align_drive_back()
                     else:
                         self.align_drive_front()
                     break
-            k.ao()
+            self.break_all_motors()
             self._manage_motor_stopper(False)
 
     def black_line(self, millis: int, speed: int = None) -> None:
@@ -4220,12 +4221,11 @@ class driveR_four:
         if speed < 0:
             ports = self.button_bl, self.button_br, self.light_sensor_back
 
-        while (k.seconds() - startTime < (millis) / 1000) and (not ports[0].is_Pressed() and not ports[1].is_Pressed()) and self.is_motor_active(motor_id):
-            self.drive_straight_condition_analog(ports[2], '>=', ports[0].get_value_black(), millis=200,
-                                                 speed=speed)  # Front -> 3500
+        while (k.seconds() - startTime < (millis) / 1000) and (not ports[0].is_pressed() and not ports[1].is_pressed()) and self.is_motor_active(motor_id):
+            self.drive_straight_condition_analog(ports[2], '>=', ports[0].get_value_black() - ports[0].get_bias(), millis=200, speed=speed)
             self.align_line(True, speed=speed)
 
-        if ports[0].is_Pressed() or ports[1].is_Pressed():
+        if ports[0].is_pressed() or ports[1].is_pressed():
             if speed < 0:
                 self.align_drive_back()
             else:
@@ -4320,14 +4320,12 @@ class driveR_four:
                     k.mav(ports[7], speed - adjuster)
                 k.msleep(10)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
-            k.ao()
-            k.msleep(1)
         else:
             if speed < 0:
                 adjuster = -adjuster
             while k.seconds() - startTime < (millis) / 1000 and (
-                    not ports[0].is_Pressed() and not ports[1].is_Pressed()) and self.is_motor_active(motor_id):
-                while self.light_sensor_side.sees_Black() and (not ports[0].is_Pressed() and not ports[1].is_Pressed()) and self.is_motor_active(motor_id):
+                    not ports[0].is_pressed() and not ports[1].is_pressed()) and self.is_motor_active(motor_id):
+                while self.light_sensor_side.sees_Black() and (not ports[0].is_pressed() and not ports[1].is_pressed()) and self.is_motor_active(motor_id):
                     if theta < 1000 and theta > -1000:
                         k.mav(ports[4], speed)
                         k.mav(ports[5], speed)
@@ -4362,6 +4360,7 @@ class driveR_four:
                         scenario1()
                 k.ao()
                 k.msleep(50)
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
     def scanner_face_object(self, degree: int) -> None:

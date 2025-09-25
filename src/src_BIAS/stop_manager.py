@@ -152,7 +152,7 @@ class StopManager:
         self.is_stopped = True
         log("Everything stopped!", important=True)
 
-    def check_stopped(self):
+    def check_stopped(self) -> bool:
         '''
         Let's you see if the emergency_stop() function was executed
 
@@ -160,7 +160,7 @@ class StopManager:
             None
 
         Returns:
-            If the emergency_stop() function was executed (True) or not (False)
+            bool: If the emergency_stop() function was executed (True) or not (False)
         '''
         return self.is_stopped
 

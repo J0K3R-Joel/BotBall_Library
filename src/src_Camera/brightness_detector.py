@@ -8,8 +8,10 @@ from logger import *  # selfmade
 # Email: kalkusch.joel@gmail.com
 # Notice: feel free to write me for questions or help!
 # Date of creation: 2025-09-15
+
 try:
     import cv2
+    from typing import Optional
     import numpy as np
     import os
     import time
@@ -493,7 +495,7 @@ class CameraBrightnessDetector:
 
     # ---------- Wait methods ---------- #
 
-    def wait_black(self, max_secs:float=9999999.0):
+    def wait_black(self, max_secs:float=9999999.0) -> list:
         '''
         wait until something black is found and if there is something black, get all the black positions
 
@@ -516,7 +518,7 @@ class CameraBrightnessDetector:
                 return []
         return []
 
-    def wait_white(self, max_secs:float=9999999.0):
+    def wait_white(self, max_secs:float=9999999.0) -> list:
         '''
         wait until something white is found and if there is something white, get all the white positions
 
@@ -566,7 +568,7 @@ class CameraBrightnessDetector:
         self._brightness_bias = current_bias
         return self.get_brightness_bias(calibrated=True)
 
-    def get_brightness_bias(self, calibrated: bool = False) -> float:
+    def get_brightness_bias(self, calibrated: bool = False) -> Optional[float]:
         '''
         Gives you the opportunity to see the calibrated bias from the file.
         Optionally updates the stored bias with a new calibration.

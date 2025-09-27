@@ -51,15 +51,15 @@ Before you start, consider that you have access the following points:
 
 6. Type in the IP-Adress of the controller alongside the Port `8888`. In conclusion, the URL has to look like this: `192.168.0.10:8888` 
 
-7. Afterwards you will get to the website that looks something like this
+7. Afterwards you will get to the website that looks something like this:
    
-   [Pic einfügen]
+   ![](C:\Users\kalku\AppData\Roaming\marktext\images\2025-09-27-16-25-09-image.png)
 
 8. To start programming look for the "KISS IDE" button and press it.
 
 9. In the new window you are able to change the user, project and the code
    
-   [Pic einfügen]
+   ![](C:\Users\kalku\AppData\Roaming\marktext\images\2025-09-27-16-19-08-image.png)
 
 ---
 
@@ -70,6 +70,8 @@ Before you start, consider that you have access the following points:
 2. Make sure, there are no Exceptions / Errors
 
 3. Press the `Run` button
+
+![](C:\Users\kalku\AppData\Roaming\marktext\images\2025-09-27-16-23-18-image.png)
 
 **HINT**: a very common error in python (at least in the KISS IDE) is the `TabError` or `inconsistent use of tabs`. This is because the KISS IDE distinguishes between using 4 spaces or one tab. Normally this does not matter but unfortunately in the KISS IDE it does.
 

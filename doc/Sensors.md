@@ -48,7 +48,7 @@ This sensor is unfortunatelly very unreliable, so keep care when using it! It wo
 
 The light sensor returns a value from `1000` - `3100`. The value it returns depends on one factor:
 
-- light - brightness
+- brightness of light
 
 This sensor is reliable. It is works best for light emitting sources, like a lamp. This is great for the start of the game. Theoretically it could be used as a brightness sensor, but with less bias between the top and low threshold. 
 

@@ -30,7 +30,7 @@
 
 ##### 2.1.1 Distance Sensor (ET)
 
-![](C:\Users\kalku\AppData\Roaming\marktext\images\2025-09-27-22-43-02-image.png)
+![](./img/distance_sensor.png)
 
 The distance sensor returns a value between `200` - `2900`. The value it returns depends on some factors (at least from what I noticed):
 
@@ -44,7 +44,7 @@ This sensor is unfortunatelly very unreliable, so keep care when using it! It wo
 
 ##### 2.1.2 Light Sensor
 
-![](C:\Users\kalku\AppData\Roaming\marktext\images\2025-09-27-23-03-46-image.png)
+![](./img/light_sensor.png)
 
 The light sensor returns a value from `1000` - `3100`. The value it returns depends on one factor:
 
@@ -54,7 +54,7 @@ This sensor is reliable. It is works best for light emitting sources, like a lam
 
 ##### 2.1.3 Brightness Sensor (Tophat)
 
-![](C:\Users\kalku\AppData\Roaming\marktext\images\2025-09-27-23-16-07-image.png) ![](C:\Users\kalku\AppData\Roaming\marktext\images\2025-09-27-23-16-24-image.png)
+![](./img/large_tophat.png) ![](./img/small_tophat.png)
 
 The Tophat sensors (small and large) return a value from `200` - `3700`. The value they return depends on one factor:
 
@@ -64,7 +64,7 @@ There is not really a difference between the small and large Tophat sensors. Fro
 
 ##### 2.1.4 Linear Slide
 
-![](C:\Users\kalku\AppData\Roaming\marktext\images\2025-09-27-23-40-25-image.png)
+![](./img/slide.png)
 
 The linear slide returns a value from `0`  - `2047`. The value it returns depends on one factor:
 
@@ -78,7 +78,7 @@ Unfortunatelly you can not set the value, you can only receive the value it is a
 
 ##### 2.2.1 Touch
 
-![](C:\Users\kalku\AppData\Roaming\marktext\images\2025-09-27-23-50-10-image.png)![](C:\Users\kalku\AppData\Roaming\marktext\images\2025-09-27-23-50-39-image.png)
+![](./img/button_small.png)![](./img/button_large.png)
 
 The small and large Buttons return the values `0` or `1`. The value it returns depends on one factor:
 
@@ -88,7 +88,7 @@ You should keep care a bit on the large Touch sensor, since if it is pressed fro
 
 ##### 2.2.2 Lever
 
-![](C:\Users\kalku\AppData\Roaming\marktext\images\2025-09-28-00-07-27-image.png)
+![](./img/lever.png)
 
 The Lever returns the values `0` or `1`. The value depends on one factor:
 
@@ -100,7 +100,7 @@ The last years you were able to bend the the metal, which made. You also need to
 
 ### 2.3 Motor
 
-![](C:\Users\kalku\AppData\Roaming\marktext\images\2025-09-28-00-16-53-image.png)
+![](./img/motor.png)
 
 The motor is very diverse. It can move 360 degrees in a loop. You can use them for something simple just as driving and for something advanced like an arm. You can receive and set the value in ticks / velocity / ... . They are not really depending on a factor, but something you need to keep care about is the following:
 
@@ -112,13 +112,13 @@ The motor is very diverse. It can move 360 degrees in a loop. You can use them f
 
 ##### 2.4.1 Servo
 
-![](C:\Users\kalku\AppData\Roaming\marktext\images\2025-09-28-00-17-01-image.png)
+![](./img/servo.png)
 
 The servo is great for using it as an arm or claw. It can move 180 degrees. It is not really dependant on anything. It is very consistent and I did not encounter any problems with those. You can receive and set the value of a servo very accurately.
 
 #### 2.4.2 Micro Servo
 
-![](C:\Users\kalku\AppData\Roaming\marktext\images\2025-09-28-18-59-23-image.png)
+![](./img/micro_servo.png)
 
 The micro servo is not that consistent. It is very important to consider the following:
 

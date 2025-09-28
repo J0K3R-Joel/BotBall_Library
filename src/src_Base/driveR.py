@@ -4356,7 +4356,7 @@ class driveR_four:
                     elif ports[3].sees_Black():
                         scenario2()
                     else:
-                        print('====== crazy kemal (easter egg found, congrats!)=====', flush=True)
+                        print('====== first person to find this easter egg will get his/her name embadded inside of here (easter egg found, congrats!)=====', flush=True)
                         scenario1()
                 k.ao()
                 k.msleep(50)

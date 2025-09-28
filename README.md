@@ -209,6 +209,10 @@ Other classes that got an entire user as test purpose:
 
 - You need to make sure that if the values of the motor position gets positive, then the motors have to make the robot move forward. All `driveR` functions are expecting, that his works and is the case
 
+- `driveR` is very dependant on the right placement of the sensors, which you can find in [./doc/Standard_Construction.md](./doc/Standard_Construction.md). Make sure everything is positioned correctly!
+
+- Check out [./doc/Sensors.md](./doc/Sensors.md) for all sensor description
+
 ----
 
 ## License

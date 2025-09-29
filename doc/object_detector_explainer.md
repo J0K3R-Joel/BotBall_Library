@@ -190,6 +190,24 @@ This enables debugging and offline analysis of all detection attempts.
 
 ----
 
+## Adding new object examples
+
+1. Take the wanted object and lay it on a white piece of paper
+
+2. Turn off the lights and put the blinds down
+
+3. Take your (phone) camera and place it on a height where the entire object is seen (at least around about 21 cm in the air)
+
+4. Make it that your phone is laying on something so the picture will not be wobbly
+
+5. Turn on the flashlight (of your phone) and take a picture of the object
+
+6. Create a new folder with the name that you want to call the object in [../src/bias/object_detector/objects](../src/bias/object_detector/objects)
+
+7. Add every picture you took inside that folder
+
+
+
 ## Conclusion
 
 The `CameraObjectDetector` provides a **flexible and modular vision system** for robotics:

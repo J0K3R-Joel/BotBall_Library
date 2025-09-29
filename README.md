@@ -213,6 +213,8 @@ Other classes that got an entire user as test purpose:
 
 - Check out [./doc/Sensors.md](./doc/Sensors.md) for every sensor description
 
+- Check out [./doc/Common_Issues.md](./doc/Common_Issues.md) for the solutions of common issues that might occur
+
 ----
 
 ## License

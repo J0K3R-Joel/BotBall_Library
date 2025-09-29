@@ -13,7 +13,7 @@ Consider this since it could be that some things are deprecated!
 
 ## 1. Preparation
 
-Before you start, consider that you have access the following points:
+Before you start, consider that you have access to the following points:
 
 - At least one controller (wallaby / wombat / ...)
 
@@ -31,7 +31,7 @@ Before you start, consider that you have access the following points:
 
 - Some things you are able to use which are not listed in those parts are listed in the game rules, so you need to consider them as well
 
-- All things considered your imagination has no boundaries for building and / or adding the Hardware to the controller, as long as you are following the rules and are not exceeding the allowed parts for usage
+- All things considered, your imagination has no boundaries for building and / or adding the Hardware to the controller, as long as you are following the rules and are not exceeding the allowed parts for usage
 
 - **HINT**: it is useful to write a parts list on you own where you can see which parts are used and how often they are used
 
@@ -83,13 +83,13 @@ Since the day of the creation of this file the entire tournament is split into a
 
 These (at this time) four categories of scoring points are unequally destributed: 
 
-- **Seeding**: Score as many points as possible on one game table side without an opponent as possible
+- **Seeding**: Score as many points as possible on one game table side without an opponent
 
 - **Double Elimination**: Get more points on one game table side than your opponent
 
 - **Paper**: Pre-scientific document about something related to robotic / MINT / ...
 
-- **Documentation**: Is seperated into three categories. (Typically word document or video)
+- **Documentation**: Is separated into three categories. (Typically word document or video)
   
   - Team Management
   
@@ -107,7 +107,7 @@ These (at this time) four categories of scoring points are unequally destributed
 
 - A team member of mine created a VSCode Extension. His name is Markus Weberndorfer and [this](https://marketplace.visualstudio.com/items?itemName=markusweberndorfer0.kipr-wombat-vscode-extension) is the Extension's link. This could make your life easier in programming
 
-- **Do not be scared** of editing my code. Noone is perfect, neither am I, so I also can make mistakes. Also, if something is deprecated many things will not work anymore, so it is in your hands to create a new solution
+- **Do not be scared** of editing my code. No one is perfect, neither am I, so I also can make mistakes. Also, if something is deprecated many things will not work anymore, so it is in your hands to create a new solution
 
 - **Do not be scared** of adding new classes / code / software / interfaces /... 
 

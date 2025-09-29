@@ -101,7 +101,7 @@ These (at this time) four categories of scoring points are unequally destributed
 
 ## 6. Next steps
 
-- Try out sensors. This is since only with sensors you can consistantly complete tasks
+- Try out sensors. Only with sensors you are able to consistently complete tasks
 
 - If you want to code in python, then feel free to read my documentations so you get an idea of how I solved some problems. Also you sure are allowed to use my library as much as you wish. 
 

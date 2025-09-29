@@ -35,7 +35,6 @@ except Exception as e:
 # ===== GLOBAL VARIABLES =====
 wifi = None
 comm = None
-utility = None
 file_Manager = None
 camera_man = None
 brightness_cam = None
@@ -87,20 +86,11 @@ def Comm_Setup(p_event, Communication_instance):
 		log(f'Communication Exception: {str(e)}', important=True, in_exception=True)
 
 
-def Utility_Setup():
-    global utility
-    try:
-        utility = Util()
-    except Exception as e:
-        log(f'Utility Exception: {str(e)}', important=True, in_exception=True)
-
-
 def Instancer_Setup():
     try:
         # ============ Ports Initializing ===========
+        # ================= Digital =================
         globals()['TestButton'] = Digital(PORT_BUTTON)  # This is how you will declare all sensors and motors and servos. globals()['{VAR_NAME)'] creates a global variable that is accessable EVERYWHERE (see main function)!
-
-        # ================== Util ===================
 
         # ================= ServoX ==================
     
@@ -108,7 +98,10 @@ def Instancer_Setup():
 
         # =============== LightSensor ===============
 
+        # ================== Util ===================
+
         # ================= DriveR ==================
+        
     except Exception as e:
         log(f'Instancer Exception: {str(e)}', important=True, in_exception=True)
 
@@ -136,7 +129,6 @@ def setup(pause_instance, Communication_instance):
         # Comm_Setup(pause_instance, Communication_instance)
         # Camera_Setup()  # if you want to use the camera
         FileR_Setup()
-        Utility_Setup()
         Instancer_Setup()
     except Exception as e:
         log(f'Setup Exception: {str(e)}', important=True, in_exception=True)

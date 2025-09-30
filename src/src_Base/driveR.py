@@ -2666,6 +2666,59 @@ class driveR_four:
         if counter is not None and max is not None:
             log(f'{counter}/{max} - ACCEL Y CALIBRATED')
 
+    def calibrate_distance(self, start_mm: int, min_sensor_value: int, speed: int = None, step: float = 0.01) -> None:
+        '''
+        calibrates the values for the distance sensor. HINT: calibrate the gyro first (if you did not already do that), so it drives straight. Also it calibrates one time, make sure it is as accurate as possible.
+        It needs to be 800mm away from an object and both object has to be as parallel to each other as possible.
+
+        Args:
+            start_mm (int): bekannter Startabstand in mm (z. B. 800 mm)  # @TODO englisch
+            max_sensor_value (int): höchster Sensorwert, der nahe am Objekt erreicht wird
+            speed (int, optional): konstante Fahrgeschwindigkeit, Default = self.ds_speed
+            step (float): Zeitintervall in Sekunden zwischen Messungen
+
+
+        Returns:
+            None
+        '''
+        if speed is None:
+            speed = self.ds_speed
+
+        self.check_instance_distance_sensor()
+
+        self.distance_far_values = []
+        self.distance_far_mm = []
+
+        #change this
+        k.mav(self.port_wheel_fl, speed)
+        k.mav(self.port_wheel_fr, speed)
+        k.mav(self.port_wheel_bl, speed)
+        k.mav(self.port_wheel_br, speed)
+
+        # Speed of the robot in mm/s (from measurement: 830mm / 5.0056s)
+        robot_speed_mm_s = 830.0 / 5.0056  # ~166 mm/s
+
+        start_time = time.time()
+
+        while True:
+            elapsed = time.time() - start_time
+            traveled = robot_speed_mm_s * elapsed
+            current_mm = max(start_mm - traveled, 0)
+
+            sensor_value = self.distance_sensor.current_value()
+
+            self.distance_far_values.append(sensor_value)
+            self.distance_far_mm.append(int(current_mm))
+
+            if sensor_value <= min_sensor_value:
+                break
+
+            time.sleep(step)
+
+        self.break_all_motors()
+
+        log(f"Calibration finished. {len(self.distance_far_mm)} datapoints collected.")
+
     # ================== GET / OVERWRITE BIAS ==================
     def get_current_standard_gyro(self, reverse: bool = False) -> int:
         '''
@@ -2929,7 +2982,7 @@ class driveR_four:
         startTime: float = k.seconds()
         motor_id = self._manage_motor_stopper(True)
         theta = 0
-        adjuster = 1600
+        adjuster = 100
         self.break_all_motors()
         while k.seconds() - startTime < (millis) / 1000 and self.is_motor_active(motor_id):
             if theta < 1000 and theta > -1000:
@@ -3255,7 +3308,7 @@ class driveR_four:
         motor_id = self._manage_motor_stopper(True)
         self.isClose = False
         theta = 0.0
-        adjuster = 1600
+        adjuster = 100
         if self.distance_sensor.current_value() > 1800:
             while self.distance_sensor.current_value() > 1800 and (
                     not self.button_bl.is_pressed() and not self.button_br.is_pressed()) and self.is_motor_active(motor_id):  # this is because if it is already too close, it will back out a little bit to get the best result
@@ -3285,8 +3338,6 @@ class driveR_four:
                 self.break_all_motors()
         else:
             val = mm_to_object
-            if mm_to_object <= 200:
-                val = 200
 
             far_sensor_values = [500, 530, 600, 670, 715, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900,
                                  2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900]
@@ -3297,7 +3348,7 @@ class driveR_four:
             next_value = combination[next_step]
 
             def distance_stopper():
-                tolerance = val / 10
+                tolerance = val / 10 # it should be 90% accurate
                 try:
                     lookup = interp1d(far_sensor_values, far_distances_mm, kind='linear', fill_value="extrapolate")
                 except Exception as e:
@@ -3309,6 +3360,7 @@ class driveR_four:
                 def is_target_distance_reached():
                     value = self.distance_sensor.current_value()
                     dist = get_distance_from_sensor(value)
+                    print(dist, val, flush=True)
                     return dist - val < tolerance
 
                 while self.is_motor_active(motor_id):

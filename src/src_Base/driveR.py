@@ -909,33 +909,6 @@ class driveR_two():
         if stop:
             self._manage_motor_stopper(False)
 
-    def wait_motor_done(self, *args, stop: bool = False) -> bool:
-        '''
-        Waits until all specified motors have completed their rotations.
-
-        Args:
-            *args (int): Ports of the motors to wait for.
-            stop (bool, optional): If it should wait completly and everywhere (True), or just in this Thread (False, default)
-
-        Returns:
-            bool: True when all specified motors are done.
-        '''
-        try:
-            pending = set(args)
-
-            while pending:
-                for motor in list(pending):
-                    if k.get_motor_done(motor):
-                        pending.remove(motor)
-
-            if stop:
-                self._manage_motor_stopper(False)
-            return True
-
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
-            return False
-
     def align_drive_side(self, speed: int, drive_dir: bool = True, millis: int = 5000) -> None:
         '''
         Drives (forwards or backwards, depending if the speed is positive or negative) until it bumps into something, but it won't readjust with the other wheel, resulting in aligning as far away as possible
@@ -1958,7 +1931,7 @@ class driveR_four:
         self.utility = Instance_util
 
         self.ds_speed = DS_SPEED
-
+        self.distance_far_values, self.distance_far_mm = self.get_distances()
         self.isClose = False
         self._motor_lock = threading.Lock()
         self._motor_stoppers = {}
@@ -2666,7 +2639,7 @@ class driveR_four:
         if counter is not None and max is not None:
             log(f'{counter}/{max} - ACCEL Y CALIBRATED')
 
-    def calibrate_distance(self, start_mm: int, min_sensor_value: int, speed: int = None, step: float = 0.01) -> None:
+    def calibrate_distance(self, start_mm: int, min_sensor_value: int, speed: int = None, step: float = 0.1) -> None:
         '''
         calibrates the values for the distance sensor. HINT: calibrate the gyro first (if you did not already do that), so it drives straight. Also it calibrates one time, make sure it is as accurate as possible.
         It needs to be 800mm away from an object and both object has to be as parallel to each other as possible.
@@ -2689,11 +2662,7 @@ class driveR_four:
         self.distance_far_values = []
         self.distance_far_mm = []
 
-        #change this
-        k.mav(self.port_wheel_fl, speed)
-        k.mav(self.port_wheel_fr, speed)
-        k.mav(self.port_wheel_bl, speed)
-        k.mav(self.port_wheel_br, speed)
+        threading.Thread(target=self.drive_straight, args=(9999999, -speed//2,)).start()
 
         # Speed of the robot in mm/s (from measurement: 830mm / 5.0056s)
         robot_speed_mm_s = 830.0 / 5.0056  # ~166 mm/s
@@ -2701,9 +2670,9 @@ class driveR_four:
         start_time = time.time()
 
         while True:
-            elapsed = time.time() - start_time
+            elapsed = (time.time() - start_time) / 2
             traveled = robot_speed_mm_s * elapsed
-            current_mm = max(start_mm - traveled, 0)
+            current_mm = max(start_mm + traveled, 0)
 
             sensor_value = self.distance_sensor.current_value()
 
@@ -2714,12 +2683,60 @@ class driveR_four:
                 break
 
             time.sleep(step)
-
-        self.break_all_motors()
+        self.break_all_motors(True)
+        self.get_distances(calibrated=True)
 
         log(f"Calibration finished. {len(self.distance_far_mm)} datapoints collected.")
 
     # ================== GET / OVERWRITE BIAS ==================
+    def get_distances(self, calibrated: bool = False) -> tuple:
+        '''
+        Getting the disances from the distances_arr.txt file
+
+        Args:
+            calibrated (bool, optional): Writing to the file distances_arr.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
+
+
+        Returns:
+            tuple[list[int], list[int]] | None:
+                If calibrated=False: (values, mm)
+                If calibrated=True: None
+        '''
+        file_name = os.path.join(BIAS_FOLDER, 'distances_arr.txt')
+
+        try:
+            if calibrated:
+                with open(file_name, "w") as f:
+                    f.write("value=" + ",".join(map(str, self.distance_far_values)) + "\n")
+                    f.write("mm=" + ",".join(map(str, self.distance_far_mm)) + "\n")
+                log(f"Distances saved to {file_name}")
+
+            else:
+                if not os.path.exists(file_name):
+                    raise FileNotFoundError(f"{file_name} not found. Run calibration first.")
+
+                with open(file_name, "r") as f:
+                    lines = f.readlines()
+
+                values = []
+                mm = []
+
+                for line in lines:
+                    if line.startswith("value="):
+                        values = list(map(int, line.strip().split("=")[1].split(",")))
+                    elif line.startswith("mm="):
+                        mm = list(map(int, line.strip().split("=")[1].split(",")))
+
+                if not values or not mm:
+                    raise ValueError("File format is invalid or empty.")
+
+                return values, mm
+
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
+            return None
+
+
     def get_current_standard_gyro(self, reverse: bool = False) -> int:
         '''
         Getting the current value of the bias depending on if the controller is standing or laying down
@@ -3298,10 +3315,10 @@ class driveR_four:
         '''
         if speed is None:
             speed = self.ds_speed
-        if mm_to_object > 800 or mm_to_object < 10:
-            log('You can only put a value in range of 10 - 800 for the distance parameter!', in_exception=True)
+        if mm_to_object > self.distance_far_mm[-1] or mm_to_object < 10:
+            log(f'You can only put a value in range of 10 - {self.distance_far_mm[-1]} for the distance parameter!', in_exception=True)
             raise ValueError(
-                'drive_til_distance() Exception: You can only put a value in range of 10 - 800 for the distance parameter!')
+                f'drive_til_distance() Exception: You can only put a value in range of 10 - {self.distance_far_mm[-1]} for the distance parameter!')
 
         self.check_instances_buttons_back()
         self.check_instance_distance_sensor()
@@ -3336,67 +3353,61 @@ class driveR_four:
                 k.mav(self.port_wheel_br, speed)
                 k.msleep(20)
                 self.break_all_motors()
-        else:
-            val = mm_to_object
 
-            far_sensor_values = [500, 530, 600, 670, 715, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900,
-                                 2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900]
-            far_distances_mm = [800, 700, 600, 580, 540, 480, 400, 360, 320, 285, 260, 235, 220, 205, 190, 180, 170,
-                                160, 150, 140, 135, 130, 125, 120, 115, 110, 100]
-            combination = dict(zip(far_distances_mm, far_sensor_values))
-            next_step = min(combination, key=lambda x: abs(x - val))
-            next_value = combination[next_step]
+        combination = dict(zip(self.distance_far_mm, self.distance_far_values))
+        next_step = min(combination, key=lambda x: abs(x - mm_to_object))
+        next_value = combination[next_step]
 
-            def distance_stopper():
-                tolerance = val / 10 # it should be 90% accurate
-                try:
-                    lookup = interp1d(far_sensor_values, far_distances_mm, kind='linear', fill_value="extrapolate")
-                except Exception as e:
-                    log(str(e), important=True, in_exception=True)
+        def distance_stopper():
+            tolerance = mm_to_object / 20 # /20 makes it that it is 90% accurate
+            try:
+                lookup = interp1d(self.distance_far_values, self.distance_far_mm, kind='linear', fill_value="extrapolate")
+            except Exception as e:
+                log(str(e), important=True, in_exception=True)
 
-                def get_distance_from_sensor(sensor_value):
-                    return float(lookup(sensor_value))
+            def get_distance_from_sensor(sensor_value):
+                return float(lookup(sensor_value))
 
-                def is_target_distance_reached():
-                    value = self.distance_sensor.current_value()
-                    dist = get_distance_from_sensor(value)
-                    print(dist, val, flush=True)
-                    return dist - val < tolerance
+            def is_target_distance_reached():
+                value = self.distance_sensor.current_value()
+                dist = get_distance_from_sensor(value)
+                print(dist, mm_to_object, flush=True)
+                if str(dist) == 'inf' or dist <= self.distance_far_mm[0]:
+                    return True
+                return dist < mm_to_object + tolerance
 
-                while self.is_motor_active(motor_id):
-                    if is_target_distance_reached():
-                        self.isClose = True
-                        sys.exit()
-                        break
+            while self.is_motor_active(motor_id):
+                if is_target_distance_reached():
+                    self.isClose = True
+                    sys.exit()
+                    break
 
-            if self.distance_sensor.current_value() < next_value:
-                threading.Thread(target=distance_stopper).start()
+        if self.distance_sensor.current_value() < next_value:
+            threading.Thread(target=distance_stopper).start()
 
-                while not self.isClose and self.is_motor_active(motor_id):
-                    if theta < 1000 and theta > -1000:
-                        k.mav(self.port_wheel_fl, speed)
-                        k.mav(self.port_wheel_fr, speed)
-                        k.mav(self.port_wheel_bl, speed)
-                        k.mav(self.port_wheel_br, speed)
-                    elif theta > 1000:
-                        k.mav(self.port_wheel_fl, speed - adjuster)
-                        k.mav(self.port_wheel_fr, speed + adjuster)
-                        k.mav(self.port_wheel_bl, speed - adjuster)
-                        k.mav(self.port_wheel_br, speed + adjuster)
-                    else:
-                        k.mav(self.port_wheel_fl, speed + adjuster)
-                        k.mav(self.port_wheel_fr, speed - adjuster)
-                        k.mav(self.port_wheel_bl, speed + adjuster)
-                        k.mav(self.port_wheel_br, speed - adjuster)
+            while not self.isClose and self.is_motor_active(motor_id):
+                if theta < 1000 and theta > -1000:
+                    k.mav(self.port_wheel_fl, speed)
+                    k.mav(self.port_wheel_fr, speed)
+                    k.mav(self.port_wheel_bl, speed)
+                    k.mav(self.port_wheel_br, speed)
+                elif theta > 1000:
+                    k.mav(self.port_wheel_fl, speed - adjuster)
+                    k.mav(self.port_wheel_fr, speed + adjuster)
+                    k.mav(self.port_wheel_bl, speed - adjuster)
+                    k.mav(self.port_wheel_br, speed + adjuster)
+                else:
+                    k.mav(self.port_wheel_fl, speed + adjuster)
+                    k.mav(self.port_wheel_fr, speed - adjuster)
+                    k.mav(self.port_wheel_bl, speed + adjuster)
+                    k.mav(self.port_wheel_br, speed - adjuster)
 
-                    k.msleep(5)
-                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
-                self.break_all_motors()
-                k.ao()
-
-        if mm_to_object <= 200:
-            counter = 200
+        if mm_to_object < self.distance_far_mm[0]:
+            counter = self.distance_far_mm[0]
+            mult = self.ds_speed / speed
+            timer = 0.001 * mult
             while counter > mm_to_object and self.is_motor_active(motor_id):
                 counter -= 1
                 if theta < 1000 and theta > -1000:
@@ -3414,10 +3425,10 @@ class driveR_four:
                     k.mav(self.port_wheel_fr, speed - adjuster)
                     k.mav(self.port_wheel_bl, speed + adjuster)
                     k.mav(self.port_wheel_br, speed - adjuster)
-                time.sleep(0.0023) # for some reason this value makes it perfect
+                time.sleep(timer)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
-            self.break_all_motors()
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
     def break_motor(self, *args) -> None:
@@ -3453,34 +3464,6 @@ class driveR_four:
         if stop:
             self._manage_motor_stopper(False)
 
-    def wait_motor_done(self, *args, stop:bool = False) -> bool:
-        '''
-        Waits until all specified motors have completed their rotations.
-
-        Args:
-            *args (int): Ports of the motors to wait for.
-            stop (bool, optional): If it should wait completly and everywhere (True), or just wait in the thread (False, default)
-
-        Returns:
-            bool: True when all specified motors are done.
-        '''
-        try:
-            pending = set(args)
-
-            while pending:
-                for motor in list(pending):
-                    if k.get_motor_done(motor):
-                        pending.remove(motor)
-
-            if stop:
-                self._manage_motor_stopper(False)
-            return True
-
-
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
-            return False
-
     def shake_side(self, times: int, millis: int = 90) -> None:
         '''
         drive right and left in small steps
@@ -3496,11 +3479,9 @@ class driveR_four:
         for i in range(times):
             if self.is_motor_active(motor_id):
                 self.drive_side('right', millis)
-                self.wait_motor_done(self.port_wheel_fl, self.port_wheel_fr, self.port_wheel_bl, self.port_wheel_br)
                 self.drive_side('left', millis)
-                self.wait_motor_done(self.port_wheel_fl, self.port_wheel_fr, self.port_wheel_bl, self.port_wheel_br)
                 if i % 2 == 0:  # this is since the robot is driving straight a little bit after some time
-                    self.drive_straight(50, -self.ds_speed)
+                    self.drive_straight(10, -self.ds_speed)
                     self.break_all_motors()
             else:
                 break
@@ -4556,5 +4537,4 @@ class driveR_four:
         while th1.is_alive() and self.is_motor_active(motor_id):
             continue
         adjust()
-        self.wait_motor_done()
         self._manage_motor_stopper(False)

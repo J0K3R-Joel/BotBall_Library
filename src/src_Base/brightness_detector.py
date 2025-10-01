@@ -134,6 +134,7 @@ class CameraBrightnessDetector:
                 cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
         if self.test_mode:
             cv2.imshow("Test Mode - Camera Feedback", frame)
+        return frame
 
     def _capture_frame(self) -> tuple:
         '''
@@ -210,8 +211,8 @@ class CameraBrightnessDetector:
         Args:
             frame: the frame, where something was found (a marked frame) or if nothing was found just the normal frame
             func_name: the function name, which calls this function
-            status: was something found ("FOUND") or not ("NOT_FOUND")
-            mdoe: the type of function where it got called from (e.g. "is", "find" or "wait"
+            status: was something found ("FOUND") or not ("NOTFOUND")
+            mode: the type of function where it got called from (e.g. "is", "find" or "wait"
 
         Returns:
             None
@@ -222,7 +223,7 @@ class CameraBrightnessDetector:
         filename = f"{func_name}_{status}_{timestamp}.png"
         path = os.path.join(folder, filename)
         cv2.imwrite(path, frame)
-        log(f"Saved result: {path}")
+        log(f"{func_name} has the status {status}")
 
     # ======================== PUBLIC METHODS ========================
 
@@ -239,7 +240,7 @@ class CameraBrightnessDetector:
         '''
         frame, gray = self._capture_frame()
         found = np.any(gray < self.threshold_black)
-        self._save_result(frame, "is_black_in_frame", "found" if found else "notfound", mode="is")
+        self._save_result(frame, "is_black_in_frame", "FOUND" if found else "NOTFOUND", mode="is")
         return found
 
     def is_white_in_frame(self):
@@ -254,7 +255,7 @@ class CameraBrightnessDetector:
         '''
         frame, gray = self._capture_frame()
         found = np.any(gray > self.threshold_white)
-        self._save_result(frame, "is_white_in_frame", "found" if found else "notfound", mode="is")
+        self._save_result(frame, "is_white_in_frame", "FOUND" if found else "NOTFOUND", mode="is")
         return found
 
     # ---------- Regional detection ----------
@@ -272,7 +273,7 @@ class CameraBrightnessDetector:
         w = gray.shape[1]
         left_region = gray[:, :w // 2]
         found = np.any(left_region < self.threshold_black)
-        self._save_result(frame, "is_black_left", "found" if found else "notfound", mode="is")
+        self._save_result(frame, "is_black_left", "FOUND" if found else "NOT_FOUND", mode="is")
         return found
 
     def is_black_right(self):
@@ -289,7 +290,7 @@ class CameraBrightnessDetector:
         w = gray.shape[1]
         right_region = gray[:, w // 2:]
         found = np.any(right_region < self.threshold_black)
-        self._save_result(frame, "is_black_right", "found" if found else "notfound", mode="is")
+        self._save_result(frame, "is_black_right", "FOUND" if found else "NOT_FOUND", mode="is")
         return found
 
     def is_black_top(self):
@@ -306,7 +307,7 @@ class CameraBrightnessDetector:
         h = gray.shape[0]
         top_region = gray[:h // 2, :]
         found = np.any(top_region < self.threshold_black)
-        self._save_result(frame, "is_black_top", "found" if found else "notfound", mode="is")
+        self._save_result(frame, "is_black_top", "FOUND" if found else "NOT_FOUND", mode="is")
         return found
 
     def is_black_bottom(self):
@@ -323,7 +324,7 @@ class CameraBrightnessDetector:
         h = gray.shape[0]
         bottom_region = gray[h // 2:, :]
         found = np.any(bottom_region < self.threshold_black)
-        self._save_result(frame, "is_black_bottom", "found" if found else "notfound", mode="is")
+        self._save_result(frame, "is_black_bottom", "FOUND" if found else "NOT_FOUND", mode="is")
         return found
 
     def is_white_left(self):
@@ -340,7 +341,7 @@ class CameraBrightnessDetector:
         w = gray.shape[1]
         left_region = gray[:, :w // 2]
         found = np.any(left_region > self.threshold_white)
-        self._save_result(frame, "is_white_left", "found" if found else "notfound", mode="is")
+        self._save_result(frame, "is_white_left", "FOUND" if found else "NOT_FOUND", mode="is")
         return found
 
     def is_white_right(self):
@@ -357,7 +358,7 @@ class CameraBrightnessDetector:
         w = gray.shape[1]
         right_region = gray[:, w // 2:]
         found = np.any(right_region > self.threshold_white)
-        self._save_result(frame, "is_white_right", "found" if found else "notfound", mode="is")
+        self._save_result(frame, "is_white_right", "FOUND" if found else "NOTFOUND", mode="is")
         return found
 
     def is_white_top(self):
@@ -374,7 +375,7 @@ class CameraBrightnessDetector:
         h = gray.shape[0]
         top_region = gray[:h // 2, :]
         found = np.any(top_region > self.threshold_white)
-        self._save_result(frame, "is_white_top", "found" if found else "notfound", mode="is")
+        self._save_result(frame, "is_white_top", "FOUND" if found else "NOTFOUND", mode="is")
         return found
 
     def is_white_bottom(self):
@@ -391,7 +392,7 @@ class CameraBrightnessDetector:
         h = gray.shape[0]
         bottom_region = gray[h // 2:, :]
         found = np.any(bottom_region > self.threshold_white)
-        self._save_result(frame, "is_white_bottom", "found" if found else "notfound", mode="is")
+        self._save_result(frame, "is_white_bottom", "FOUND" if found else "NOT_FOUND", mode="is")
         return found
 
     def is_color_centered(self, color="black", range_percent=0.2, orientation="vertical") -> bool:
@@ -453,7 +454,7 @@ class CameraBrightnessDetector:
             raise ValueError("color must be 'black' or 'white'")
 
         func_name = f"is_color_centered_{color}_{orientation}"
-        self._save_result(frame, func_name, "found" if found else "notfound", mode="is")
+        self._save_result(frame, func_name, "FOUND" if found else "NOTFOUND", mode="is")
 
         return found
 
@@ -472,7 +473,7 @@ class CameraBrightnessDetector:
         frame, results = self.analyze_frame()
         black_positions = [(x, y) for y, row in enumerate(results) for x, data in enumerate(row) if data["black"]]
         marked = self._visualize(frame.copy(), results)
-        status = "found" if black_positions else "notfound"
+        status = "FOUND" if black_positions else "NOTFOUND"
         self._save_result(marked, "find_black", status, "find")
         return black_positions
 
@@ -489,7 +490,7 @@ class CameraBrightnessDetector:
         frame, results = self.analyze_frame()
         white_positions = [(x, y) for y, row in enumerate(results) for x, data in enumerate(row) if data["white"]]
         marked = self._visualize(frame.copy(), results)
-        status = "found" if white_positions else "notfound"
+        status = "FOUND" if white_positions else "NOTFOUND"
         self._save_result(marked, "find_white", status, "find")
         return white_positions
 
@@ -512,7 +513,7 @@ class CameraBrightnessDetector:
             black_positions = [(x, y) for y, row in enumerate(results) for x, data in enumerate(row) if data["black"]]
             if black_positions:
                 marked = self._visualize(frame.copy(), results)
-                self._save_result(marked, "wait_black", "found", "wait")
+                self._save_result(marked, "wait_black", "FOUND", "wait")
                 return black_positions
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 return []
@@ -535,7 +536,7 @@ class CameraBrightnessDetector:
             white_positions = [(x, y) for y, row in enumerate(results) for x, data in enumerate(row) if data["white"]]
             if white_positions:
                 marked = self._visualize(frame.copy(), results)
-                self._save_result(marked, "wait_white", "found", "wait")
+                self._save_result(marked, "wait_white", "FOUND", "wait")
                 return white_positions
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 return []
@@ -642,7 +643,7 @@ class CameraBrightnessDetector:
         if self.test_mode:
             self._visualize(frame, results)
 
-        return results
+        return frame, results
 
 
 # Example usage:

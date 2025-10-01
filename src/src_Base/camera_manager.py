@@ -61,8 +61,8 @@ class CameraManager:
                 if ret and frame is not None:
                     return frame
                 time.sleep(delay)
-            log("No valid frame found", important=True, in_exception=True)
-            raise RuntimeError("No valid frame found")
+            log("No valid frame found. Maybe wrong camera index?", important=True, in_exception=True)
+            raise RuntimeError("No valid frame found. Maybe wrong camera index?")
 
     def release(self):
         '''

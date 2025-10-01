@@ -27,14 +27,14 @@
 
 ### Issue ID: 002
 
-- **Title:** `Indentation Error`
+- **Title:** `TabError`
 
 - **Category:** Software 
 
 - **Affected Components:** Code (Python)
 
 - **Description:**  
-  When compiling your code you get an `indentation error` 
+  When compiling your code you get an `TabError` 
 
 - **Symptoms / Indicators:**
   

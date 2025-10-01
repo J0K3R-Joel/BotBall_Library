@@ -23,10 +23,10 @@ def main():
     #try:
         #global camera_man
         #camera_man = CameraManager(cam_index=X)
-        #brightness_man = CameraBrightnessDetector(camera_man)
-        #object_man = CameraObjectDetector(camera_man, tiles_x=2, tyles_y=5)
+        #brightness_man = CameraBrightnessDetector(camera_man, tiles_x=2, tiles_y=5)
+        #object_man = CameraObjectDetector(camera_man)
     
-        #brightness_man.find_black()
+        #print(brightness_man.find_black(), flush=True)
         #if brightness_man.is_white_top():
         #    print('something white is on the top half', flush=True)
         #else:
@@ -35,7 +35,7 @@ def main():
         #if object_man.find_by_color('red'):
         #    print('ooh, something red was found!', flush=True)
 
-        #object_man.wait_for_object("red_pom", max_secs=5)
+        #object_man.wait_for_object("red_pom", max_secs=10)
     #except Exception as e:
      #   log(f'Main Exception: {str(e)}', important=True, in_exception=True)
     #finally:

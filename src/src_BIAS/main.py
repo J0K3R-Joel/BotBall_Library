@@ -21,6 +21,7 @@ except Exception as e:
 # ===== PORTS ANALOG =====
 #PORT_LIGHT_SENSOR_FRONT = XX
 #PORT_LIGHT_SENSOR_BACK = XX
+#PORT_LIGHT_SENSOR_SIDE = XX
 
 # ===== PORTS DIGITAL =====
 #PORT_BUTTON = XX
@@ -38,8 +39,9 @@ def Instance_Setup():
         globals()['AcceptButton'] = Digital(PORT_BUTTON)
 
         # ============== DistanceSensor =============
-        globals()['LightSensorFront'] = LightSensor('front', PORT_LIGHT_SENSOR_FRONT, bias=500)
-        globals()['LightSensorBack'] = LightSensor('back', PORT_LIGHT_SENSOR_BACK, bias=500)
+        globals()['LightSensorFront'] = LightSensor('front', PORT_LIGHT_SENSOR_FRONT, bias=XX)
+        globals()['LightSensorBack'] = LightSensor('back', PORT_LIGHT_SENSOR_BACK, bias=XX)
+        globals()['LightSensorSide'] = LightSensor('side', PORT_LIGHT_SENSOR_SIDE, bias=XX)
 
         # ================= DriveR ==================
         globals()['MechanumWheeler'] = driveR_four(Port_front_right_wheel=PORT_MOTOR_FR,
@@ -48,31 +50,37 @@ def Instance_Setup():
                                                    Port_back_left_wheel=PORT_MOTOR_BL,
                                                    controller_standing=XX,                                  # change this
                                                    Instance_light_sensor_front=LightSensorFront,
-                                                   Instance_light_sensor_back=LightSensorBack)
+                                                   Instance_light_sensor_back=LightSensorBack,
+                                                   Instance_light_sensor_side=LightSensorSide)
     except Exception as e:
         log(f'Instancer Exception: {str(e)}', important=True, in_exception=True)
 
 # ======================== CUSTOM METHODS =======================
 def register_light_values():
-    print('Please press the Accept button to set the value for the front AND back WHITE values ...', flush=True)
+    print('Please press the Accept button to set the value for the front AND back WHITE values and the side BLACK value ...', flush=True)
     while not AcceptButton.is_pressed():
         continue
 
     white_front_val = LightSensorFront.current_value()
     white_back_val = LightSensorBack.current_value()
+    black_side_val = LightSensorSide.current_value()
 
     time.sleep(2)
-    print('Please press the Accept button to set the value for the front AND back BLACK values ...', flush=True)
+    print('Please press the Accept button to set the value for the front AND back BLACK values and the side WHITE value ...', flush=True)
     while not AcceptButton.is_pressed():
         continue
 
     black_front_val = LightSensorFront.current_value()
     black_back_val = LightSensorBack.current_value()
+    white_side_val = LightSensorSide.current_value()
 
+    black_back_val = LightSensorBack.current_value()
     LightSensorFront.save_value_white(white_front_val)  # saving the value into the file
     LightSensorFront.save_value_black(black_front_val)  # saving the value into the file
     LightSensorBack.save_value_white(white_back_val)  # saving the value into the file
     LightSensorBack.save_value_black(black_back_val)  # saving the value into the file
+    LightSensorSide.save_value_white(white_side_val)  # saving the value into the file
+    LightSensorSide.save_value_black(black_side_val)  # saving the value into the file
 
     time.sleep(2)
     print('Please press the Accept button to go on to the next step', flush=True)

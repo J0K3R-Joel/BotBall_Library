@@ -613,20 +613,21 @@ class driveR_two():
             log('CALIBRATION DONE', important=True)
 
 
-    def calibrate_gyro_z(self, counter: int, max: int, time: int = 8000) -> None:
+    def calibrate_gyro_z(self, counter: int, max: int, times: int = 8000) -> None:
         '''
         calibrates the bias from the gyro to be able to drive straight, since the bias is for telling us how far off from driving straight the wombat is
 
         Args:
             counter (int): the number where it is at the moment
             max (int): how many caLibrations there are (to show it on the screen and for debugging usage)
+            times (int, optional): how many calibrations should be done (
 
         Returns:
             None
         '''
         i: int = 0
         avg: float = 0
-        while i < time:
+        while i < times:
             avg += k.gyro_z()
             k.msleep(1)
             i += 1
@@ -1164,6 +1165,7 @@ class driveR_two():
             while ports[2].sees_Black() and self.is_motor_active(motor_id):
                 k.mav(ports[4], -speed)
             k.msleep(10)
+            print('====== first person to find this easter egg will get his/her name embadded inside of here (easter egg found, congrats!)=====', flush=True)
 
         if not follow:
             self.break_all_motors()

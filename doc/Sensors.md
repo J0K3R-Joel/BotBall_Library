@@ -94,7 +94,7 @@ The Lever returns the values `0` or `1`. The value depends on one factor:
 
 - If it is pressed, it returns `1`, otherwise it returns `0`
 
-The last years you were able to bend the the metal, which made. You also need to be careful to not crush the metal piece, since it is not very durable
+The last years you were able to bend the metal, which made. You also need to be careful to not crush the metal piece, since it is not very durable
 
 ---
 

@@ -17,3 +17,4 @@ This file will tell you things to consider and important stuff. This is very imp
 - You need to make sure that if the values of the motor position gets positive, then the motors have to make the robot move forward. All `driveR` functions are expecting, that this works and that this is the case
 - In [./threadsafe_classes.md](./threadsafe_classes.md) every class that supports multi threading / threading is written down
 - In [./calibrations.md](./calibrations.md) you will find how to calibrate (and why you should consider calibration) the robot
+- The buttons mounted on the robot need to be the furthest point in the front and rear.

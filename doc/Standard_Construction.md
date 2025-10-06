@@ -72,8 +72,14 @@
 
 - **Positions**:
   
-  [Pic einfügen]
+  ###### Front (Front - back view)
 
+  ![](.\img\buttons_robot_front.png)
+  
+  ###### Rear (Back - bottom view)
+  
+  ![](.\img\buttons_robot_rear.png)
+  
 - **Justification**:
   
-  - The type of buttons do not really matter. You can choose the small touch or the large touch. The large touch are a little bit better, because on the mecanum wheels It is a little bit better since the buttons are larger and therefor the robot (with mecanum wheels) does not slide as much against the pipes when it aligns. If the mecanum wheels are not allowed, then on the rubber wheels it does not matter
+  - The type of buttons do not really matter. You can choose the small touch or the large touch. The large touch are a little bit better, because on the mecanum wheels It is a little bit better since the buttons are larger and therefor the robot (with mecanum wheels) does not slide as much against the pipes when it aligns. If the mecanum wheels are not allowed, then on the rubber wheels it does not matter. The buttons need to be the furthest extended point in the front and rear of the robot.

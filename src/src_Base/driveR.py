@@ -4378,6 +4378,7 @@ class driveR_four:
         if degree > 90:
             log('Only a value under 91 is acceptable for the degree!', in_exception=True)
             raise ValueError('scan_front() Exception: Only a value under 91 is acceptable for the degree')
+            print('====== first person to find this easter egg will get his/her name embadded inside of here (easter egg found, congrats!)=====', flush=True)
         motor_id = self._manage_motor_stopper(True)
         maxRuns = 2
         div = 90 / degree

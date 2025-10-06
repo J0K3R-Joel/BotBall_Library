@@ -39,7 +39,7 @@ class driveR_two():
                  Port_right_wheel: int,
                  Port_left_wheel: int,
                  controller_standing: bool,
-                 DS_SPEED: int = 1500,
+                 DS_SPEED: int = 1400,
                  Instance_button_front_right: Digital = None,
                  Instance_button_front_left: Digital = None,
                  Instance_button_back_right: Digital = None,
@@ -707,17 +707,17 @@ class driveR_two():
         self.check_instance_light_sensors_middle()
         startTime = time.time()
         while k.seconds() - startTime < (1200) / 1000:
-            k.mav(self.port_wheel_left, self.ds_speed // 2)
-            k.mav(self.port_wheel_right, -self.ds_speed // 2)
+            k.mav(self.port_wheel_left, self.ds_speed)
+            k.mav(self.port_wheel_right, -self.ds_speed)
         while not self.light_sensor_front.sees_Black():
-            k.mav(self.port_wheel_left, self.ds_speed // 2)
-            k.mav(self.port_wheel_right, -self.ds_speed // 2)
+            k.mav(self.port_wheel_left, self.ds_speed)
+            k.mav(self.port_wheel_right, -self.ds_speed)
         while not self.light_sensor_back.sees_Black():
-            k.mav(self.port_wheel_left, self.ds_speed // 2)
-            k.mav(self.port_wheel_right, -self.ds_speed // 2)
+            k.mav(self.port_wheel_left, self.ds_speed)
+            k.mav(self.port_wheel_right, -self.ds_speed)
         self.break_all_motors()
         endTime = time.time()
-        self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime) * 0.93
+        self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime) * 0.995
         self.NINETY_DEGREES_SECS = endTime - startTime
         log('DEGREES CALIBRATED')
 

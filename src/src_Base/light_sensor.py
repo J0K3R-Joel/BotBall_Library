@@ -13,14 +13,15 @@ try:
     from typing import Optional
     import _kipr as k
     from fileR import FileR  # selfmade
+    from analog import Analog
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 
-class LightSensor:
+class LightSensor(Analog):
     def __init__(self, position: str, Port:int, value_white : int =None, value_black : int=None, bias : int=500):  # position is the placement, where it got positioned -> this is for the text average calculation
+        super().__init__(Port)
         self.position = position
-        self.port = Port
         self.val_white = value_white
         self.val_black = value_black
         self.bias = bias
@@ -204,19 +205,6 @@ class LightSensor:
 
 
     # ======================== Normal methods =======================
-
-    def current_value(self) -> int:
-        '''
-        get the current value of the light sensor
-
-        Args:
-            None
-
-       Returns:
-            current value of the assigned analog port (int)
-        '''
-        return k.analog(self.port)
-
     def sees_Black(self) -> bool:
         '''
         tells you, if the sensor sees black (True) or not (False)

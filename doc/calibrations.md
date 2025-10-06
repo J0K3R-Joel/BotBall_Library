@@ -24,9 +24,79 @@ This file tells you how to calibrate the wallaby / wombat / controller / ... . C
 6. Tell the function your two measurements: 
    1. the mm where the distance is the highest
    2. actual lowest value of the ET Sensor 
+7. Run the program
 
 #### calibrate_degrees()
 
 ###### Considerations:
 
-- 
+- The front AND back <u>brightness sensor</u> have to be calibrated. This is because this function turns from a black line to a white area and back to the black line and to recognize the line and area, the brightness sensor needs to know what the black and white values are   
+- Make sure that the <u>brightness sensors</u> (front and back) are parallel on the front and rear of the robot
+- There is a slight difference between the two classes `driveR_two` and `driveR_four`. In the class `driveR_four` you are able to tell this function if the robot is on a black line or not. If you tell the function, that the robot is not on the line, then (only in `driveR_four`!) you have to place the robot parallel next to the line, so it can find the line by itself. On the other hand you can tell the function that it got placed on the line (`on_line=True`). The example in the "How to calibrate" section the robot will be placed on the line 
+
+###### How to calibrate
+
+1. Place the robot on a black line. Both front and back brightness sensors need to be on the black line
+2.  Run the program
+
+#### calibrate_accel_y()
+
+###### Considerations:
+
+- While it calibrates, do NOT touch the robot
+
+###### How to calibrate
+
+- Run the program
+
+#### calibrate_accel_z()
+
+###### Considerations:
+
+- While it calibrates, do NOT touch the robot
+
+###### How to calibrate
+
+- Run the program
+
+#### calibrate_gyro_z()
+
+###### Considerations:
+
+- While it calibrates, do NOT touch the robot
+
+###### How to calibrate
+
+- Run the program
+
+#### calibrate_gyro_y()
+
+###### Considerations:
+
+- While it calibrates, do NOT touch the robot
+
+###### How to calibrate
+
+- Run the program
+
+#### calibrate()
+
+###### Considerations:
+
+- In the `calibrate` function there are certain functions that will be executed. Make sure that the considerations of every single calibration method are met.
+
+###### How to calibrate
+
+-  Keep track of the "how to calibrate" sections of every single function to execute
+
+#### auto_calibration()
+
+###### Considerations
+
+- Make sure that the considerations of every single calibration method are met.
+
+###### How to calibrate
+
+-  Keep track of the "how to calibrate" sections of every single function to execute
+- After the running the program, it will automatically make everything that needs to be done. You just need to tell this function on how to begin the first calibration step and how often it should calibrate (10 times should be enough)
+

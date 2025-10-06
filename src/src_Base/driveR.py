@@ -613,7 +613,7 @@ class driveR_two():
             log('CALIBRATION DONE', important=True)
 
 
-    def calibrate_gyro_z(self, counter: int, max: int) -> None:
+    def calibrate_gyro_z(self, counter: int, max: int, time: int = 8000) -> None:
         '''
         calibrates the bias from the gyro to be able to drive straight, since the bias is for telling us how far off from driving straight the wombat is
 
@@ -626,7 +626,6 @@ class driveR_two():
         '''
         i: int = 0
         avg: float = 0
-        time: int = 8000
         while i < time:
             avg += k.gyro_z()
             k.msleep(1)
@@ -634,7 +633,7 @@ class driveR_two():
         self.bias_gyro_z = avg / time
         log(f'{counter}/{max} - GYRO Z CALIBRATED')
 
-    def calibrate_gyro_y(self, counter: int, max: int) -> None:
+    def calibrate_gyro_y(self, counter: int, max: int, time: int = 8000) -> None:
         '''
         calibrates the bias from the gyro to be able to drive straight, since the bias is for telling us how far off from driving straight the wombat is (theoretically it is for driving sideways)
 
@@ -647,7 +646,6 @@ class driveR_two():
         '''
         i: int = 0
         avg: float = 0
-        time: int = 8000
         while i < time:
             avg += k.gyro_y()
             k.msleep(1)
@@ -655,7 +653,7 @@ class driveR_two():
         self.bias_gyro_y = avg / time
         log(f'{counter}/{max} - GYRO Y CALIBRATED')
 
-    def calibrate_accel_z(self, counter: int, max: int) -> None:
+    def calibrate_accel_z(self, counter: int, max: int, time: int = 8000) -> None:
         '''
         calibrates the bias from the accelerometer to know how fast the wombat is going towards the x-axis(accelerometer is not yet in use though)
 
@@ -668,7 +666,6 @@ class driveR_two():
         '''
         i: int = 0
         avg: float = 0
-        time: int = 8000
         while i < time:
             avg += k.accel_z()
             k.msleep(1)
@@ -676,7 +673,7 @@ class driveR_two():
         self.bias_accel_z = avg / time
         log(f'{counter}/{max} - ACCEL X CALIBRATED')
 
-    def calibrate_accel_y(self, counter: int, max: int) -> None:
+    def calibrate_accel_y(self, counter: int, max: int, time: int = 8000) -> None:
         '''
         calibrates the bias from the accelerometer to know how fast the wombat is going towards the y-axis(accelerometer is not yet in use though)
 
@@ -689,7 +686,6 @@ class driveR_two():
         '''
         i: int = 0
         avg: float = 0
-        time: int = 8000
         while i < time:
             avg += k.accel_y()
             k.msleep(1)

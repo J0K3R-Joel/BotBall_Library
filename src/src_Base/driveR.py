@@ -2489,7 +2489,7 @@ class driveR_four:
         log('AUTO CALIBRATION DONE')
 
 
-    def calibrate(self, on_line:bool = False, output:bool = True) -> float:
+    def calibrate(self, on_line:bool = False, output:bool = True) -> None:
         '''
         Calibrates all necessairy bias
 
@@ -2648,8 +2648,8 @@ class driveR_four:
         Args:
             start_mm (int): known starting distance (e.g. 95)
             max_sensor_value (int): the value until where the robot should drive (the lower the value, 
-            speed (int, optional): konstante Fahrgeschwindigkeit, Default = self.ds_speed
-            step (float): Zeitintervall in Sekunden zwischen Messungen
+            speed (int, optional): constant speed (default: ds_speed)
+            step (float, optional): time between two measurements (default: 0.1)
 
 
         Returns:

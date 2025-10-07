@@ -612,15 +612,14 @@ class driveR_two():
         if output:
             log('CALIBRATION DONE', important=True)
 
-
-    def calibrate_gyro_z(self, counter: int, max: int, times: int = 8000) -> None:
+    def calibrate_gyro_z(self, counter: int = None, max: int = None, times: int = 8000) -> None:
         '''
         calibrates the bias from the gyro to be able to drive straight, since the bias is for telling us how far off from driving straight the wombat is
 
         Args:
             counter (int): the number where it is at the moment
             max (int): how many caLibrations there are (to show it on the screen and for debugging usage)
-            times (int, optional): how many calibrations should be done (
+            times (int, optional): how many calibrations should be done (default: 8000)
 
         Returns:
             None
@@ -632,67 +631,75 @@ class driveR_two():
             k.msleep(1)
             i += 1
         self.bias_gyro_z = avg / time
-        log(f'{counter}/{max} - GYRO Z CALIBRATED')
+        if counter is not None and max is not None:
+            log(f'{counter}/{max} - GYRO Z CALIBRATED')
 
-    def calibrate_gyro_y(self, counter: int, max: int, time: int = 8000) -> None:
+    def calibrate_gyro_y(self, counter: int = None, max: int = None, times: int = 8000) -> None:
         '''
         calibrates the bias from the gyro to be able to drive straight, since the bias is for telling us how far off from driving straight the wombat is (theoretically it is for driving sideways)
 
         Args:
-            counter (int): the number where it is at the moment
-            max (int): how many caLibrations there are (to show it on the screen and for debugging usage)
+            counter (int, default): the number where it is at the moment (default: None)
+            max (int, default): how many caLibrations there are (to show it on the screen and for debugging usage) (default: None)
+            times (int, optional): how many calibrations should be done (default: 8000)
 
         Returns:
             None
         '''
         i: int = 0
         avg: float = 0
+        time: int = 8000
         while i < time:
             avg += k.gyro_y()
             k.msleep(1)
             i += 1
         self.bias_gyro_y = avg / time
-        log(f'{counter}/{max} - GYRO Y CALIBRATED')
+        if counter is not None and max is not None:
+            log(f'{counter}/{max} - GYRO Y CALIBRATED')
 
-    def calibrate_accel_z(self, counter: int, max: int, time: int = 8000) -> None:
+    def calibrate_accel_z(self, counter: int = None, max: int = None, times: int = 8000) -> None:
         '''
         calibrates the bias from the accelerometer to know how fast the wombat is going towards the x-axis(accelerometer is not yet in use though)
 
         Args:
-            counter (int): the number where it is at the moment
-            max (int): how many caLibrations there are (to show it on the screen and for debugging usage)
+            counter (int, optional): the number where it is at the moment (default: None)
+            max (int, optional): how many caLibrations there are (to show it on the screen and for debugging usage) (default: None)
+            times (int, optional): how many calibrations should be done (default: 8000)
 
         Returns:
             None
         '''
         i: int = 0
         avg: float = 0
-        while i < time:
+        while i < times:
             avg += k.accel_z()
             k.msleep(1)
             i += 1
         self.bias_accel_z = avg / time
-        log(f'{counter}/{max} - ACCEL X CALIBRATED')
+        if counter is not None and max is not None:
+            log(f'{counter}/{max} - ACCEL X CALIBRATED')
 
-    def calibrate_accel_y(self, counter: int, max: int, time: int = 8000) -> None:
+    def calibrate_accel_y(self, counter: int = None, max: int = None, times: int = 8000) -> None:
         '''
         calibrates the bias from the accelerometer to know how fast the wombat is going towards the y-axis(accelerometer is not yet in use though)
 
         Args:
-            counter (int): the number where it is at the moment
-            max (int): how many caLibrations there are (to show it on the screen and for debugging usage)
+            counter (int, optional): the number where it is at the moment (default: None)
+            max (int, optional): how many caLibrations there are (to show it on the screen and for debugging usage) (default: None)
+            times (int, optional): how many calibrations should be done (default: 8000)
 
         Returns:
             None
         '''
         i: int = 0
         avg: float = 0
-        while i < time:
+        while i < times:
             avg += k.accel_y()
             k.msleep(1)
             i += 1
         self.bias_accel_y = avg / time
-        log(f'{counter}/{max} - ACCEL Y CALIBRATED')
+        if counter is not None and max is not None:
+            log(f'{counter}/{max} - ACCEL Y CALIBRATED')
 
     def calibrate_degrees(self) -> None:
         '''
@@ -1165,7 +1172,6 @@ class driveR_two():
             while ports[2].sees_Black() and self.is_motor_active(motor_id):
                 k.mav(ports[4], -speed)
             k.msleep(10)
-            print('====== first person to find this easter egg will get his/her name embadded inside of here (easter egg found, congrats!)=====', flush=True)
 
         if not follow:
             self.break_all_motors()
@@ -2550,21 +2556,21 @@ class driveR_four:
         if output:
             log('DEGREES CALIBRATED')
 
-    def calibrate_gyro_z(self, counter: int = None, max: int = None) -> None:
+    def calibrate_gyro_z(self, counter: int = None, max: int = None, times: int = 8000) -> None:
         '''
         calibrates the bias from the gyro to be able to drive straight, since the bias is for telling us how far off from driving straight the wombat is
 
         Args:
             counter (int): the number where it is at the moment
             max (int): how many caLibrations there are (to show it on the screen and for debugging usage)
+            times (int, optional): how many calibrations should be done (default: 8000)
 
         Returns:
             None
         '''
         i: int = 0
         avg: float = 0
-        time: int = 8000
-        while i < time:
+        while i < times:
             avg += k.gyro_z()
             k.msleep(1)
             i += 1
@@ -2572,13 +2578,14 @@ class driveR_four:
         if counter is not None and max is not None:
             log(f'{counter}/{max} - GYRO Z CALIBRATED')
 
-    def calibrate_gyro_y(self, counter: int = None, max: int = None) -> None:
+    def calibrate_gyro_y(self, counter: int = None, max: int = None, times: int = 8000) -> None:
         '''
         calibrates the bias from the gyro to be able to drive straight, since the bias is for telling us how far off from driving straight the wombat is (theoretically it is for driving sideways)
 
         Args:
-            counter (int): the number where it is at the moment
-            max (int): how many caLibrations there are (to show it on the screen and for debugging usage)
+            counter (int, default): the number where it is at the moment (default: None)
+            max (int, default): how many caLibrations there are (to show it on the screen and for debugging usage) (default: None)
+            times (int, optional): how many calibrations should be done (default: 8000)
 
         Returns:
             None
@@ -2594,21 +2601,21 @@ class driveR_four:
         if counter is not None and max is not None:
             log(f'{counter}/{max} - GYRO Y CALIBRATED')
 
-    def calibrate_accel_z(self, counter: int = None, max: int = None) -> None:
+    def calibrate_accel_z(self, counter: int = None, max: int = None, times: int = 8000) -> None:
         '''
         calibrates the bias from the accelerometer to know how fast the wombat is going towards the x-axis(accelerometer is not yet in use though)
 
         Args:
-            counter (int): the number where it is at the moment
-            max (int): how many caLibrations there are (to show it on the screen and for debugging usage)
+            counter (int, optional): the number where it is at the moment (default: None)
+            max (int, optional): how many caLibrations there are (to show it on the screen and for debugging usage) (default: None)
+            times (int, optional): how many calibrations should be done (default: 8000)
 
         Returns:
             None
         '''
         i: int = 0
         avg: float = 0
-        time: int = 8000
-        while i < time:
+        while i < times:
             avg += k.accel_z()
             k.msleep(1)
             i += 1
@@ -2616,21 +2623,21 @@ class driveR_four:
         if counter is not None and max is not None:
             log(f'{counter}/{max} - ACCEL X CALIBRATED')
 
-    def calibrate_accel_y(self, counter: int = None, max: int = None) -> None:
+    def calibrate_accel_y(self, counter: int = None, max: int = None, times: int = 8000) -> None:
         '''
         calibrates the bias from the accelerometer to know how fast the wombat is going towards the y-axis(accelerometer is not yet in use though)
 
         Args:
-            counter (int): the number where it is at the moment
-            max (int): how many caLibrations there are (to show it on the screen and for debugging usage)
+            counter (int, optional): the number where it is at the moment (default: None)
+            max (int, optional): how many caLibrations there are (to show it on the screen and for debugging usage) (default: None)
+            times (int, optional): how many calibrations should be done (default: 8000)
 
         Returns:
             None
         '''
         i: int = 0
         avg: float = 0
-        time: int = 8000
-        while i < time:
+        while i < times:
             avg += k.accel_y()
             k.msleep(1)
             i += 1

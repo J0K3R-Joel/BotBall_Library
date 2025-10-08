@@ -2463,7 +2463,8 @@ class driveR_four:
         actual_sec = sec if sec is not None else file_sec
         actual_mm = mm if mm is not None else file_mm
 
-        file_Manager.writer(self.mm_per_sec_file, 'w', actual_mm / actual_sec)
+        self.mm_per_sec = actual_mm / actual_sec
+        file_Manager.writer(self.mm_per_sec_file, 'w', self.mm_per_sec)
         file_Manager.writer(self.mm_per_sec_file, 'a', actual_mm)
         file_Manager.writer(self.mm_per_sec_file, 'a', actual_sec)
 

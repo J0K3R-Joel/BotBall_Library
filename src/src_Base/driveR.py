@@ -79,6 +79,7 @@ class driveR_two():
         self._motor_lock = threading.Lock()
 
         stop_manager.register_driver(self)
+        self.mm_per_sec_file = BIAS_FOLDER + '/mm_per_sec.txt'
 
         self._set_values()
 
@@ -93,6 +94,7 @@ class driveR_two():
         Returns:
             None
         '''
+        self.mm_per_sec = self.get_mm_per_sec()
         self.ONEEIGHTY_DEGREES_SECS = self.get_degrees()
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
         self.bias_gyro_z = self.get_bias_gyro_z()
@@ -337,6 +339,64 @@ class driveR_two():
             None
         '''
         self.button_br = Instance_button_back_right
+
+    def set_TOTAL_mm_per_sec(self, mm: int = None, sec: float = None) -> None:
+        '''
+        Sets the millimeters and / or seconds for driving mm per seconds
+
+        Args:
+            sec (float): The amount of time (in seconds) it took to drive
+             mm (int): How far it drove (in mm)
+
+        Returns:
+            None
+        '''
+        if mm is None and sec is None:
+            log('By setting the mm and sec at least one of those values need to be assigned to a number!', important=True, in_exception=True)
+            raise ValueError('By setting the mm and sec at least one of those values need to be assigned to a number!')
+        if not isinstance(mm, int) and mm is not None:
+            log('mm need to stay in mm! make sure mm is not in seconds!', important=True, in_exception=True)
+            raise TypeError('mm need to stay in mm! make sure mm is not in seconds!')
+        if (not isinstance(sec, int) or not isinstance(sec, float)) and sec is not None:
+            str_instance = isinstance(sec, str)
+            log(f'seconds need to stay as a float or int! seconds being a string: {str_instance}', important=True, in_exception=True)
+            raise TypeError(f'seconds need to stay as a float or int! seconds being a string: {str_instance}')
+
+
+        text = file_Manager.reader(self.mm_per_sec_file).split('\n')
+        file_mm = int(text[1].strip())
+        file_sec = float(text[2].strip())
+        actual_sec = sec if sec is not None else file_sec
+        actual_mm = mm if mm is not None else file_mm
+
+        self.mm_per_sec = actual_mm/actual_sec
+        file_Manager.writer(self.mm_per_sec_file, 'w', self.mm_per_sec)
+        file_Manager.writer(self.mm_per_sec_file, 'a', actual_mm)
+        file_Manager.writer(self.mm_per_sec_file, 'a', actual_sec)
+
+    def set_MM_mm_per_sec(self, mm: int) -> None:
+        '''
+        Specifically sets the millimeters for driving mm per seconds
+
+        Args:
+            mm (int): How far it drove (in mm)
+
+        Returns:
+            None
+        '''
+        self.set_TOTAL_mm_per_sec(mm=mm)
+
+    def set_SEC_mm_per_sec(self, sec: float) -> None:
+        '''
+        Specifically sets the seconds for driving mm per seconds
+
+        Args:
+            sec (float): The amount of time (in seconds) it took to drive
+
+        Returns:
+            None
+        '''
+        self.set_TOTAL_mm_per_sec(sec=sec)
 
     # ======================== CHECK INSTANCES ========================
 
@@ -730,6 +790,27 @@ class driveR_two():
         self.NINETY_DEGREES_SECS = endTime - startTime
         log('DEGREES CALIBRATED')
 
+    def calibrate_mm_per_sec(self, millis: int = 5000, speed: int = None) -> None:
+        '''
+        calibrates the mm per second. You need to mark the beginning on where it began to drive from, since you need to know how far it went (in mm)
+
+        Args:
+            millis (int, optional): How long it should drive (in milliseconds) (default: 5000)
+            speed (int, optional): How fast it should drive (default: ds_speed)
+
+        Returns:
+            None
+        '''
+        if speed is None:
+            speed = self.ds_speed
+
+        start_time = time.time()
+        self.drive_straight(speed=speed, millis=millis)
+        sec = time.time() - start_time
+        mm = int(input('How many mm did the robot drive from the beginning on?'))
+
+        self.set_TOTAL_mm_per_sec(mm=mm, sec=sec)
+
 
     def calibrate_distance(self, start_mm: int, min_sensor_value: int, speed: int = None, step: float = 0.1) -> None:
         '''
@@ -751,19 +832,21 @@ class driveR_two():
 
         self.check_instance_distance_sensor()
 
+        print(self.mm_per_sec, type(self.mm_per_sec), flush=True)
+        if self.mm_per_sec == 0:
+            log('You need to calibrate the mm per sec first. Execute the function calibrate_mm_per_sec first!', important=True, in_exception=True)
+            raise ValueError('You need to calibrate the mm per sec first. Execute the function calibrate_mm_per_sec first!')
+
         self.distance_far_values = []
         self.distance_far_mm = []
 
         threading.Thread(target=self.drive_straight, args=(9999999, -speed//2,)).start()
 
-        # Speed of the robot in mm/s (from measurement: 830mm / 5.0056s)
-        robot_speed_mm_s = 830.0 / 5.0056  # ~166 mm/s  # @TODO -> calculate the speed
-
         start_time = time.time()
 
         while True:
             elapsed = (time.time() - start_time) / 2
-            traveled = robot_speed_mm_s * elapsed
+            traveled = self.mm_per_sec * elapsed
             current_mm = max(start_mm + traveled, 0)
 
             sensor_value = self.distance_sensor.current_value()
@@ -781,6 +864,36 @@ class driveR_two():
         log(f"Calibration finished. {len(self.distance_far_mm)} datapoints collected.")
 
     # ================== GET / OVERWRITE BIAS ==================
+    def get_mm_per_sec(self, only_mm: bool = False, only_sec: bool = False) -> None:  # @TODO schauen, wie man float ODER int (ODER list) zurückgeben kann als typ
+        '''
+        Getting the mm, sec, mm and sec or total it takes to drive a certain distance (in mm)
+
+        Args:
+            only_mm (bool, optional): If you specifically need the mm
+            only_sec (bool, optional): If you specifically need the sec
+
+        Returns:
+            One of the following options:
+                - List[int, float]: the mm and time in seconds it takes to drive
+                - int: the mm of distance for driving
+                - float: time in seconds for driving
+                - float: calculated value of mm/sec
+        '''
+
+        text = file_Manager.reader(self.mm_per_sec_file).split('\n')
+        total = float(text[0])
+        mm = int(text[1])
+        sec = float(text[2])
+
+        if only_mm and only_sec:
+            return mm, sec
+        if only_mm:
+            return mm
+        if only_sec:
+            return sec
+        return total
+
+
     def get_distances(self, calibrated: bool = False) -> tuple:
         '''
         Getting the disances from the distances_arr.txt file
@@ -2036,6 +2149,7 @@ class driveR_four:
         self._next_motor_id = 0
         self.max_speed = 1500
 
+        self.mm_per_sec_file = BIAS_FOLDER + '/mm_per_sec.txt'
         stop_manager.register_driver(self)
         self._set_values()
 
@@ -2050,6 +2164,7 @@ class driveR_four:
         Returns:
             None
         '''
+        self.mm_per_sec = self.get_mm_per_sec()
         self.ONEEIGHTY_DEGREES_SECS = self.get_degrees()
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
         self.bias_gyro_z = self.get_bias_gyro_z()
@@ -2317,6 +2432,64 @@ class driveR_four:
             None
         '''
         self.utility = Instance_util
+
+    def set_TOTAL_mm_per_sec(self, mm: int = None, sec: float = None) -> None:
+        '''
+        Sets the millimeters and / or seconds for driving mm per seconds
+
+        Args:
+            sec (float): The amount of time (in seconds) it took to drive
+             mm (int): How far it drove (in mm)
+
+        Returns:
+            None
+        '''
+        if mm is None and sec is None:
+            log('By setting the mm and sec at least one of those values need to be assigned to a number!',
+                important=True, in_exception=True)
+            raise ValueError('By setting the mm and sec at least one of those values need to be assigned to a number!')
+        if not isinstance(mm, int) and mm is not None:
+            log('mm need to stay in mm! make sure mm is not in seconds!', important=True, in_exception=True)
+            raise TypeError('mm need to stay in mm! make sure mm is not in seconds!')
+        if (not isinstance(sec, int) or not isinstance(sec, float)) and sec is not None:
+            str_instance = isinstance(sec, str)
+            log(f'seconds need to stay as a float or int! seconds being a string: {str_instance}', important=True,
+                in_exception=True)
+            raise TypeError(f'seconds need to stay as a float or int! seconds being a string: {str_instance}')
+
+        text = file_Manager.reader(self.mm_per_sec_file).split('\n')
+        file_mm = int(text[1].strip())
+        file_sec = float(text[2].strip())
+        actual_sec = sec if sec is not None else file_sec
+        actual_mm = mm if mm is not None else file_mm
+
+        file_Manager.writer(self.mm_per_sec_file, 'w', actual_mm / actual_sec)
+        file_Manager.writer(self.mm_per_sec_file, 'a', actual_mm)
+        file_Manager.writer(self.mm_per_sec_file, 'a', actual_sec)
+
+    def set_MM_mm_per_sec(self, mm: int) -> None:
+        '''
+        Specifically sets the millimeters for driving mm per seconds
+
+        Args:
+            mm (int): How far it drove (in mm)
+
+        Returns:
+            None
+        '''
+        self.set_TOTAL_mm_per_sec(mm=mm)
+
+    def set_SEC_mm_per_sec(self, sec: float) -> None:
+        '''
+        Specifically sets the seconds for driving mm per seconds
+
+        Args:
+            sec (float): The amount of time (in seconds) it took to drive
+
+        Returns:
+            None
+        '''
+        self.set_TOTAL_mm_per_sec(sec=sec)
 
     # ======================== CHECK INSTANCES ========================
 
@@ -2759,19 +2932,22 @@ class driveR_four:
 
         self.check_instance_distance_sensor()
 
+        print(self.mm_per_sec, type(self.mm_per_sec), flush=True)
+        if self.mm_per_sec == 0:
+            log('You need to calibrate the mm per sec first. Execute the function calibrate_mm_per_sec first!', important=True, in_exception=True)
+            raise ValueError(
+                'You need to calibrate the mm per sec first. Execute the function calibrate_mm_per_sec first!')
+        
         self.distance_far_values = []
         self.distance_far_mm = []
 
         threading.Thread(target=self.drive_straight, args=(9999999, -speed//2,)).start()
 
-        # Speed of the robot in mm/s (from measurement: 830mm / 5.0056s)
-        robot_speed_mm_s = 830.0 / 5.0056  # ~166 mm/s
-
         start_time = time.time()
 
         while True:
             elapsed = (time.time() - start_time) / 2
-            traveled = robot_speed_mm_s * elapsed
+            traveled = self.mm_per_sec * elapsed
             current_mm = max(start_mm + traveled, 0)
 
             sensor_value = self.distance_sensor.current_value()
@@ -2788,7 +2964,58 @@ class driveR_four:
 
         log(f"Calibration finished. {len(self.distance_far_mm)} datapoints collected.")
 
+    def calibrate_mm_per_sec(self, millis: int = 5000, speed: int = None) -> None:
+        '''
+        calibrates the mm per second. You need to mark the beginning on where it began to drive from, since you need to know how far it went (in mm)
+
+        Args:
+            millis (int, optional): How long it should drive (in milliseconds) (default: 5000)
+            speed (int, optional): How fast it should drive (default: ds_speed)
+
+        Returns:
+            None
+        '''
+        if speed is None:
+            speed = self.ds_speed
+
+        start_time = time.time()
+        self.drive_straight(speed=speed, millis=millis)
+        sec = time.time() - start_time
+        mm = int(input('How many mm did the robot drive from the beginning on?'))
+
+        self.mm_per_sec = mm/sec
+        self.set_TOTAL_mm_per_sec(mm=mm, sec=sec)
+
     # ================== GET / OVERWRITE BIAS ==================
+    def get_mm_per_sec(self, only_mm: bool = False, only_sec: bool = False) -> None:  # @TODO schauen, wie man float ODER int (ODER list) zurückgeben kann als typ
+        '''
+        Getting the mm, sec, mm and sec or total it takes to drive a certain distance (in mm)
+
+        Args:
+            only_mm (bool, optional): If you specifically need the mm
+            only_sec (bool, optional): If you specifically need the sec
+
+        Returns:
+            One of the following options:
+                - List[int, float]: the mm and time in seconds it takes to drive
+                - int: the mm of distance for driving
+                - float: time in seconds for driving
+                - float: calculated value of mm/sec
+        '''
+
+        text = file_Manager.reader(self.mm_per_sec_file).split('\n')
+        total = float(text[0])
+        mm = int(text[1])
+        sec = float(text[2])
+
+        if only_mm and only_sec:
+            return mm, sec
+        if only_mm:
+            return mm
+        if only_sec:
+            return sec
+        return total
+
     def get_distances(self, calibrated: bool = False) -> tuple:
         '''
         Getting the disances from the distances_arr.txt file

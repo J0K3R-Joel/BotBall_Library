@@ -22,6 +22,7 @@ except Exception as e:
 #PORT_LIGHT_SENSOR_FRONT = XX
 #PORT_LIGHT_SENSOR_BACK = XX
 #PORT_LIGHT_SENSOR_SIDE = XX
+#PORT_DISTANCE_SENSOR = XX
 
 # ===== PORTS DIGITAL =====
 #PORT_BUTTON = XX
@@ -39,6 +40,9 @@ def Instance_Setup():
         globals()['AcceptButton'] = Digital(PORT_BUTTON)
 
         # ============== DistanceSensor =============
+        globals()['DistanceSens'] = DistanceSensor(PORT_DISTANCE_SENSOR)
+
+        # ============== LightSensor =============
         globals()['LightSensorFront'] = LightSensor('front', PORT_LIGHT_SENSOR_FRONT, bias=XX)
         globals()['LightSensorBack'] = LightSensor('back', PORT_LIGHT_SENSOR_BACK, bias=XX)
         globals()['LightSensorSide'] = LightSensor('side', PORT_LIGHT_SENSOR_SIDE, bias=XX)
@@ -51,7 +55,8 @@ def Instance_Setup():
                                                    controller_standing=XX,                                  # change this
                                                    Instance_light_sensor_front=LightSensorFront,
                                                    Instance_light_sensor_back=LightSensorBack,
-                                                   Instance_light_sensor_side=LightSensorSide)
+                                                   Instance_light_sensor_side=LightSensorSide,
+                                                   Instance_distance_sensor=DistanceSens)
     except Exception as e:
         log(f'Instancer Exception: {str(e)}', important=True, in_exception=True)
 

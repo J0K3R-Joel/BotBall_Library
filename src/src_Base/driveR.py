@@ -357,7 +357,7 @@ class driveR_two():
         if not isinstance(mm, int) and mm is not None:
             log('mm need to stay in mm! make sure mm is not in seconds!', important=True, in_exception=True)
             raise TypeError('mm need to stay in mm! make sure mm is not in seconds!')
-        if (not isinstance(sec, int) or not isinstance(sec, float)) and sec is not None:
+        if (not isinstance(sec, int) and not isinstance(sec, float)) and sec is not None:
             str_instance = isinstance(sec, str)
             log(f'seconds need to stay as a float or int! seconds being a string: {str_instance}', important=True, in_exception=True)
             raise TypeError(f'seconds need to stay as a float or int! seconds being a string: {str_instance}')
@@ -371,8 +371,8 @@ class driveR_two():
 
         self.mm_per_sec = actual_mm/actual_sec
         file_Manager.writer(self.mm_per_sec_file, 'w', self.mm_per_sec)
-        file_Manager.writer(self.mm_per_sec_file, 'a', actual_mm)
-        file_Manager.writer(self.mm_per_sec_file, 'a', actual_sec)
+        file_Manager.writer(self.mm_per_sec_file, 'a', '\n' + str(actual_mm))
+        file_Manager.writer(self.mm_per_sec_file, 'a', '\n' + str(actual_sec))
 
     def set_MM_mm_per_sec(self, mm: int) -> None:
         '''
@@ -644,7 +644,7 @@ class driveR_two():
         for i in range(times):
             self.calibrate(False)
             self.break_all_motors()
-            print(f'=== {i} / {times} times calibrated ===', flush=True)
+            print(f'=== {i+1} / {times} times calibrated ===', flush=True)
         log('AUTO CALIBRATION DONE')
 
     def calibrate(self, output:bool = True) -> float:
@@ -691,7 +691,7 @@ class driveR_two():
             avg += k.gyro_z()
             k.msleep(1)
             i += 1
-        self.bias_gyro_z = avg / time
+        self.bias_gyro_z = avg / times
         if counter is not None and max is not None:
             log(f'{counter}/{max} - GYRO Z CALIBRATED')
 
@@ -710,11 +710,11 @@ class driveR_two():
         i: int = 0
         avg: float = 0
         time: int = 8000
-        while i < time:
+        while i < times:
             avg += k.gyro_y()
             k.msleep(1)
             i += 1
-        self.bias_gyro_y = avg / time
+        self.bias_gyro_y = avg / times
         if counter is not None and max is not None:
             log(f'{counter}/{max} - GYRO Y CALIBRATED')
 
@@ -736,7 +736,7 @@ class driveR_two():
             avg += k.accel_z()
             k.msleep(1)
             i += 1
-        self.bias_accel_z = avg / time
+        self.bias_accel_z = avg / times
         if counter is not None and max is not None:
             log(f'{counter}/{max} - ACCEL X CALIBRATED')
 
@@ -758,7 +758,7 @@ class driveR_two():
             avg += k.accel_y()
             k.msleep(1)
             i += 1
-        self.bias_accel_y = avg / time
+        self.bias_accel_y = avg / times
         if counter is not None and max is not None:
             log(f'{counter}/{max} - ACCEL Y CALIBRATED')
 
@@ -807,7 +807,7 @@ class driveR_two():
         start_time = time.time()
         self.drive_straight(speed=speed, millis=millis)
         sec = time.time() - start_time
-        mm = int(input('How many mm did the robot drive from the beginning on?'))
+        mm = int(input('How many mm did the robot drive from the beginning on?: '))
 
         self.set_TOTAL_mm_per_sec(mm=mm, sec=sec)
 
@@ -832,7 +832,6 @@ class driveR_two():
 
         self.check_instance_distance_sensor()
 
-        print(self.mm_per_sec, type(self.mm_per_sec), flush=True)
         if self.mm_per_sec == 0:
             log('You need to calibrate the mm per sec first. Execute the function calibrate_mm_per_sec first!', important=True, in_exception=True)
             raise ValueError('You need to calibrate the mm per sec first. Execute the function calibrate_mm_per_sec first!')
@@ -922,7 +921,6 @@ class driveR_two():
 
                 with open(file_name, "r") as f:
                     lines = f.readlines()
-
                 values = []
                 mm = []
 
@@ -931,9 +929,6 @@ class driveR_two():
                         values = list(map(int, line.strip().split("=")[1].split(",")))
                     elif line.startswith("mm="):
                         mm = list(map(int, line.strip().split("=")[1].split(",")))
-
-                if not values or not mm:
-                    raise ValueError("File format is invalid or empty.")
 
                 return values, mm
 
@@ -1268,7 +1263,7 @@ class driveR_two():
         motor_id = self._manage_motor_stopper(True)
         theta = 0.0
         startTime = k.seconds()
-        adjuster = round(speed / 1.8)
+        adjuster = 100
         ports = self.port_wheel_right, self.port_wheel_left, self.button_fl, self.button_fr
         if speed < 0:
             ports = self.port_wheel_left, self.port_wheel_right, self.button_bl, self.button_br
@@ -1353,7 +1348,7 @@ class driveR_two():
         motor_id = self._manage_motor_stopper(True)
         startTime: float = k.seconds()
         theta = 0.0
-        adjuster = round(speed / 1.8)
+        adjuster = 100
         ports = self.button_fl, self.button_fr, self.light_sensor_front, self.light_sensor_back, self.port_wheel_right, self.port_wheel_left
         if speed < 0:
             ports = self.button_bl, self.button_br, self.light_sensor_back, self.light_sensor_front, self.port_wheel_left, self.port_wheel_right
@@ -1405,7 +1400,7 @@ class driveR_two():
             while k.seconds() - startTime < (millis) / 1000 and (
                     not ports[0].is_pressed() and not ports[1].is_pressed()) and self.is_motor_active(motor_id):
                 theta = 0.0
-                adjuster = 1600
+                adjuster = 100
                 if speed < 0:
                     adjuster = -adjuster
                 while self.light_sensor_side.sees_Black() and (not ports[0].is_pressed() and not ports[1].is_pressed()) and self.is_motor_active(motor_id):
@@ -1556,7 +1551,7 @@ class driveR_two():
         motor_id = self._manage_motor_stopper(True)
         startTime: float = k.seconds()
         theta = 0.0
-        adjuster = round(speed / 1.8)
+        adjuster = 100
         ports = self.button_fl, self.button_fr, self.light_sensor_front
         if speed < 0:
             ports = self.button_bl, self.button_br, self.light_sensor_back
@@ -1586,23 +1581,21 @@ class driveR_two():
         motor_id = self._manage_motor_stopper(True)
         startTime: float = k.seconds()
         theta = 0.0
-        adjuster = round(speed / 1.8)
-        ports = self.port_wheel_right, self.port_wheel_left
-        if speed < 0:
-            ports = self.port_wheel_left, self.port_wheel_right
-        # adjuster = -adjuster
+        adjuster = 100
+        print(self.get_current_standard_gyro(), self.standard_bias_gyro, flush=True)
         while k.seconds() - startTime < (millis) / 1000 and self.is_motor_active(motor_id):
-            if theta < 1000 and theta > -1000:  # left
-                k.mav(ports[0], speed)
-                k.mav(ports[1], speed)
-            elif theta < 1000:  # right
-                k.mav(ports[0], speed - adjuster)
-                k.mav(ports[1], speed + adjuster)
+            if theta < 10 and theta > -10:
+                k.mav(self.port_wheel_left, speed)
+                k.mav(self.port_wheel_right, speed)
+            elif theta < 10:
+                k.mav(self.port_wheel_left, speed + adjuster)
+                k.mav(self.port_wheel_right, speed - adjuster*3)
             else:
-                k.mav(ports[0], speed + adjuster)
-                k.mav(ports[1], speed - adjuster)
+                k.mav(self.port_wheel_left, speed - adjuster*3)
+                k.mav(self.port_wheel_right, speed + adjuster)
             k.msleep(10)
-            theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
+            theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+            #print(theta, flush=True)
         self.break_all_motors()
         self._manage_motor_stopper(False)
 
@@ -1923,6 +1916,11 @@ class driveR_two():
 
         self.check_instances_buttons_back()
         self.check_instance_distance_sensor()
+
+        if self.distance_far_values == 0 and self.distance_far_mm == 0:
+            log('You need to calibrate the distance using the calibrate_distance function first!', important=True, in_exception=True)
+            raise ValueError('You need to calibrate the distance using the calibrate_distance function first!')
+
         motor_id = self._manage_motor_stopper(True)
         self.isClose = False
         theta = 0.0
@@ -1935,11 +1933,11 @@ class driveR_two():
                     k.mav(self.port_wheel_left, -speed)
                     k.mav(self.port_wheel_right, -speed)
                 elif theta > 1000:  # right
-                    k.mav(self.port_wheel_left, -speed - adjuster)
-                    k.mav(self.port_wheel_right, -speed + adjuster)
-                else:
                     k.mav(self.port_wheel_left, -speed + adjuster)
                     k.mav(self.port_wheel_right, -speed - adjuster)
+                else:
+                    k.mav(self.port_wheel_left, -speed - adjuster)
+                    k.mav(self.port_wheel_right, -speed + adjuster)
                 k.msleep(10)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
             if theta != 0.0:
@@ -2003,11 +2001,11 @@ class driveR_two():
                     k.mav(self.port_wheel_left, speed)
                     k.mav(self.port_wheel_right, speed)
                 elif theta > 1000:
-                    k.mav(self.port_wheel_left, speed - adjuster)
-                    k.mav(self.port_wheel_right, speed + adjuster)
-                else:
                     k.mav(self.port_wheel_left, speed + adjuster)
                     k.mav(self.port_wheel_right, speed - adjuster)
+                else:
+                    k.mav(self.port_wheel_left, speed - adjuster)
+                    k.mav(self.port_wheel_right, speed + adjuster)
                 time.sleep(timer)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
@@ -2099,6 +2097,7 @@ class driveR_two():
                 k.mav(self.port_wheel_left, -self.ds_speed)
                 k.mav(self.port_wheel_right, self.ds_speed)
         self.break_all_motors()
+        k.msleep(200)
         self._manage_motor_stopper(False)
 
 
@@ -2451,7 +2450,7 @@ class driveR_four:
         if not isinstance(mm, int) and mm is not None:
             log('mm need to stay in mm! make sure mm is not in seconds!', important=True, in_exception=True)
             raise TypeError('mm need to stay in mm! make sure mm is not in seconds!')
-        if (not isinstance(sec, int) or not isinstance(sec, float)) and sec is not None:
+        if (not isinstance(sec, int) and not isinstance(sec, float)) and sec is not None:
             str_instance = isinstance(sec, str)
             log(f'seconds need to stay as a float or int! seconds being a string: {str_instance}', important=True,
                 in_exception=True)
@@ -2463,10 +2462,10 @@ class driveR_four:
         actual_sec = sec if sec is not None else file_sec
         actual_mm = mm if mm is not None else file_mm
 
-        self.mm_per_sec = actual_mm / actual_sec
+        self.mm_per_sec = actual_mm/actual_sec
         file_Manager.writer(self.mm_per_sec_file, 'w', self.mm_per_sec)
-        file_Manager.writer(self.mm_per_sec_file, 'a', actual_mm)
-        file_Manager.writer(self.mm_per_sec_file, 'a', actual_sec)
+        file_Manager.writer(self.mm_per_sec_file, 'a', '\n' + str(actual_mm))
+        file_Manager.writer(self.mm_per_sec_file, 'a', '\n' + str(actual_sec))
 
     def set_MM_mm_per_sec(self, mm: int) -> None:
         '''
@@ -2757,7 +2756,7 @@ class driveR_four:
             self.calibrate(on_line=line_found, output=False)
             self.break_all_motors()
             line_found = True
-            print(f'=== {i} / {times} times calibrated ===', flush=True)
+            print(f'=== {i+1} / {times} times calibrated ===', flush=True)
         log('AUTO CALIBRATION DONE')
 
 
@@ -2920,7 +2919,7 @@ class driveR_four:
 
         Args:
             start_mm (int): known starting distance (e.g. 95)
-            max_sensor_value (int): the value until where the robot should drive (the lower the value, 
+            max_sensor_value (int): the value until where the robot should drive (the lower the value,
             speed (int, optional): constant speed (default: ds_speed)
             step (float, optional): time between two measurements (default: 0.1)
 
@@ -2938,7 +2937,7 @@ class driveR_four:
             log('You need to calibrate the mm per sec first. Execute the function calibrate_mm_per_sec first!', important=True, in_exception=True)
             raise ValueError(
                 'You need to calibrate the mm per sec first. Execute the function calibrate_mm_per_sec first!')
-        
+
         self.distance_far_values = []
         self.distance_far_mm = []
 
@@ -2982,7 +2981,7 @@ class driveR_four:
         start_time = time.time()
         self.drive_straight(speed=speed, millis=millis)
         sec = time.time() - start_time
-        mm = int(input('How many mm did the robot drive from the beginning on?'))
+        mm = int(input('How many mm did the robot drive from the beginning on?: '))
 
         self.mm_per_sec = mm/sec
         self.set_TOTAL_mm_per_sec(mm=mm, sec=sec)
@@ -3386,7 +3385,7 @@ class driveR_four:
 
         startTime: float = k.seconds()
         theta_z = 0
-        adjuster = 1350
+        adjuster = 100
         if side == 'left':
             adjuster = -adjuster
         speed = abs(speed)
@@ -3554,6 +3553,10 @@ class driveR_four:
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
             raise ValueError(
                 'drive_side_til_mm_found() Exception: Only "right" or "left" are valid options for the "direction" parameter')
+        if self.distance_far_values == 0 and self.distance_far_mm == 0:
+            log('You need to calibrate the distance using the calibrate_distance function first!', important=True, in_exception=True)
+            raise ValueError('You need to calibrate the distance using the calibrate_distance function first!')
+
         self.isClose = False
         theta = 0
         t = 10
@@ -3579,7 +3582,6 @@ class driveR_four:
             def is_target_distance_reached():
                 value = self.distance_sensor.current_value()
                 dist = get_distance_from_sensor(value)
-                print(dist, mm_to_object, flush=True)
                 if str(dist) == 'inf' or dist <= self.distance_far_mm[0]:
                     return True
                 return dist < mm_to_object + tolerance
@@ -3652,8 +3654,6 @@ class driveR_four:
 
                 k.msleep(t)
                 theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
-        if th_distance_waiter.is_alive():
-            self.utility.stop_runner()
         self.break_all_motors()
         self._manage_motor_stopper(False)
 
@@ -3675,6 +3675,9 @@ class driveR_four:
             log(f'You can only put a value in range of 10 - {self.distance_far_mm[-1]} for the distance parameter!', in_exception=True)
             raise ValueError(
                 f'drive_til_distance() Exception: You can only put a value in range of 10 - {self.distance_far_mm[-1]} for the distance parameter!')
+        if self.distance_far_values == 0 and self.distance_far_mm == 0:
+            log('You need to calibrate the distance using the calibrate_distance function first!', important=True, in_exception=True)
+            raise ValueError('You need to calibrate the distance using the calibrate_distance function first!')
 
         self.check_instances_buttons_back()
         self.check_instance_distance_sensor()
@@ -3727,7 +3730,6 @@ class driveR_four:
             def is_target_distance_reached():
                 value = self.distance_sensor.current_value()
                 dist = get_distance_from_sensor(value)
-                print(dist, mm_to_object, flush=True)
                 if str(dist) == 'inf' or dist <= self.distance_far_mm[0]:
                     return True
                 return dist < mm_to_object + tolerance
@@ -4735,7 +4737,6 @@ class driveR_four:
         if degree > 90:
             log('Only a value under 91 is acceptable for the degree!', in_exception=True)
             raise ValueError('scan_front() Exception: Only a value under 91 is acceptable for the degree')
-            print('====== first person to find this easter egg will get his/her name embadded inside of here (easter egg found, congrats!)=====', flush=True)
         motor_id = self._manage_motor_stopper(True)
         maxRuns = 2
         div = 90 / degree

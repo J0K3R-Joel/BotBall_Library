@@ -46,7 +46,9 @@
   
   - <u>Tophat</u>: They are positioned in the front and rear of the wombat for the line follower and line detection. They positioned symmetrically, one at the front and one at the rear for optimal results for the line follower
   
-  - <u>Small Tophat</u>: This is mainly for detecting a horizontal line when the robot is already following a line
+  - <u>Small tophat</u>: This is mainly for detecting a horizontal line when the robot is already following a line
+  
+  - The tophats should be as low as possible, but they should not scratch the ground. If they are positioned too high, then the values are more inaccurate (since the sensor can not detect the difference between white and black as precise). If they are too low, they will scratch the ground and may get damaged. Also consider the shadow the robot casts onto the tophats.
 
 ##### Distance Sensor (ET) - Bottom View
 

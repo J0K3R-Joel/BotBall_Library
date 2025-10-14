@@ -18,3 +18,5 @@ This file will tell you things to consider and important stuff. This is very imp
 - In [./threadsafe_classes.md](./threadsafe_classes.md) every class that supports multi threading / threading is written down
 - In [./calibrations.md](./calibrations.md) you will find how to calibrate (and why you should consider calibration) the robot
 - The buttons mounted on the robot need to be the furthest point in the front and rear.
+- The tophats should be as low as possible, but they should not scratch the ground. If they are positioned too high, then the values are more inaccurate (since the sensor can not detect the difference between white and black as precise). If they are too low, they will scratch the ground and may get damaged. Also consider the shadow the robot casts onto the tophats.
+

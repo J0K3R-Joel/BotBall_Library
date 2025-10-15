@@ -1366,14 +1366,14 @@ class driveR_two():
         self.break_all_motors()
         self._manage_motor_stopper(False)
 
-    def turn_to_black_line(self, direction: str, millis: str = 80, speed: int = None) -> None:
+    def turn_to_black_line(self, direction: str, millis: int = 80, speed: int = None) -> None:
         '''
        Turn as long as the light sensor (front or back, depends if the speed is positive or negative) sees the black line
 
        Args:
            direction (str): "right" or "left" - depends on where you want to go
            millis (int, optional): how long (in milliseconds) to drive until the sensor gets checked (no threading is used) (default: 80)
-           speed (int, optional): how fast it should turn (default: ds_speed)
+           speed (int, optional): how fast it should turn. Note: with negative speed it will also look at the brightness sensor on the back (default: ds_speed)
 
        Returns:
            None
@@ -1403,16 +1403,14 @@ class driveR_two():
         self.break_all_motors()
         self._manage_motor_stopper(False)
 
-    def align_line(self, onLine: bool, direction: str = None, speed: int = None) -> None:
+    def drive_align_line(self, direction: str = None, speed: int = None) -> None:
         '''
         If you are anywhere on the black line, you can align yourself on the black line. If you are not on the line, it drives (forwards or backwards, depends if the speed is positive or negative) until the line was found and then aligns as desired.
         Improvement: align backwards, so there is no need to make a 180B0 turn. Would spare you some time.
 
         Args:
-           onLine (bool): Are you already on the black line (True), or do you need to get onto it (False)? If you are not on the line, you need to write the direction you want to face to!
            direction (str): "right" or "left" - depends on where you want to go
            speed (int, optional): how fast it should drive (default: ds_speed)
-           maxDuration  (int, optional): the time (in milliseconds) it is allowed to turn in one direction until a failsave gets executed to turn to the other direction (default: 100)
 
         Returns:
            None
@@ -1421,47 +1419,97 @@ class driveR_two():
             speed = self.ds_speed
         self.check_instances_buttons()
         self.check_instance_light_sensors_middle()
-        motor_id = self._manage_motor_stopper(True)
-        if not onLine:
-            if direction != 'left' and direction != 'right':
-                log('If the Wombat is not on the line, please tell it which direction it should face when it is on the line ("right" or "left")',
-                    in_exception=True)
-                raise ValueError(
-                    'align_line() Exception: If the Wombat is not on the line, please tell it which direction it should face when it is on the line ("right" or "left")')
 
-            ports = self.light_sensor_back, self.light_sensor_front
-            if speed < 0:
-                ports = self.light_sensor_front, self.light_sensor_back
+        if direction != 'left' and direction != 'right':
+            log('If the Wombat is not on the line, please tell it which direction it should face when it is on the line ("right" or "left")',
+                in_exception=True)
+            raise ValueError('drive_align_line() Exception: If the Wombat is not on the line, please tell it which direction it should face when it is on the line ("right" or "left")')
 
-            self.drive_straight_condition_analog(ports[1], '<=', ports[1].get_value_black() - ports[1].get_bias(), speed=speed)
-            start_time = k.seconds()
-            self.drive_straight_condition_analog(ports[0], '<=', ports[0].get_value_black() - ports[0].get_bias(), speed=speed)
-            end_time = k.seconds()
-            self.break_all_motors()
+        ports = self.light_sensor_back, self.light_sensor_front
+        if speed < 0:
+            ports = self.light_sensor_front, self.light_sensor_back
 
-            seconds = end_time - start_time
-            self.drive_straight((seconds * 1000) // 2, speed=-speed)
-            self.turn_to_black_line(direction, speed=speed)
+        self.drive_straight_condition_analog(ports[1], '<=', ports[1].get_value_black() - ports[1].get_bias(), speed=speed)
+        start_time = k.seconds()
+        self.drive_straight_condition_analog(ports[0], '<=', ports[0].get_value_black() - ports[0].get_bias(), speed=speed)
+        end_time = k.seconds()
+        self.break_all_motors()
+
+        seconds = end_time - start_time
+        self.drive_straight((seconds * 1000) // 2, speed=-speed)
+        self.turn_to_black_line(direction, speed=abs(speed))
+
+    def drift(self, direction: str, end: str, degrees: int, speed: int = None) -> None:
+        if speed is None:
+            speed = self.ds_speed
         else:
-            startTime = k.seconds()
-            maxDuration = 100  # only 0.1 second to turn
-            ports = self.port_wheel_right, self.port_wheel_left, self.button_fl, self.button_fr, self.light_sensor_front
-            direction = 'right', 'left'
-            if speed < 0:
-                ports = self.port_wheel_left, self.port_wheel_right, self.button_bl, self.button_br, self.light_sensor_back
-                direction = 'left', 'right'
+            speed = abs(speed)
 
-            while self.is_motor_active(motor_id):
+        if direction != 'left' and direction != 'right':
+            log('direction parameter has to be "left" or "right"!', in_exception=True, important=True)
+            raise ValueError('direction parameter has to be "left" or "right"!')
+
+        if end != 'front' and end != 'back':
+            log('end parameter has to be "front" or "back"!', in_exception=True, important=True)
+            raise ValueError('end parameter has to be "front" or "back"!')
+
+        start_time = k.seconds()
+        while k.seconds() - start_time < self.NINETY_DEGREES_SECS:
+            k.mav(self.port_wheel_left, -speed)
+            k.mav(self.port_wheel_right, speed)
+
+        self.break_all_motors()
+
+
+    def on_line_align(self, millis: int = None, speed: int = None, leaning_side: str = None) -> None:
+        '''
+        If you are on the line, then it will turn as long as you wish and look for the line. If the line was not found in the time given, then it will turn the other way
+
+        Args:
+            millis (int, optional): how long it is allowed to look for the line (default: NINETY_DEGREES_SECS)
+            speed (int, optional): how fast it should drive (default: ds_speed)
+            leaning_side (str, optional): the side ("right" or "left") where the wombat has to get to (default: None)
+
+        Returns:
+            None
+        '''
+        if speed is None:
+            speed = self.ds_speed
+        startTime = k.seconds()
+        maxDuration = millis/1000 if millis is not None else self.NINETY_DEGREES_SECS
+        motor_id = self._manage_motor_stopper(True)
+        ports = self.port_wheel_right, self.port_wheel_left, self.button_fl, self.button_fr, self.light_sensor_front
+        counter_drive = False
+        direction = 'left', 'right'
+        if speed < 0:
+            ports = self.port_wheel_left, self.port_wheel_right, self.button_bl, self.button_br, self.light_sensor_back
+            direction = 'right', 'left'
+
+        if leaning_side == 'left' or leaning_side == 'right':
+            direction = leaning_side, 'right' if leaning_side != 'right' else 'left'
+        elif leaning_side != None:
+            log('leaning_side parameter has to be None, "left" or "right"!', important=True, in_exception=True)
+            raise ValueError('leaning_side parameter has to be None, "left" or "right"!')
+
+        while self.is_motor_active(motor_id):
+            if direction[0] == 'left':
                 k.mav(ports[0], speed)
                 k.mav(ports[1], -speed)
-                if (k.seconds() - startTime > maxDuration / 1000):
-                    self.turn_to_black_line(direction[0], 15)
-                    break
-                if ports[4].sees_Black():  # Front -> 3500
-                    self.turn_to_black_line(direction[1], 20)
-                    break
-                if ports[2].is_pressed() or ports[3].is_pressed():
-                    break
+            else:
+                k.mav(ports[0], -speed)
+                k.mav(ports[1], speed)
+            if k.seconds() - startTime > maxDuration:
+                self.turn_to_black_line(direction[1], 15)
+                counter_drive = True
+                break
+            if ports[4].sees_Black():
+                counter_drive = True
+                break
+            if ports[2].is_pressed() or ports[3].is_pressed():
+                break
+
+        if counter_drive:
+            self.turn_to_black_line(direction[1], 20, speed=-speed)  #@TODO some kind of drift function here so the rear moves but the front stays still
         self.break_all_motors()
         self._manage_motor_stopper(False)
 
@@ -1492,7 +1540,7 @@ class driveR_two():
             self.drive_straight_condition_analog(ports[2], '>=', ports[2].get_value_black() - ports[2].get_bias(), speed=speed, millis=100)
 
             if not ports[2].sees_Black():
-                self.align_line(True, speed=speed)
+                self.on_line_align(millis=80, speed=speed)
         self.break_all_motors()
         self._manage_motor_stopper(False)
 

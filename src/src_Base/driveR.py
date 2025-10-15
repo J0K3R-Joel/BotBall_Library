@@ -1439,12 +1439,7 @@ class driveR_two():
         self.drive_straight((seconds * 1000) // 2, speed=-speed)
         self.turn_to_black_line(direction, speed=abs(speed))
 
-    def drift(self, direction: str, end: str, degrees: int, speed: int = None) -> None:
-        if speed is None:
-            speed = self.ds_speed
-        else:
-            speed = abs(speed)
-
+    def drift(self, direction: str, end: str, degrees: int) -> None:
         if direction != 'left' and direction != 'right':
             log('direction parameter has to be "left" or "right"!', in_exception=True, important=True)
             raise ValueError('direction parameter has to be "left" or "right"!')
@@ -1453,10 +1448,48 @@ class driveR_two():
             log('end parameter has to be "front" or "back"!', in_exception=True, important=True)
             raise ValueError('end parameter has to be "front" or "back"!')
 
-        start_time = k.seconds()
-        while k.seconds() - start_time < self.NINETY_DEGREES_SECS:
-            k.mav(self.port_wheel_left, -speed)
-            k.mav(self.port_wheel_right, speed)
+
+        if direction == 'left':
+            speed = self.ds_speed
+            ports = self.port_wheel_right, self.port_wheel_left
+            nums = [3, 2]
+            mods = [4, 2]
+            positive = True
+        else:
+            speed = self.ds_speed
+            ports = self.port_wheel_left, self.port_wheel_right
+            nums = [3, 2]
+            mods = [4, 2]
+            positive = True
+
+
+        tries = 30
+        divisor = 180 / degrees
+        degree_total_time = self.ONEEIGHTY_DEGREES_SECS / divisor
+        degree_try_time = degree_total_time / (tries/10)
+        for i in range(1, tries//2-1):  # +1 prev, so just a tryout
+            k.mav(ports[0], -speed)
+            if i % mods[0] == 0:
+                time.sleep(degree_try_time/nums[0])
+            else:
+                time.sleep(degree_try_time)
+            k.freeze(ports[0])
+            k.mav(ports[1], -speed)
+            if i % mods[1] == 0:
+                if i % mods[0] != 0:
+                    time.sleep(degree_try_time*nums[1])
+                else:
+                    time.sleep(degree_try_time)
+            else:
+                time.sleep(degree_try_time)
+            k.freeze(ports[1])
+
+            speed = -speed
+        speed = self.ds_speed if positive else -self.ds_speed
+
+        k.mav(ports[0], -speed)
+        k.mav(ports[1], -speed)
+        time.sleep(degree_try_time)
 
         self.break_all_motors()
 

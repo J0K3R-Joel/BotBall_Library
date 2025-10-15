@@ -63,9 +63,7 @@ class CameraObjectDetector:
         white_path = os.path.join(self.lighting_dir, "white_real.png")
 
         frame = self.camera_manager.get_frame()
-        time.sleep(5)
         cv2.imwrite(white_path, frame)
-
 
 
     def _compute_lighting_bias(self) -> np.float32:
@@ -425,6 +423,23 @@ class CameraObjectDetector:
         return last_frame
 
     # ======================== PUBLIC METHODS ========================
+    def create_new_background(self) -> None:
+        '''
+        Let's you create a new background so a new bias can be calibrated. This is great if you know the location / background changed since running the program
+
+        Args:
+            None
+
+        Returns:
+            None
+        '''
+
+        self._capture_white_real()
+        self.bias = self._compute_lighting_bias()
+        self._save_corrected_background()
+        self._build_object_dict()
+
+
     # x----------x find methods x------------x
 
     def find_by_shape(self, shape_name: str) -> bool:

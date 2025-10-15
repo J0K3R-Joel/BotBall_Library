@@ -94,10 +94,49 @@
   Adress of the server is already existing 
 
 - **Solution / Workaround:**  
-  If there are more than one team participating in the competition using the same router, then make sure that every team has their own IP Adresses so two (or more) teams cannot use the same IPv4 Adresses
+  If there are more than one team participating in the competition using the same router, then make sure that every team has their own IP Addresses so two (or more) teams cannot use the same IPv4 Addresses
   
-  If this is not the case, then you need to wait for a while, since the IPv4 Adress is reserved for a while. After some time, the IPv4 Adress will be able for use again.
+  If this is not the case, then you need to wait for a while, since the IPv4 Address is reserved for a while. After some time, the IPv4 Address will be able for use again.
 
+- **Status:** Resolved
+
+---
+
+### Issue ID: 005
+
+- **Title:** Program won't stop running
+
+- **Category:** Software
+
+- **Affected Components:** KISS IDE
+
+- **Description:**  
+  By clicking the `Stop` - Button nothing happens
+
+- **Symptoms / Indicators:**
+
+  - After clicking the `Stop` - Button, the text won't change to `Run`  
+
+- **Cause:**  
+  
+  There are mainly three reasons:
+  
+  1. Controller's battery is empty
+  2. Controller or the PC is in the wrong WIFI
+  3. In a loop that has no waiting time
+  
+- **Solution / Workaround:**  
+  
+  1. Controller's battery is empty -> Switch the empty battery with a full battery
+  2. Controller or the PC is in the wrong WIFI -> Get in the same WIFI
+  3. In a loop that has no waiting time -> The solution to this step is split into steps:
+     1. If it won't exit out of the loop and you do not know how it is able to leave the loop, you need to unplug the battery.
+     2. Plug in the battery
+     3. Detect where it has the issue when leaving the loop
+     4. Change the loop accordingly (most of the time a small sleeping time is enough)
+     5. Compile and you are good to go! 
+     6. If the issue keeps reappearing, then you either got the wrong loop changed or there are multiple problematic loops.  
+  
 - **Status:** Resolved
 
 ---

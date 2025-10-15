@@ -34,6 +34,7 @@ class Util:
         self.distance_sensor = Instance_distance_sensor
 
         self.isClose = False
+        self.running_allowed = True
 
 
     # ======================== SET INSTANCES ========================
@@ -86,7 +87,7 @@ class Util:
        Returns:
             if there is an instance of the distance sensor in existance
         '''
-        if not isinstance(self.light_sensor_start, LightSensor):
+        if not isinstance(self.distance_sensor, DistanceSensor):
             log('Distance sensor is not initialized!', in_exception=True)
             raise TypeError('Distance sensor start is not initialized!')
         return True
@@ -123,34 +124,40 @@ class Util:
 
     # ======================== Normal methods =======================
 
+    def stop_runner(self) -> None:
+        '''
+        stops every wait function if needed (even though they are in a thread)
+
+        Args:
+            None
+
+        Returns:
+            None
+        '''
+        self.running_allowed = False
+
 
     def wait_til_distance_reached(self, mm_to_object: int, sideways: bool = False) -> bool:
         # distance in mm
         '''
         do nothing except wait until it detects an object that is in the specified mm range (the object has to come closer, since this function only waits until somethings gets closer)
+        HINT: The higher the value of the mm_to_object, the less consistent
 
         Args:
-            mm_to_object (int): the distance (in mm) between the distance sensor and the object in front of the sensor
+            mm_to_object (int): the distance (in mm) between the distance sensor and the object in front of the sensor (95 - 800mm)
             sideways (bool, optional): If True, indicates that the robot is moving sideways instead of forward. This changes the distance handling logic and which sensor calibration table is used.
 
         Returns:
             desired mm captured
         '''
         self.check_instance_distance_sensor()
-        if mm_to_object > 800 or mm_to_object < 10:
-            log('Exception: You can only put a value in range of 10 - 800 for the distance parameter!', in_exception=True)
+        if mm_to_object > 800 or mm_to_object < 95:
+            log('You can only put a value in range of 100 - 800 for the distance parameter!', in_exception=True, important=True)
             raise ValueError(
-                'wait_til_distance_reached() Exception: You can only put a value in range of 10 - 800 for the distance parameter!')
-
-        if sideways and mm_to_object < 20:
-            log('Exception: You can only put a value higher than 20 for the distance parameter, if you are driving sideways!', in_exception=True)
-            raise ValueError(
-                'wait_til_distance_reached() Exception: You can only put a value higher than 20 for the distance parameter, if you are driving sideways!')
+                'wait_til_distance_reached() Exception: You can only put a value in range of 100 - 800 for the distance parameter!')
 
         self.isClose = False
-        theta = 0.0
-        adjuster = 1600
-
+        self.running_allowed = True
         val = mm_to_object
 
         # being far away
@@ -170,7 +177,7 @@ class Util:
         next_step_close = min(combination_close, key=lambda x: abs(x - val))
         next_value_close = combination_close[next_step_close]
 
-        def distance_stopper(self, far_away: bool):
+        def distance_stopper(far_away: bool):
             self.isClose = False
             tolerance = val / 10  # has to be 90% accurate
             try:
@@ -189,7 +196,7 @@ class Util:
                 dist = get_distance_from_sensor(value)
                 return dist - val < tolerance
 
-            while True:
+            while self.running_allowed:
                 if is_target_distance_reached():
                     self.isClose = True
                     sys.exit()
@@ -197,10 +204,11 @@ class Util:
 
         if not sideways or (sideways and mm_to_object >= 200):
             if self.distance_sensor.current_value() < next_value_far:
-                threading.Thread(target=distance_stopper, args=(True,)).start()
-
+                th_distance_stopper = threading.Thread(target=distance_stopper, args=(True,))
+                th_distance_stopper.start()
+                
                 log('waiting for wished distance...')
-                while not self.isClose:  # @TODO -> fail save could be needed
+                while th_distance_stopper.is_alive():
                     continue
 
             if not sideways and mm_to_object <= 200:
@@ -210,8 +218,10 @@ class Util:
                     time.sleep(0.0023)
 
         elif sideways and mm_to_object < 200:
-            threading.Thread(target=distance_stopper, args=(False,)).start()
-            while not self.isClose:  # @TODO -> fail save could be needed
+            th_distance_stopper = threading.Thread(target=distance_stopper, args=(False,))
+            th_distance_stopper.start()
+
+            while th_distance_stopper.is_alive():  # @TODO -> fail save could be needed
                 continue
 
         return True
@@ -234,7 +244,7 @@ class Util:
             k.msleep(1)
             if waiting_millis > 0:
                 waiting_millis -= 1
-            if k.gyro_z() >= 20 or k.gyro_z() <= -20:
+            if k.gyro_z() >= 20 or k.gyro_z() <= -20:  # @TODO -> check, if that is still accurate
                 touched = True
         if touched:
             log('touched')

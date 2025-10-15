@@ -35,7 +35,7 @@ class FakeR():
             log(f"Error while fetching for directory: {e}", important=True, in_exception=True)
             self.working_dir = os.getcwd()
 
-        self.target_dir = '/home/kipr/Joel'
+        self.target_dir = '/home/kipr/FakeR_created'
         self.inserted_method = ".wait()"
         self.replacer_method = '.set()' 
         self.inserted_line = ''
@@ -218,7 +218,7 @@ class FakeR():
                         indent = lines[func_start][:len(lines[func_start]) - len(lines[func_start].lstrip())]
                         print(func_start, flush=True)
                         lines.insert(func_start, indent + 'if stop_manager.check_stopped():')
-                        lines.insert(func_start + 1, îndent + '    ' + f'{self.communicator_instance_name}.execute_last_main()')
+                        lines.insert(func_start + 1, indent + '    ' + f'{self.communicator_instance_name}.execute_last_main()')
                         lines.insert(func_start + 2, indent + self.inserted_line)
                         print(f"'{node.name}': Marker inserted in the first line, since there is no try/except as the first statement", flush=True)
 

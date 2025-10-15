@@ -10,7 +10,6 @@ sys.path.append("/usr/lib")
 from datetime import datetime
 import inspect
 import subprocess
-import os
 
 LOG_FOLDER = "/usr/lib/logger_log"
 LOG_FILE = os.path.join(LOG_FOLDER, "log_file.txt")

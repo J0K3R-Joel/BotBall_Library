@@ -12,7 +12,6 @@ import threading
 
 class FileR:
 	def __init__(self):
-		print()
 		self._writer_lock = threading.Lock()
 
 	def reader(self, file_name: str) -> str:

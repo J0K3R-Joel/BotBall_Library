@@ -148,11 +148,14 @@ class RobotCommunicator:
                 self.message_queue.append((msg, priority))
 
                 if priority == "pos":
-                    self.position_history.append(msg[4:])
+                    self.position_history.append(msg)
+                    log(f'[POS PRIORITY] {msg}', important=True)
                 elif priority == "high" and self.high_priority_callback:
                     self.__handle_high_priority(msg)
                 elif priority == "new_main" and self.new_main_callback:
                     self.__handle_new_main(msg)
+                else:
+                    log(f'Received message: {msg}', with_print=False, important=True)
 
             except Exception as e:
                 log(str(e), important=True, in_exception=True)
@@ -198,6 +201,7 @@ class RobotCommunicator:
         Returns:
             None
         '''
+        log(f"[NEW MAIN] {msg}", important=True)
         stop_manager.emergency_stop()
 
     # ======================== PUBLIC METHODS ========================
@@ -212,9 +216,9 @@ class RobotCommunicator:
                             Options:
                                 "normal"   -> (default), just sending a message in the background
                                 "high"     -> will pause the main() and lets you execute a function before the main() resumes
-                                "new_main" -> == EXPERIMENTAL == (not yet tested) will forget what happens after the current main() and another function / new main will be executed until the end of the program / function / new main
+                                "new_main" -> will forget what happens after the current main() and another function / new main will be executed until the end of the program / function / new main
 
-       Returns:
+        Returns:
             None
         '''
         try:

@@ -1463,7 +1463,7 @@ class driveR_two():
             positive = True
 
 
-        tries = 30
+        tries = 40
         divisor = 180 / degrees
         degree_total_time = self.ONEEIGHTY_DEGREES_SECS / divisor
         degree_try_time = degree_total_time / (tries/10)

@@ -15,6 +15,7 @@ try:
     import time
     import threading
     import uuid
+    import math
     from scipy.interpolate import interp1d
     from util import Util  # selfmade
     from analog import Analog  # selfmade
@@ -1439,7 +1440,7 @@ class driveR_two():
         self.drive_straight((seconds * 1000) // 2, speed=-speed)
         self.turn_to_black_line(direction, speed=abs(speed))
 
-    def drift(self, direction: str, end: str, degrees: int) -> None:
+    def drift(self, direction: str, end: str, degree: int) -> None:
         if direction != 'left' and direction != 'right':
             log('direction parameter has to be "left" or "right"!', in_exception=True, important=True)
             raise ValueError('direction parameter has to be "left" or "right"!')
@@ -1448,6 +1449,20 @@ class driveR_two():
             log('end parameter has to be "front" or "back"!', in_exception=True, important=True)
             raise ValueError('end parameter has to be "front" or "back"!')
 
+        if degree < 1 or degree > 180:
+            log('Only values from range 1 - 180 are valid for the "degree" parameter', in_exception=True)
+            raise ValueError(
+                'Only values from range 1 - 180 are valid for the "degree" parameter')
+
+        def get_kgv(a: int, b: int):
+            a = abs(a)
+            b = abs(b)
+
+            if a == 0 or b == 0:
+                return 0
+
+            gcd = math.gcd(a, b)
+            return (a*b)//gcd
 
         if direction == 'left':
             speed = self.ds_speed
@@ -1463,33 +1478,68 @@ class driveR_two():
             positive = True
 
 
-        tries = 40
-        divisor = 180 / degrees
+        divisor = 180 / degree
         degree_total_time = self.ONEEIGHTY_DEGREES_SECS / divisor
+        tries = int((degree_total_time / 2) * 100)
+        kgV = get_kgv(mods[0], mods[1])
+        for i in range(1, tries+1):
+            num = kgV * i
+            if num >= tries:
+                tries += (kgV * i) - tries
+                break
+
         degree_try_time = degree_total_time / (tries/10)
-        for i in range(1, tries//2-1):  # +1 prev, so just a tryout
+        start_time = 0
+        first_run_time = 0
+        total_time = 0
+        i = 1
+
+        def direction_one(loop_index: int, speed: int):
             k.mav(ports[0], -speed)
-            if i % mods[0] == 0:
-                time.sleep(degree_try_time/nums[0])
+            if loop_index % mods[0] == 0:
+                time.sleep(degree_try_time / nums[0])
             else:
                 time.sleep(degree_try_time)
             k.freeze(ports[0])
+
+        def direction_two(loop_index: int, speed: int):
             k.mav(ports[1], -speed)
-            if i % mods[1] == 0:
-                if i % mods[0] != 0:
-                    time.sleep(degree_try_time*nums[1])
+            if loop_index % mods[1] == 0:
+                if loop_index % mods[0] != 0:
+                    time.sleep(degree_try_time * nums[1])
                 else:
                     time.sleep(degree_try_time)
             else:
                 time.sleep(degree_try_time)
             k.freeze(ports[1])
 
-            speed = -speed
-        speed = self.ds_speed if positive else -self.ds_speed
+        while True:
+            if positive and speed > 0:
+                start_time = k.seconds()
 
-        k.mav(ports[0], -speed)
-        k.mav(ports[1], -speed)
-        time.sleep(degree_try_time)
+            direction_one(i, speed)
+            direction_two(i, speed)
+
+            if positive and speed > 0:
+                total_time += k.seconds() - start_time
+                if not first_run_time:
+                    first_run_time = k.seconds() - start_time
+
+            if total_time >= degree_try_time * (tries/2) - (first_run_time*((self.ONEEIGHTY_DEGREES_SECS*2)/divisor)):
+                if direction == 'left':
+                    direction_one(i, speed)
+
+                else:
+                    direction_one(i, speed)
+                    speed = self.ds_speed if positive else -self.ds_speed
+
+                    k.mav(ports[0], -speed)
+                    k.mav(ports[1], -speed)
+                    time.sleep(degree_try_time/divisor)
+                break
+
+            speed = -speed
+            i += 1
 
         self.break_all_motors()
 
@@ -2079,15 +2129,13 @@ class driveR_two():
         Returns:
             None
         '''
-        if speed is None:
-            speed = self.ds_speed
         motor_id = self._manage_motor_stopper(True)
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
             raise ValueError(
                 'turn_degrees() Exception: Only "right" or "left" are valid options for the "direction" parameter')
 
-        if degree > 180 and degree < 1:
+        if degree > 180 or degree < 1:
             log('Only values from range 1 - 180 are valid for the "degree" parameter', in_exception=True)
             raise ValueError(
                 'turn_degrees() Exception: Only values from range 1 - 180 are valid for the "degree" parameter')

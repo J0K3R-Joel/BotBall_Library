@@ -115,7 +115,7 @@
 
 - **Symptoms / Indicators:**
 
-  - After clicking the `Stop` - Button, the text won't change to `Run`  
+  - After clicking the `Stop` - Button, the text won't change to `Run`  
 
 - **Cause:**  
   

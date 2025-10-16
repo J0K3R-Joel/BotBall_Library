@@ -660,19 +660,17 @@ class driveR_two():
         Returns:
             None. Writes bias into files
         '''
-        if self.standing:
-            self.calibrate_gyro_y(counter=1, max=2)
-            self.calibrate_accel_z(counter=2, max=2)
-            self.bias_gyro_y = self.get_bias_gyro_y(True)
-            self.bias_accel_z = self.get_bias_accel_y(True)
-        else:
-            self.calibrate_gyro_z(counter=1, max=2)
-            self.calibrate_accel_y(counter=2, max=2)
-            self.bias_gyro_z = self.get_bias_gyro_z(True)
-            self.bias_accel_y = self.get_bias_accel_y(True)
+        self.calibrate_gyro_y(counter=1, max=4)
+        self.calibrate_accel_z(counter=2, max=4)
+        self.calibrate_gyro_z(counter=3, max=4)
+        self.calibrate_accel_y(counter=4, max=4)
+        self.bias_gyro_y = self.get_bias_gyro_y(True)
+        self.bias_accel_z = self.get_bias_accel_y(True)
+        self.bias_gyro_z = self.get_bias_gyro_z(True)
+        self.bias_accel_y = self.get_bias_accel_y(True)
         self.calibrate_degrees()
         self.ONEEIGHTY_DEGREES_SECS = self.get_degrees(True)
-        self.NINETY_DEGREES_SECS =  self.ONEEIGHTY_DEGREES_SECS / 2
+        self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
         if output:
             log('CALIBRATION DONE', important=True)
 

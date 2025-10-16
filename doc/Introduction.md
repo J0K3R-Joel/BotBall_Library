@@ -1,6 +1,6 @@
 # Getting Started
 
-Welcome, this document is an introduction to the BotBall Event. This file will cover the complete basics of the competition itself – the rules, structure, and general concepts – without going into the specifics of using this library.  
+Welcome, this document is an introduction to the BotBall Event. This file will cover the complete basics of the competition itself – the rules, structure, and general concepts – without going into the specifics of using my library.  
 
 If you are new to BotBall and want to understand the event before working with the code, this is the right place to start.
 

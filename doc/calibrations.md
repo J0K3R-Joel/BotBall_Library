@@ -2,7 +2,107 @@
 
 This file tells you how to calibrate the wallaby / wombat / controller / ... . Calibration is very important to ensure consistency. The more you calibrate the better. My calibration methods are written into files in `/usr/lib/bias_folder`, so you just need to properly calibrate them once and every function that needs those calibrations will read from the desired file. If you want the most current bias and therefore need to calibrate them while setting up, then the more you calibrate the longer it will take.
 
+---
+
+There is a `BIAS` user that could assist you with calibration. By changing the "unclear values"[^1] to the correct values there are some functions which helps you to calibrate, since some logic specifically for calibration is already done for you. The following functions do not need any further logic besides uncommenting the call and replacing all unclear values with correct values:
+
+##### light_sensor:
+
+front, back and side:
+
+- 
+  ```python
+  LightSensor.save_value_black()
+  ```
+
+- ```python
+  LightSensor.save_value_white()
+  ```
+  
+
+##### driveR
+
+- ```python
+  driveR_two.auto_calibration()
+  ```
+  or 
+```python
+  driveR_four.auto_calibration()
+```
+
+  which includes calibration of:
+
+  - `gyro_z` 
+  - `gyro_y` 
+  - `accel_y` 
+  - `accel_z`
+  - `ONEEIGHTY_DEGREES_SECS`  
+  - `NINETY_DEGREES_SECS`
+
+---
+
+On the other hand, there are some functions where manual execution is required, since they need a completely different setup. Those functions include:
+
+##### driveR
+
+###### calibrate_mm_per_sec() - function
+
+**Code:**
+
+- ```python
+  driveR_two.calibrate_mm_per_sec()
+  ```
+  or 
+```python
+  driveR_four.calibrate_mm_per_sec()
+```
+
+**Explanation:**
+
+This needs to be calculated so the `calibrate_distance()` function works properly. It will calculate how fast the robot is moving (in mm/sec). Further explanation in [calibrate_mm_per_sec()](#calibrate_mm_per_sec())
+
+
+
+###### calibrate_distance() - function
+
+**Code:**
+
+
+- ```python
+  driveR_two.calibrate_distance()
+  ```
+
+or 
+
+```python
+driveR_four.calibrate_distance()
+```
+
+**Explanation:**
+
+This function is needed to be able to know all the distances for the distance sensor. Some functions depend on this, so be sure that the values it returns are correct. Further explanation in [calibrate_distance()](#calibrate_distance())
+
+---
+
+[^1]:Ports and values with a placeholder (e.g. "XX") 
+
+---
+
+
+
 ## driveR 
+
+#### calibrate_mm_per_sec()
+
+###### Considerations:
+
+@TODO
+
+###### How to calibrate:
+
+@TODO
+
+---
 
 #### calibrate_distance()
 
@@ -26,6 +126,8 @@ This file tells you how to calibrate the wallaby / wombat / controller / ... . C
    2. actual lowest value of the ET Sensor 
 7. Run the program
 
+---
+
 #### calibrate_degrees()
 
 ###### Considerations:
@@ -37,7 +139,9 @@ This file tells you how to calibrate the wallaby / wombat / controller / ... . C
 ###### How to calibrate
 
 1. Place the robot on a black line. Both front and back brightness sensors need to be on the black line
-2.  Run the program
+2. Run the program
+
+---
 
 #### calibrate_accel_y()
 
@@ -49,6 +153,8 @@ This file tells you how to calibrate the wallaby / wombat / controller / ... . C
 
 - Run the program
 
+---
+
 #### calibrate_accel_z()
 
 ###### Considerations:
@@ -58,6 +164,8 @@ This file tells you how to calibrate the wallaby / wombat / controller / ... . C
 ###### How to calibrate
 
 - Run the program
+
+---
 
 #### calibrate_gyro_z()
 
@@ -69,6 +177,8 @@ This file tells you how to calibrate the wallaby / wombat / controller / ... . C
 
 - Run the program
 
+---
+
 #### calibrate_gyro_y()
 
 ###### Considerations:
@@ -78,6 +188,8 @@ This file tells you how to calibrate the wallaby / wombat / controller / ... . C
 ###### How to calibrate
 
 - Run the program
+
+---
 
 #### calibrate()
 
@@ -89,6 +201,8 @@ This file tells you how to calibrate the wallaby / wombat / controller / ... . C
 
 -  Keep track of the "how to calibrate" sections of every single function to execute
 
+---
+
 #### auto_calibration()
 
 ###### Considerations
@@ -99,4 +213,6 @@ This file tells you how to calibrate the wallaby / wombat / controller / ... . C
 
 -  Keep track of the "how to calibrate" sections of every single function to execute
 - After the running the program, it will automatically make everything that needs to be done. You just need to tell this function on how to begin the first calibration step and how often it should calibrate (10 times should be enough)
+
+---
 

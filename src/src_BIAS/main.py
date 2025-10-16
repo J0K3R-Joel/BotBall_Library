@@ -76,10 +76,9 @@ def register_light_values():
         continue
 
     black_front_val = LightSensorFront.current_value()
-    black_back_val = LightSensorBack.current_value()
     white_side_val = LightSensorSide.current_value()
-
     black_back_val = LightSensorBack.current_value()
+
     LightSensorFront.save_value_white(white_front_val)  # saving the value into the file
     LightSensorFront.save_value_black(black_front_val)  # saving the value into the file
     LightSensorBack.save_value_white(white_back_val)  # saving the value into the file

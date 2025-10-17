@@ -59,6 +59,11 @@ fi
 cp -r "$USB_SRC_BIAS"/* "$DEST/bin/"
 cp -r "$USB_SRC_BIAS"/* "$DEST/src/"
 
+rm -rf $DEST/bin/DELME
+rm -rf $DEST/data/DELME
+rm -rf $DEST/include/DELME
+rm -rf $DEST/src/DELME
+
 chmod -R 777 "$DEST_BASE/"*  # Manuel Zöttel's glory idea -> lets you compile and run the programs
 
 echo "src_BIAS files copied to bin/ and src/."

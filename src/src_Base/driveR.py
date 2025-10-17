@@ -1525,6 +1525,11 @@ class driveR_two():
 
             if total_time >= degree_try_time * (tries/2) - (first_run_time*((self.ONEEIGHTY_DEGREES_SECS*2)/divisor)):
                 if direction == 'left':
+                    for j in range(int((self.ONEEIGHTY_DEGREES_SECS*2)/divisor)+1):
+                        i += 1
+                        speed = -speed
+                        direction_one(i, speed)
+                        direction_two(i, speed)
                     direction_one(i, speed)
 
                 else:

@@ -59,13 +59,15 @@ fi
 cp -r "$USB_SRC_COMM"/* "$DEST/bin/"
 cp -r "$USB_SRC_COMM"/* "$DEST/src/"
 
+rm -rf $DEST/bin/DELME
+rm -rf $DEST/data/DELME
+rm -rf $DEST/include/DELME
+rm -rf $DEST/src/DELME
+
 if [ -z "$USB_SRC_COMM" ]; then
     echo "=========='$SRC_COMM_FOLDER_NAME' folder not found!=========="
     exit 1
 fi
-
-cp -r "$USB_SRC_COMM"/* "$DEST/bin/"
-cp -r "$USB_SRC_COMM"/* "$DEST/src/"
 
 chmod -R 777 "$DEST_BASE/"*  # Manuel Zöttel's glory idea -> lets you compile and run the programs (I had this as my only problem)
 

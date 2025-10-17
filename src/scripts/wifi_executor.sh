@@ -77,6 +77,11 @@ fi
 cp -r "$USB_SRC_WIFI"/* "$DEST/bin/"
 cp -r "$USB_SRC_WIFI"/* "$DEST/src/"
 
+rm -rf $DEST/bin/DELME
+rm -rf $DEST/data/DELME
+rm -rf $DEST/include/DELME
+rm -rf $DEST/src/DELME
+
 chmod -R 777 "$DEST_BASE/"*   # Manuel Zöttel's glory idea -> lets you compile and run the programs
 
 echo "Copied and chmod applied to $DEST"

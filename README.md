@@ -96,35 +96,35 @@ The repository is organized as follows:
 
 Detailed explanations of the classes are included in the repository:
 
-- [commU_explainer.md](./doc/commU_explainer.md) – Full explanation and usage guide for the `WifiConnector` class
+- [commU.md](./doc/explainer/commU.md) – Full explanation and usage guide for the `WifiConnector` class
 
-- [digital_explainer.md](./doc/digital_explainer.md) – Full explanation and usage guide for the `Digital` class
+- [digital.md](./doc/explainer/digital.md) – Full explanation and usage guide for the `Digital` class
 
-- [distance_sensor_explainer.md](./doc/distance_sensor_explainer.md) – Full explanation and usage guide for the `DistanceSensor` class
+- [distance_sensor.md](./doc/explainer/distance_sensor.md) – Full explanation and usage guide for the `DistanceSensor` class
 
-- [driveR_explainer.md](./doc/driveR_explainer.md) – Full explanation and usage guide for the `driveR_two` and `driveR_four` classes
+- [driveR.md](./doc/explainer/driveR.md) – Full explanation and usage guide for the `driveR_two` and `driveR_four` classes
 
-- [fake_explainer.md](./doc/fake_explainer.md) – Full explanation and usage guide for the `FakeR` class
+- [fake.md](./doc/explainer/fake.md) – Full explanation and usage guide for the `FakeR` class
 
-- [fileR_explainer.md](./doc/fileR_explainer.md) – Full explanation and usage guide for the `FileR` class
+- [fileR.md](./doc/explainer/fileR.md) – Full explanation and usage guide for the `FileR` class
 
-- [light_sensor_explainer.md](./doc/light_sensor_explainer.md) – Full explanation and usage guide for the `LightSensor` class
+- [light_sensor.md](./doc/explainer/light_sensor.md) – Full explanation and usage guide for the `LightSensor` class
 
-- [logger_explainer.md](./doc/logger_explainer.md) – Full explanation and usage guide for the `logger` file
+- [logger.md](./doc/explainer/logger.md) – Full explanation and usage guide for the `logger` file
 
-- [RoboComm_explainer.md](./doc/RoboComm_explainer.md) – Full explanation and usage guide for the `RobotCommunicator` class
+- [RoboComm.md](./doc/explainer/RoboComm.md) – Full explanation and usage guide for the `RobotCommunicator` class
 
-- [util_explainer.md](./doc/util_explainer.md) – Full explanation and usage guide for the `Util` class
+- [util.md](./doc/explainer/util.md) – Full explanation and usage guide for the `Util` class
 
-- [servo_explainer.md](./doc/servo_explainer.md) - Full explanation and usage guide for the `ServoX` class
+- [servo.md](./doc/explainer/servo.md) - Full explanation and usage guide for the `ServoX` class
 
-- [brightness_detector_explainer.md](./doc/brightness_detector_explainer.md) - Full explanation and usage guide for the `CameraBrightnessDetector` class
+- [brightness_detector.md](./doc/explainer/brightness_detector.md) - Full explanation and usage guide for the `CameraBrightnessDetector` class
 
-- [object_detector_explainer.md](./doc/object_detector_explainer.md) - Full explanation and usage guide for the `CameraObjectDetector` class
+- [object_detector.md](./doc/explainer/object_detector.md) - Full explanation and usage guide for the `CameraObjectDetector` class
 
-- [camera_manager_explainer.md](./doc/camera_manager_explainer.md) - Full explanation and usage guide for the `CameraManager` class
+- [camera_manager.md](./doc/explainer/camera_manager.md) - Full explanation and usage guide for the `CameraManager` class
 
-- [stop_manager_explainer.md](./doc/stop_manager_explainer.md) - Full explanation and usage guide for the `stop_manager` functions
+- [stop_manager.md](./doc/explainer/stop_manager.md) - Full explanation and usage guide for the `stop_manager` functions
 
 ---
 
@@ -167,7 +167,7 @@ sudo bash config.sh
 
 Example usage for most classes is provided in the documentation files linked above.
 
-Additionally, an example usage for the `FakeR` class is provided in [./doc/user_server_client_fake_explaner.md](./doc/user_server_client_fake_explaner.md) file, since this will be the best exercise for the beginning, if you do not have experience with this library. This got two new users (one for as a client, the other as the server)
+Additionally, an example usage for the `FakeR` class is provided in [./doc/explainer/user_server_client_fake.md](./doc/explainer/user_server_client_fake.md) file, since this will be the best exercise for the beginning, if you do not have experience with this library. This got two new users (one for as a client, the other as the server)
 
 Other classes that got an entire user as test purpose:
 
@@ -183,7 +183,7 @@ Other classes that got an entire user as test purpose:
 
 ## Additional Information
 
-- Go to [./doc/user_server_client_fake_explaner.md](./doc/user_server_client_fake_explaner.md) to get an example usage with the `FakeR` class
+- Go to [./doc/explainer/user_server_client_fake.md](./doc/explainer/user_server_client_fake.md) to get an example usage with the `FakeR` class
 
 - Check out [./doc/Sensors.md](./doc/Sensors.md) for every sensor description
 

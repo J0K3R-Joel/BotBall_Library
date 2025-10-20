@@ -20,14 +20,30 @@ You are able to see this page when
   
   
   ## Shutting down
-  
 
-@TODO
+##### Reason
+
+It is recommended to always safely shut down the controller this way. It will close everything safely.
+
+##### Navigation
+
+1. Click the `Shut Down` button in the top center of the screen ![](./img/shut_down_page.png)
+
+
 
   ## Rebooting
 
 
-@TODO
+
+##### Reason
+
+Sometimes some problems will be fixed when rebooting the controller
+
+##### Navigation
+
+1. Click the `Reboot` button ![](./img/reboot_page.png)
+
+
 
 ## Viewing WIFI settings
 
@@ -35,9 +51,19 @@ You are able to see this page when
 
 
 
-## Viewing local Programs
+## Run local Programs
 
-@TODO
+##### Reason
+
+When you are at the BotBall (ECER / GCER) event you HAVE TO execute all your programs on the controller and not on the PC!
+
+##### Navigation
+
+1. Click the `Programs` button ![img](./img/programs_page.png)
+
+2. Click on the User and Project file. This makes it, so the `main.py` file gets executed.![](./img/programs_user_page.png)
+
+3. Click the `Run` button to execute the code ![](./img/programs_run_page.png)
 
 
 

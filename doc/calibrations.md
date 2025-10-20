@@ -59,7 +59,7 @@ On the other hand, there are some functions where manual execution is required, 
 
 **Explanation:**
 
-This needs to be calculated so the `calibrate_distance()` function works properly. It will calculate how fast the robot is moving (in mm/sec). Further explanation in [calibrate_mm_per_sec()](#calibrate_mm_per_sec())
+This needs to be calculated so the `calibrate_distance()` function works properly. It will calculate how fast the robot is moving (in mm/sec). Further explanation in [calibrate_mm_per_sec()](#calibrate_mm_per_sec())
 
 
 

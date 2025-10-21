@@ -76,11 +76,11 @@
   
   ###### Front (Front - back view)
 
-  ![](.\img\buttons_robot_front.png)
+  ![](./img/buttons_robot_front.png)
   
   ###### Rear (Back - bottom view)
   
-  ![](.\img\buttons_robot_rear.png)
+  ![](./img/buttons_robot_rear.png)
   
 - **Justification**:
   

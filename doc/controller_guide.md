@@ -59,15 +59,52 @@ When you are at the BotBall (ECER / GCER) event you HAVE TO execute all your pro
 
 ##### Navigation
 
-1. Click the `Programs` button ![img](./img/programs_page.png)
+1. Click the `Programs` button ![img](./img/programs_page.png)
 
-2. Click on the User and Project file. This makes it, so the `main.py` file gets executed.![](./img/programs_user_page.png)
+2. Click on the User and Project file. This makes it, so the `main.py` file gets executed.![](./img/programs_user_page.png)
 
-3. Click the `Run` button to execute the code ![](./img/programs_run_page.png)
+3. Click the `Run` button to execute the code ![](./img/programs_run_page.png)
 
 
 
 ## Viewing Sensor / Motor / Servo values
 
-@TODO
+##### Reason
+
+1. **Motor**: You can test out, where a motor drives (forward, backward) when changing the value (positive, negative). You can also see the motor counter
+2. **Servo**: You can enable / disable servos while also seeing the current value and changing the value / position
+3. **Sensors**: You can see every analog, digital and inbuilt sensor values to test the values out
+
+##### Navigation
+
+1. Click on the `Motors and Sensors` button![](./img/values_page.png)
+
+2. From here on, there are 5 options:
+
+   1. ###### Motors:
+
+       Click the `Motors` button ![](./img/values_motors_page.png)
+
+       Here you can see every important information regarding motors.
+
+       ![](./img/values_motors_interface_page.png)
+
+       - **Port**: The physical location where the motor is plugged in. You can switch the port on the interface, if you want to access another port.
+       - **Pointer of movement**: The visualization of the "Value of movement". Turn the pointer to one direction to make the motor go forward. Turn it the other way for going backward
+       - **Value of movement**: Shows you where it is going (positive -> forward; negative -> backward)
+       - **Position counter**: Values of movement added together 
+   
+   
+   
+   1. ###### Servos:
+   
+       ![](./img/values_servo_page.png)
+   
+   2. ###### Sensor Graph: 
+   
+   3. ###### Sensor List:
+   
+   4. ###### Camera: 
+
+
 

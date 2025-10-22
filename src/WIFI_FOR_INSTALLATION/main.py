@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+    #!/usr/bin/python3
 import os, sys
 
 sys.path.append("/usr/lib")
@@ -21,7 +21,6 @@ def wifi_setup():
         connector.enable_wifi_scanning()
         connector.run()
         time.sleep(2)
-        #subprocess.run(['sudo', 'reboot'])
     else:
         print('Wifi successfully setup', flush=True)
 

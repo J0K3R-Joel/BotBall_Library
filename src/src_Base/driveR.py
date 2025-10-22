@@ -957,7 +957,6 @@ class driveR_two():
         Args:
             calibrated (bool, optional): Writing to the file bias_degrees.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
 
-
         Returns:
             Average of the bias_degrees.txt file (optionally with the recent calibrated bias as well)
         '''
@@ -1403,10 +1402,9 @@ class driveR_two():
         self.break_all_motors()
         self._manage_motor_stopper(False)
 
-    def drive_align_line(self, direction: str = None, speed: int = None) -> None:
+    def drive_align_line(self, direction: str, speed: int = None) -> None:
         '''
-        If you are anywhere on the black line, you can align yourself on the black line. If you are not on the line, it drives (forwards or backwards, depends if the speed is positive or negative) until the line was found and then aligns as desired.
-        Improvement: align backwards, so there is no need to make a 180B0 turn. Would spare you some time.
+        If you are not on the line, it drives (forwards or backwards, depends if the speed is positive or negative) until the line was found and then aligns as desired.
 
         Args:
            direction (str): "right" or "left" - depends on where you want to go
@@ -2126,7 +2124,7 @@ class driveR_two():
         self.break_all_motors()
         self._manage_motor_stopper(False)
 
-    def turn_degrees(self, direction: str, degree: int, speed: int = None) -> None:
+    def turn_degrees(self, direction: str, degree: int) -> None:
         '''
         turn the amount of degrees given, to take a turn with all wheels, resulting in a turn on the spot
 

@@ -24,7 +24,9 @@ fi
 mkdir -p "$DEST_BASE/bias_files"
 cp -r "$USB_BIAS_PATH"/* "$DEST_BASE/bias_files"
 
-chmod -R 777 "$DEST_BASE/bias_files"/*  # Manuel Zöttel's glory idea -> lets you compile and run the programs
+sleep 2
+
+chmod -R 777 "$DEST_BASE/bias_files"  # Manuel Zöttel's glory idea -> lets you compile and run the programs
 
 echo "Bias files copied to $DEST_BASE/bias_files."
 

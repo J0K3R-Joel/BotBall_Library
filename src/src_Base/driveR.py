@@ -1438,6 +1438,7 @@ class driveR_two():
         self.turn_to_black_line(direction, speed=abs(speed))
 
     def drift(self, direction: str, end: str, degree: int) -> None:
+        # missing in the function table
         if direction != 'left' and direction != 'right':
             log('direction parameter has to be "left" or "right"!', in_exception=True, important=True)
             raise ValueError('direction parameter has to be "left" or "right"!')
@@ -1738,7 +1739,7 @@ class driveR_two():
         self._manage_motor_stopper(False)
 
     def align_on_black_line(self, crossing: bool, direction: str = 'vertical', leaning_side: str = None) -> None:
-        # hint: do not face the black line
+        # missing in the function table
         '''
        Align yourself on the black line. If there is a crossing you can choose on which line you want to get onto by switching the direction parameter. You need to be somewhere on top of the black line to let this function work!
 
@@ -1963,7 +1964,6 @@ class driveR_two():
             log(str(e), important=True, in_exception=True)
 
     def drive_til_distance(self, mm_to_object: int, speed: int = None) -> None:
-        # distance in mm
         '''
         drive straight as long as the object in front of the distance sensor (in mm) is not in reach
 
@@ -2083,23 +2083,19 @@ class driveR_two():
         self.break_all_motors()
         self._manage_motor_stopper(False)
 
-    def turn_degrees_far(self, direction: str, degree: int, speed: int = None) -> None:
+    def turn_degrees_far(self, direction: str, degree: int, straight: bool = True) -> None:
         '''
-       turn the amount of degrees given, to take a turn with only one wheel, resulting in a turn not on the spot
+        turn the amount of degrees given, to take a turn with only one wheel, resulting in a turn not on the spot
 
-       Args:
-           direction (str): "left" or "right", depending on where you want to go
-           degree (int): the amount of degrees (B0) to turn from the current point (only values from 0 - 180 allowed for maximum efficiency)
+        Args:
+            direction (str): "left" or "right", depending on where you want to go
+            degree (int): the amount of degrees to turn from the current point (only values from 0 - 180 allowed for maximum efficiency)
+            straight (bool, optional): If True, it will drive forward for the direction. If False, it will drive backward. (default: True)
 
-       Returns:
-           None
-       '''
-        if speed is None:
-            speed = self.ds_speed + 100  # +100 to make it drive full speed (capped at 1500 and ds_speed is just 1400)
-        elif speed == -self.ds_speed:
-            speed -= 100  # -100 to make it drive full speed (capped at -1500 and "ds_speed" is in this case just -1400)
-        elif speed == self.ds_speed:
-            speed += 100 # +100 to make it drive full speed (capped at 1500 and ds_speed is just 1400)
+        Returns:
+            None
+        '''
+        speed = self.max_speed if straight else -self.max_speed
 
         motor_id = self._manage_motor_stopper(True)
         if direction != 'right' and direction != 'left':

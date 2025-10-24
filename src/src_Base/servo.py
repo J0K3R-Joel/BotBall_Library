@@ -112,7 +112,7 @@ class ServoX:
         Returns:
             None
         '''
-        millis = (abs(self.get_pos() - value) / 100) + 20 # + 20 is just a kind of bias.  
+        millis = (abs(self.get_pos() - value) / 100) + 20 # + 20 is just a kind of bias.
         print(millis, flush=True)
         if enabler_needed:
             self._servo_enabler()

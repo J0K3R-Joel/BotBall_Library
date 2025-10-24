@@ -62,3 +62,4 @@ echo "All scripts executed successfully."
 
 # Step 4: Set the ownership of specific paths
 chmod -R 777 "usr/lib/bias_files"/*
+chmod 777 /usr/lib/LOCAL_STD_WIFI.conf

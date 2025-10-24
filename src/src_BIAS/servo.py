@@ -95,11 +95,11 @@ class ServoX:
         Returns:
             bool: If it is a valid number (True), else it raises an exception
         '''
-        in_range =  self.min_value <= value <= self.max_value
+        in_range = self.min_value <= value <= self.max_value
         if not in_range:
             log(f"{value} is out of range, where the range is between {self.min_value} to {self.max_value}", important=True, in_exception=True)
             raise ValueError(f"{value} is out of range, where the range is between {self.min_value} to {self.max_value}")
-        return num
+        return in_range
 
     def _set_pos_internal(self, value: int, enabler_needed: bool=True) -> None:
         '''
@@ -112,7 +112,8 @@ class ServoX:
         Returns:
             None
         '''
-        millis = abs(self.get_pos() - value) / 10 + 20 # + 20 is just a kind of bias.
+        millis = (abs(self.get_pos() - value) / 100) + 20 # + 20 is just a kind of bias.
+        print(millis, flush=True)
         if enabler_needed:
             self._servo_enabler()
         if self._valid_range(value):
@@ -122,6 +123,31 @@ class ServoX:
             self._servo_disabler()
 
     # ======================== PUBLIC METHODS ========================
+    def get_max_value(self) -> int:
+        '''
+        Lets you see the highest value available for the servo
+
+        Args:
+            None
+
+        Returns:
+            int: highest value of the servo
+        '''
+        return self.max_value
+
+    def get_min_value(self) -> int:
+        '''
+        Lets you see the lowest value available for the servo
+
+        Args:
+            None
+
+        Returns:
+            int: lowest value of the servo
+        '''
+        return self.min_value
+
+
     def get_pos(self) -> int:
         '''
         The position where the servo is set at the moment

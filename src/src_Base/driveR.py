@@ -17,7 +17,6 @@ try:
     import uuid
     import math
     from scipy.interpolate import interp1d
-    from util import Util  # selfmade
     from analog import Analog  # selfmade
     from distance_sensor import DistanceSensor  # selfmade
     from light_sensor import LightSensor  # selfmade
@@ -1997,32 +1996,34 @@ class driveR_two():
         if speed < 0:
             ports = self.port_wheel_right, self.port_wheel_left
             adjuster = -adjuster
-        if self.distance_sensor.current_value() > 1800:
-            while self.distance_sensor.current_value() > 1800 and (
-                    not self.button_bl.is_pressed() and not self.button_br.is_pressed()) and self.is_motor_active(
-                motor_id):  # this is because if it is already too close, it will back out a little bit to get the best result
-                if theta < 10 and theta > -10:
-                    k.mav(ports[0], speed)
-                    k.mav(ports[1], speed)
-                elif theta < 10:
-                    k.mav(ports[0], speed + adjuster)
-                    k.mav(ports[1], speed - adjuster * 3)
-                else:
-                    k.mav(ports[0], speed - adjuster * 3)
-                    k.mav(ports[1], speed + adjuster)
-                k.msleep(10)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
-            if theta != 0.0:
-                k.mav(self.port_wheel_left, speed)
-                k.mav(self.port_wheel_right, speed)
-                k.msleep(20)
-                self.break_all_motors()
+
+        else:
+            if self.distance_sensor.current_value() > 1800:
+                while self.distance_sensor.current_value() > 1800 and (
+                        not self.button_bl.is_pressed() and not self.button_br.is_pressed()) and self.is_motor_active(
+                    motor_id):  # this is because if it is already too close, it will back out a little bit to get the best result
+                    if theta < 10 and theta > -10:
+                        k.mav(ports[0], speed)
+                        k.mav(ports[1], speed)
+                    elif theta < 10:
+                        k.mav(ports[0], speed + adjuster)
+                        k.mav(ports[1], speed - adjuster * 3)
+                    else:
+                        k.mav(ports[0], speed - adjuster * 3)
+                        k.mav(ports[1], speed + adjuster)
+                    k.msleep(10)
+                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                if theta != 0.0:
+                    k.mav(self.port_wheel_left, speed)
+                    k.mav(self.port_wheel_right, speed)
+                    k.msleep(20)
+                    self.break_all_motors()
 
         combination = dict(zip(self.distance_far_mm, self.distance_far_values))
         next_step = min(combination, key=lambda x: abs(x - mm_to_object))
         next_value = combination[next_step]
 
-        def distance_stopper():
+        def distance_stopper(positive):
             tolerance = mm_to_object / 20  # /20 makes it that it is 90% accurate
             try:
                 lookup = interp1d(self.distance_far_values, self.distance_far_mm, kind='linear',
@@ -2038,7 +2039,11 @@ class driveR_two():
                 dist = get_distance_from_sensor(value)
                 if str(dist) == 'inf' or dist <= self.distance_far_mm[0]:
                     return True
-                return dist < mm_to_object + tolerance
+
+                if positive:
+                    return dist < mm_to_object + tolerance
+                else:
+                    return dist > mm_to_object + tolerance
 
             while self.is_motor_active(motor_id):
                 if is_target_distance_reached():
@@ -2046,39 +2051,56 @@ class driveR_two():
                     sys.exit()
                     break
 
-        if self.distance_sensor.current_value() < next_value:
-            threading.Thread(target=distance_stopper).start()
+        if speed > 0:
+            if self.distance_sensor.current_value() < next_value:
+                threading.Thread(target=distance_stopper, args=(True,)).start()
 
-            while not self.isClose and self.is_motor_active(motor_id):
-                if theta < 10 and theta > -10:
-                    k.mav(ports[0], speed)
-                    k.mav(ports[1], speed)
-                elif theta < 10:
-                    k.mav(ports[0], speed + adjuster)
-                    k.mav(ports[1], speed - adjuster * 3)
-                else:
-                    k.mav(ports[0], speed - adjuster * 3)
-                    k.mav(ports[1], speed + adjuster)
-                k.msleep(10)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                while not self.isClose and self.is_motor_active(motor_id):
+                    if theta < 10 and theta > -10:
+                        k.mav(ports[0], speed)
+                        k.mav(ports[1], speed)
+                    elif theta < 10:
+                        k.mav(ports[0], speed + adjuster)
+                        k.mav(ports[1], speed - adjuster * 3)
+                    else:
+                        k.mav(ports[0], speed - adjuster * 3)
+                        k.mav(ports[1], speed + adjuster)
+                    k.msleep(10)
+                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
 
-        if mm_to_object < self.distance_far_mm[0]:
-            counter = self.distance_far_mm[0]
-            mult = self.ds_speed / speed
-            timer = 0.001 * mult
-            while counter > mm_to_object and self.is_motor_active(motor_id):
-                counter -= 1
-                if theta < 10 and theta > -10:
-                    k.mav(ports[0], speed)
-                    k.mav(ports[1], speed)
-                elif theta < 10:
-                    k.mav(ports[0], speed + adjuster)
-                    k.mav(ports[1], speed - adjuster * 3)
-                else:
-                    k.mav(ports[0], speed - adjuster * 3)
-                    k.mav(ports[1], speed + adjuster)
-                time.sleep(timer)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+            if mm_to_object < self.distance_far_mm[0]:
+                counter = self.distance_far_mm[0]
+                mult = self.ds_speed / speed
+                timer = 0.001 * mult
+                while counter > mm_to_object and self.is_motor_active(motor_id):
+                    counter -= 1
+                    if theta < 10 and theta > -10:
+                        k.mav(ports[0], speed)
+                        k.mav(ports[1], speed)
+                    elif theta < 10:
+                        k.mav(ports[0], speed + adjuster)
+                        k.mav(ports[1], speed - adjuster * 3)
+                    else:
+                        k.mav(ports[0], speed - adjuster * 3)
+                        k.mav(ports[1], speed + adjuster)
+                    time.sleep(timer)
+                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+        else:
+            if self.distance_sensor.current_value() > next_value:
+                threading.Thread(target=distance_stopper, args=(False,)).start()
+
+                while not self.isClose and self.is_motor_active(motor_id):
+                    if theta < 10 and theta > -10:
+                        k.mav(ports[0], speed)
+                        k.mav(ports[1], speed)
+                    elif theta < 10:
+                        k.mav(ports[0], speed + adjuster)
+                        k.mav(ports[1], speed - adjuster * 3)
+                    else:
+                        k.mav(ports[0], speed - adjuster * 3)
+                        k.mav(ports[1], speed + adjuster)
+                    k.msleep(10)
+                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
 
         self.break_all_motors()
         self._manage_motor_stopper(False)
@@ -2182,7 +2204,6 @@ class driveR_four:
                  Instance_light_sensor_back: LightSensor = None,
                  Instance_light_sensor_side: LightSensor = None,
                  Instance_distance_sensor: DistanceSensor = None,
-                 Instance_util: Util = None
                  ):
 
         self.port_wheel_fl = Port_front_left_wheel
@@ -2202,8 +2223,6 @@ class driveR_four:
         self.light_sensor_side = Instance_light_sensor_side
 
         self.distance_sensor = Instance_distance_sensor
-
-        self.utility = Instance_util
 
         self.ds_speed = DS_SPEED
         self.distance_far_values, self.distance_far_mm = self.get_distances()
@@ -2484,18 +2503,6 @@ class driveR_four:
             None
         '''
         self.button_br = Instance_button_back_right
-
-    def set_instance_util(self, Instance_util: Util) -> None:
-        '''
-        create or overwrite the existence of the util class
-
-        Args:
-            Instance_util (Util):  the instance of the util class
-
-       Returns:
-            None
-        '''
-        self.utility = Instance_util
 
     def set_TOTAL_mm_per_sec(self, mm: int = None, sec: float = None) -> None:
         '''
@@ -2785,22 +2792,6 @@ class driveR_four:
         if not isinstance(self.button_br, Digital):
             log('Button back right is not initialized!', in_exception=True)
             raise TypeError('Button back right is not initialized!')
-
-        return True
-
-    def check_instance_util(self) -> bool:
-        '''
-        inspect the existence of the util class
-
-        Args:
-            None
-
-       Returns:
-            if there is an instance of the util class in existence
-        '''
-        if not isinstance(self.utility, Util):
-            log('Util class is not initialized!', in_exception=True)
-            raise TypeError('Util class is not initialized!')
 
         return True
 

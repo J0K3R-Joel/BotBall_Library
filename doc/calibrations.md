@@ -69,13 +69,13 @@ This needs to be calculated so the `calibrate_distance()` function works properl
 
 
 - ```python
-  driveR_two.calibrate_distance()
+  driveR_two.calibrate_distance(XX, XXX)
   ```
 
 or 
 
 ```python
-driveR_four.calibrate_distance()
+driveR_four.calibrate_distance(XX, XXX)
 ```
 
 **Explanation:**
@@ -96,11 +96,16 @@ This function is needed to be able to know all the distances for the distance se
 
 ###### Considerations:
 
-@TODO
+- by default it drives for 5 seconds straight, so make sure that there is enough space in front
+- mark where the beginning of the calibration is (place the robot so you can see where it started and measure the distance)
 
 ###### How to calibrate:
 
-@TODO
+1. Place the robot so you know where it began to drive
+2. Run the program
+3. Measure the distance (in mm) from the start to the end
+4. Write the mm in the console
+5. Press `Enter` 
 
 ---
 
@@ -115,7 +120,6 @@ This function is needed to be able to know all the distances for the distance se
 
 ###### How to calibrate:
 
-0. Everything will take place on a flat surface / game table
 1. Place an flat and long object on the surface
 2. Go away from the object with the robot and look for the lowest value facing the object parallel (**HINT**: the more you make it parallel, the more you will notice that the value changes from maybe ~800 to ~200 while maintaining the same distance to the object. This value becomes a little bit more consistent while driving, so make sure that while trying your first lowest value to keep track of the "actual" lowest value. Your first run of this function will so to say just be a test run. The actual lowest value will probably be around ~600. You can just make a low number up, so the robot will drive endlessly so you can be more focused on the "actual" lowest value.)
 3. Look for the distance where the ET Sensor is having the highest value (go slow and steady, every mm counts!)

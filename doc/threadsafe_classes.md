@@ -7,6 +7,7 @@ This file tells you which classes are thread safe, so classes you can use in a t
 - `CameraBrightnessDetector` 
 - `CameraManager` 
 - `Digital`
+- `Analog` 
 - `DistanceSensor`
 - `driveR_two` + `driveR_four`
 - `FileR`

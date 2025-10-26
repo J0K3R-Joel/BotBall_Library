@@ -17,8 +17,10 @@ You are able to see this page when
   - click a button called `Home` 
   - click an `Exit` / `Back` button until you reach this page again
 
+**Hint**: In the bottom right corner you can see two symbols. The left symbol is to see the current battery charge. The right symbol shows you (if it is green) that it is connected to a wifi and (if it is orange) it tells you that it is not connected to any network
+
   
-  
+
   ## Shutting down
 
 ##### Reason
@@ -41,6 +43,18 @@ Sometimes some problems will be fixed when rebooting the controller
 ##### Navigation
 
 1. Click the `Reboot` button ![](./img/reboot_page.png)Afterwards you need to accept or decline your choice
+
+## Exiting GUI
+
+##### Reason
+
+Sometimes you want to get to the home-screen of the controller. If you are using my library, you can access the logger file (located in the file explorer in `/usr/lib/logger_log`) this way for example. Another example would be to access the bias files (located in the file explorer in `/usr/lib/bias_file`).
+
+##### Navigation
+
+1. Click the `Settings` button ![](./img/hide_page.png)
+
+2. Click the `Hide UI` button ![](./img/hide_interface_page.png)
 
 ## Viewing WIFI settings
 
@@ -66,9 +80,24 @@ You got two choices:
 
 2. Look at the current configuration and change of the configuration:
 
-   1. @TODO
-
-
+   1. Click the `Settings` button ![](./img/wifi_page.png)
+   
+   2. Click the `Advanced` button ![](./img/wifi_advanced_page.png)
+   
+   3. Click the `Network` button ![](./img/wifi_network_page.png)
+   
+      Here you can see every important information regarding Wifi ![](./img/wifi_network_interface_page.png)
+   
+      - **Frequency**: Band width the controller has to look at for the desired Wifi
+      - **Current Wifis**: Every wifi with the same frequency will be shown here (you are able to connect to them)
+      - **Old Wifis**: Every wifi you were connected
+      - **Wifi Mode**: Three different modes you can set the controller
+        - _Client Mode_: Controller is able to connect to a different wifi
+        - _AP Mode_: Controller creates it's own wifi (you are able to connect to it)
+        - _Event Mode_: No connection whatsoever is allowed
+      - **Wifi Name**: Name of the Wifi the controller is currently connected to
+      - **Wifi Password**: Passoword of the Wifi the controller is currently connected to
+      - **IPv4 Address**: The IPv4 Address of the controller given by the Wifi router
 
 ## Run local Programs
 
@@ -155,5 +184,5 @@ When you are at the BotBall (ECER / GCER) event you HAVE TO execute all your pro
    
    5. ###### Camera: 
    
-       Click the `Camera` button ![](./img/camera_page.png)Here you are able to see what the camera sees (if it is plugged into the controller). It might be helpful for debugging, but besides that it really is unnecessary.
+       Click the `Camera` button ![](./img/camera_page.png)Here you are able to see what the camera sees (if it is plugged into the controller). It might be helpful for debugging, but besides that it really is unnecessary.
 

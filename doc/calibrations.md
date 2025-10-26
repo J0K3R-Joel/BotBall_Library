@@ -105,7 +105,7 @@ This function is needed to be able to know all the distances for the distance se
 2. Run the program
 3. Measure the distance (in mm) from the start to the end
 4. Write the mm in the console
-5. Press `Enter` 
+5. Press `Enter` 
 
 ---
 
@@ -220,3 +220,32 @@ This function is needed to be able to know all the distances for the distance se
 
 ---
 
+## LightSensor
+
+#### save_value_black()
+
+###### Considerations
+
+- make sure that the saved value has average lighting of the entire game table for best results
+- make sure it is actually on black
+- once saved do not change the position of the light / brightness sensor (at least in the z-axis (height))
+
+###### How to calibrate
+
+- Run the program
+
+---
+
+#### save_value_white()
+
+###### Considerations
+
+- make sure that the saved value has average lighting of the entire game table for best results
+- make sure it is actually on white
+- once saved do not change the position of the light / brightness sensor (at least in the z-axis (height))
+
+###### How to calibrate
+
+- Run the program
+
+---

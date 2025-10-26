@@ -69,7 +69,7 @@ class LightSensor(Analog):
 
     # ======================== Save-Methods =======================
 
-    def save_value_black(self, measured_value: int = None) -> None:
+    def save_value_black(self, measured_value: int) -> None:
         '''
         Saves the black value of the light sensor into a file
 
@@ -79,9 +79,6 @@ class LightSensor(Analog):
         Returns:
             None
         '''
-        if measured_value is None:
-            measured_value = self.current_value()
-
         file_name = os.path.join(self.BIAS_FOLDER, f'{self.std_black_file_name + self.position}.txt')
         try:
             if os.path.exists(file_name):
@@ -92,19 +89,16 @@ class LightSensor(Analog):
         except Exception as e:
             log(str(e), important=True, in_exception=True)
 
-    def save_value_white(self, measured_value: int = None) -> None:
+    def save_value_white(self, measured_value: int) -> None:
         '''
         Saves the white value of the light sensor into a file
 
         Args:
-            measured_value (int, optional): The value that should be averaged and written into the file
+            measured_value (int): The value that should be averaged and written into the file
 
         Returns:
             None
         '''
-        if measured_value is None:
-            measured_value = self.current_value()
-
         file_name = os.path.join(self.BIAS_FOLDER, f'{self.std_white_file_name + self.position}.txt')
         try:
             if os.path.exists(file_name):

@@ -1275,21 +1275,79 @@ class driveR_two():
         self.break_all_motors()
         self._manage_motor_stopper(False)
 
-    def drive_straight_condition_analog(self, Instance: Analog, condition: str, value: int, millis: int = 9999999,
-                                        speed: int = None) -> None:
+    def drive_straight_condition_digital(self, Instance: Digital, condition: str, value: int, millis: int = 9999999, speed: int = None):
+        # @TODO -> test this out
         '''
-       drive straight until an analog value gets reached for the desired instance
+        drive straight until an digital value gets reached for the desired instance
 
-       Args:
-           Instance (Analog): just has to be from something analog (since there is (as of time of creation) only light and distance sensors, which are valid for this argument, just those should be used.
-           condition (str): ("let" / "<=") or ("get" / ">=") or ("ht" / ">") or ("lt" / "<") are valid. Notice: l -> less | h -> higher | e -> equal | t -> than. (The parentheses should be left out, as well as the slash, only choose one argument Example: ">=")
-           value (int): The value that the current value gets compared to and has to be reached
-           millis (int, optional): The maximum amount of time (in milliseconds) which can be taken (default: 9999999)
-           speed (int, optional): The speed it drives sideways (default: ds_speed)
+        Args:
+            Instance (Digital): just has to be from something digital (buttons)
+            condition (str): should it match "==" or not "!="
+            value (int): The value that the current value gets compared to and has to be reached / not matched
+            millis (int, optional): The maximum amount of time (in milliseconds) which can be taken (default: 9999999)
+            speed (int, optional): The speed it drives straight (default: ds_speed)
 
-       Returns:
-           None
-       '''
+        Returns:
+            None
+        '''
+        if speed is None:
+            speed = self.ds_speed
+        motor_id = self._manage_motor_stopper(True)
+        theta = 0
+        adjuster = 100
+        start_time = k.seconds()
+        ports = self.port_wheel_left, self.port_wheel_right
+        if speed < 0:
+            ports = self.port_wheel_right, self.port_wheel_left
+            adjuster = -adjuster
+
+        if condition == "==":
+            while (Instance.current_value() == value) and (k.seconds() - start_time < millis/1000) and self.is_motor_active(motor_id):
+                if theta < 10 and theta > -10:
+                    k.mav(ports[0], speed)
+                    k.mav(ports[1], speed)
+                elif theta < 10:
+                    k.mav(ports[0], speed + adjuster)
+                    k.mav(ports[1], speed - adjuster * 3)
+                else:
+                    k.mav(ports[0], speed - adjuster * 3)
+                    k.mav(ports[1], speed + adjuster)
+                k.msleep(10)
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+        elif condition == "!=":
+            while (Instance.current_value() != value) and (k.seconds() - start_time < millis/1000) and self.is_motor_active(motor_id):
+                if theta < 10 and theta > -10:
+                    k.mav(ports[0], speed)
+                    k.mav(ports[1], speed)
+                elif theta < 10:
+                    k.mav(ports[0], speed + adjuster)
+                    k.mav(ports[1], speed - adjuster * 3)
+                else:
+                    k.mav(ports[0], speed - adjuster * 3)
+                    k.mav(ports[1], speed + adjuster)
+                k.msleep(10)
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+        else:
+            log('Only "==" or "!=" is available for the condition!', important=True, in_exception=True)
+            raise ValueError('Only "==" or "!=" is available for the condition!')
+        print(k.seconds() - start_time, millis/1000, flush=True)
+        self.break_all_motors()
+        self._manage_motor_stopper(False)
+
+    def drive_straight_condition_analog(self, Instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
+        '''
+        drive straight until an analog value gets reached for the desired instance
+
+        Args:
+            Instance (Analog): just has to be from something analog (since there is (as of time of creation) only light and distance sensors, which are valid for this argument, just those should be used.
+            condition (str): ("let" / "<=") or ("get" / ">=") or ("ht" / ">") or ("lt" / "<") are valid. Notice: l -> less | h -> higher | e -> equal | t -> than. (The parentheses should be left out, as well as the slash, only choose one argument Example: ">=")
+            value (int): The value that the current value gets compared to and has to be reached
+            millis (int, optional): The maximum amount of time (in milliseconds) which can be taken (default: 9999999)
+            speed (int, optional): The speed it drives straight (default: ds_speed)
+
+        Returns:
+            None
+        '''
         if speed is None:
             speed = self.ds_speed
         self.check_instances_buttons()
@@ -1615,17 +1673,17 @@ class driveR_two():
         self.check_instance_light_sensors_middle()
         motor_id = self._manage_motor_stopper(True)
         startTime: float = k.seconds()
-        theta = 0.0
-        adjuster = 100
         ports = self.button_fl, self.button_fr, self.light_sensor_front
         if speed < 0:
             ports = self.button_bl, self.button_br, self.light_sensor_back
 
         while k.seconds() - startTime < (millis) / 1000 and (not ports[0].is_pressed() and not ports[1].is_pressed()) and self.is_motor_active(motor_id):
-            self.drive_straight_condition_analog(ports[2], '>=', ports[2].get_value_black() - ports[2].get_bias(), speed=speed, millis=100)
+            self.drive_straight_condition_analog(ports[2], '<=', ports[2].get_value_black() - ports[2].get_bias(), speed=speed, millis=100)
 
             if not ports[2].sees_Black():
                 self.on_line_align(millis=80, speed=speed)
+
+        print(k.seconds() - startTime, (millis) / 1000, flush=True)
         self.break_all_motors()
         self._manage_motor_stopper(False)
 
@@ -1710,6 +1768,7 @@ class driveR_two():
             while not self.light_sensor_front.sees_Black() and self.is_motor_active(motor_id):
                 k.mav(ports[1], -1500)
                 k.mav(ports[0], -200)
+            # maybe add drift here
 
         elif not self.light_sensor_front.sees_White():
             while not self.light_sensor_back.sees_Black() and self.is_motor_active(motor_id):
@@ -2043,7 +2102,7 @@ class driveR_two():
                 if positive:
                     return dist < mm_to_object + tolerance
                 else:
-                    return dist > mm_to_object + tolerance
+                    return dist > mm_to_object - tolerance
 
             while self.is_motor_active(motor_id):
                 if is_target_distance_reached():
@@ -3978,6 +4037,73 @@ class driveR_four:
             k.mav(self.port_wheel_bl, self.ds_speed)
             k.msleep(50)
             self.break_all_motors()
+        self._manage_motor_stopper(False)
+
+    def drive_straight_condition_digital(self, Instance: Digital, condition: str, value: int, millis: int = 9999999, speed: int = None):
+        # @TODO -> test this out
+        '''
+        drive straight until an digital value gets reached for the desired instance
+
+        Args:
+            Instance (Digital): just has to be from something digital (buttons)
+            condition (str): should it match "==" or not "!="
+            value (int): The value that the current value gets compared to and has to be reached / not matched
+            millis (int, optional): The maximum amount of time (in milliseconds) which can be taken (default: 9999999)
+            speed (int, optional): The speed it drives straight (default: ds_speed)
+
+        Returns:
+            None
+        '''
+        if speed is None:
+            speed = self.ds_speed
+        motor_id = self._manage_motor_stopper(True)
+        theta = 0
+        adjuster = 100
+        start_time = k.seconds()
+
+        if condition == "==":
+            while (Instance.current_value() == value) and (k.seconds() - start_time < millis/1000) and self.is_motor_active(motor_id):
+                if 1000 > theta > -1000:
+                    k.mav(self.port_wheel_fl, speed)
+                    k.mav(self.port_wheel_fr, speed)
+                    k.mav(self.port_wheel_bl, speed)
+                    k.mav(self.port_wheel_br, speed)
+                elif theta > 1000:
+                    k.mav(self.port_wheel_fl, speed - adjuster)
+                    k.mav(self.port_wheel_fr, speed + adjuster)
+                    k.mav(self.port_wheel_bl, speed - adjuster)
+                    k.mav(self.port_wheel_br, speed + adjuster)
+                else:
+                    k.mav(self.port_wheel_fl, speed + adjuster)
+                    k.mav(self.port_wheel_fr, speed - adjuster)
+                    k.mav(self.port_wheel_bl, speed + adjuster)
+                    k.mav(self.port_wheel_br, speed - adjuster)
+                k.msleep(10)
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
+        elif condition == "!=":
+            while (Instance.current_value() != value) and (k.seconds() - start_time < millis/1000) and self.is_motor_active(motor_id):
+                if 1000 > theta > -1000:
+                    k.mav(self.port_wheel_fl, speed)
+                    k.mav(self.port_wheel_fr, speed)
+                    k.mav(self.port_wheel_bl, speed)
+                    k.mav(self.port_wheel_br, speed)
+                elif theta > 1000:
+                    k.mav(self.port_wheel_fl, speed - adjuster)
+                    k.mav(self.port_wheel_fr, speed + adjuster)
+                    k.mav(self.port_wheel_bl, speed - adjuster)
+                    k.mav(self.port_wheel_br, speed + adjuster)
+                else:
+                    k.mav(self.port_wheel_fl, speed + adjuster)
+                    k.mav(self.port_wheel_fr, speed - adjuster)
+                    k.mav(self.port_wheel_bl, speed + adjuster)
+                    k.mav(self.port_wheel_br, speed - adjuster)
+                k.msleep(10)
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
+        else:
+            log('Only "==" or "!=" is available for the condition!', important=True, in_exception=True)
+            raise ValueError('Only "==" or "!=" is available for the condition!')
+        print()
+        self.break_all_motors()
         self._manage_motor_stopper(False)
 
     def drive_side_condition_analog(self, direction: str, Instance, condition: str, value: int, millis: int = 9999999,

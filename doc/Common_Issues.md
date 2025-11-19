@@ -140,3 +140,43 @@
 - **Status:** Resolved
 
 ---
+
+### Issue ID: 006
+
+- **Title:** Permission denied when running script
+- **Category:** Software
+- **Affected Components:** entire BotBall_Library 
+- **Description:**  
+  When running the main script via `sudo bash config.sh` you get tons of `Permission denied` errors. 
+- **Symptoms / Indicators:**
+  - You are not able to `chmod` a file on the USB-stick
+  - Many `Permission denied` errors after running `sudo bash config.sh` in the terminal
+- **Cause:**  
+  - Unknown, since the error only occurs on some USB-sticks.
+- **Solution / Workaround:**  
+  1. Plug the USB-Stick containing the BotBall_Library into the controller
+  2. Get into the BotBall_Library folder on your USB-stick
+  3. Copy (or cut) the folder and paste it into any other directory where you are allowed to paste it
+  4. run the script as usual (via `sudo bash config.sh`) 
+- **Status:** Resolved
+
+---
+
+### Issue ID: 007
+
+- **Title:** Not booting after installation
+- **Category:** Software
+- **Affected Components:** controller
+- **Description:**  
+  After successfully running the main script via `sudo bash config.sh` and shutting off the controller, it will boot but it will not progress after a terminal window
+- **Symptoms / Indicators:**
+  - empty terminal window will not go away, even after waiting for minutes
+  - You can not write into the terminal window
+- **Cause:**  
+  - Unknown, but it should not be a issue of the BotBall Library
+- **Solution / Workaround:**  
+  - No solution available
+  - The only thing you can do is to wipe out the micro SD card and start all over again
+- **Status:** Open
+
+---

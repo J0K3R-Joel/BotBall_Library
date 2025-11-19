@@ -190,7 +190,7 @@ class ServoX:
         if self._valid_range(new_pos):
             self._set_pos_internal(new_pos, enabler_needed=enabler_needed)
 
-    def range_to_pos(self, value:int, multi: int = 2, disabler_needed: bool= True) -> None:
+    def range_to_pos(self, value: int, multi: int = 2, disabler_needed: bool= True) -> None:
         '''
         Changes the position smoothly from the current position to the position given
 

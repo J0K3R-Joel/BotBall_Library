@@ -211,7 +211,7 @@ class LightSensor(Analog):
 
 
     # ======================== Normal methods =======================
-    def sees_Black(self) -> bool:
+    def sees_black(self) -> bool:
         '''
         tells you, if the sensor sees black (True) or not (False)
 
@@ -226,7 +226,7 @@ class LightSensor(Analog):
             raise TypeError('You need to set the white value before trying to see if it is black')
         return self.current_value() >= self.val_white + self.bias
 
-    def sees_White(self) -> bool:
+    def sees_white(self) -> bool:
         '''
         tells you, if the sensor sees white (True) or not (False)
 

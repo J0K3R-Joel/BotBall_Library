@@ -1651,8 +1651,8 @@ class driveR_two():
             if ports[2].is_pressed() or ports[3].is_pressed():
                 break
 
-        if counter_drive:
-            self.turn_to_black_line(direction[1], 20, speed=-speed)  #@TODO some kind of drift function here so the rear moves but the front stays still
+        if counter_drive:  #@TODO some kind of drift function here so the rear moves but the front stays still
+            print()
         self.break_all_motors()
         self._manage_motor_stopper(False)
 
@@ -1676,14 +1676,15 @@ class driveR_two():
         ports = self.button_fl, self.button_fr, self.light_sensor_front
         if speed < 0:
             ports = self.button_bl, self.button_br, self.light_sensor_back
+        print('start', flush=True)
 
-        while k.seconds() - startTime < (millis) / 1000 and (not ports[0].is_pressed() and not ports[1].is_pressed()) and self.is_motor_active(motor_id):
-            self.drive_straight_condition_analog(ports[2], '<=', ports[2].get_value_black() - ports[2].get_bias(), speed=speed, millis=100)
+        while k.seconds() - startTime < millis and (not ports[0].is_pressed() and not ports[1].is_pressed()) and self.is_motor_active(motor_id):
+            self.drive_straight_condition_analog(ports[2], '>=', ports[2].get_value_black() - ports[2].get_bias(), speed=speed, millis=100)
 
             if not ports[2].sees_Black():
                 self.on_line_align(millis=80, speed=speed)
 
-        print(k.seconds() - startTime, (millis) / 1000, flush=True)
+        print('bl', k.seconds() - startTime, (millis) / 1000, flush=True)
         self.break_all_motors()
         self._manage_motor_stopper(False)
 

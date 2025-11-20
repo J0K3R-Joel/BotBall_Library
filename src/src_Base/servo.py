@@ -175,7 +175,7 @@ class ServoX:
             self._set_pos_internal(value=value, enabler_needed=enabler_needed)
         self._manage_servo_stopper(False)
 
-    def add_to_pos(self, value: int, enabler_needed: bool=True) -> None:
+    def add_to_pos(self, value: int, enabler_needed: bool = True) -> None:
         '''
         Adds the value to the current pos
 

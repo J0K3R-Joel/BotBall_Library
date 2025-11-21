@@ -191,6 +191,8 @@ Other classes that got an entire user as test purpose:
 
 - Check out [./doc/Common_Issues.md](./doc/Common_Issues.md) for the solutions of common issues that might occur
 
+- If you are using my library, then you need to calibrate the robot. Check out [./doc/Calibrations.md](./doc/Calibrations.md) for further information
+
 - `driveR` is very dependent on the right placement of the sensors, which you can find in [./Standard_Construction.md](./Standard_Construction.md). Make sure everything is positioned correctly
 
 ----

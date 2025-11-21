@@ -6,7 +6,7 @@ This file acts as a guide for every necessary information given on the controlle
 
 Every headline from now on will begin on the starting page, which looks like this:
 
-![](C:\Joel_K\Schule\BotBall\BotBall_Library\doc\img\controller_starting_page.jpg)
+![](.\img\controller_starting_page.jpg)
 
 You are able to see this page when 
 
@@ -17,7 +17,7 @@ You are able to see this page when
   - click a button called `Home` 
   - click an `Exit` / `Back` button until you reach this page again
 
-**Hint**: In the bottom right corner you can see two symbols. The left symbol is to see the current battery charge. The right symbol shows you (if it is green) that it is connected to a wifi and (if it is orange) it tells you that it is not connected to any network
+**Hint**: In the bottom right corner you can see two symbols. The left symbol is to see the current battery charge. The right symbol shows you (if it is green) that it is connected to a wifi and (if it is orange) it tells you that it is not connected to any network
 
   
 

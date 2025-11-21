@@ -41,7 +41,7 @@ front, back and side:
 
 ---
 
-On the other hand, there are some functions where manual execution is required, since they need a completely different setup. Those functions include:
+On the other hand, there are some functions where manual execution is required, since they need a completely different setup. You should only execute those kind of functions alone and not with any other calibration method, since you need to be precise with those methods. As said, execute them alone with no other function, since they can cause a lot of trouble and there is not a lot of margin for error. Those functions include:
 
 ##### driveR
 
@@ -84,7 +84,7 @@ This function is needed to be able to know all the distances for the distance se
 
 ---
 
-[^1]:Ports and values with a placeholder (e.g. "XX") 
+[^1]:Ports and values with a placeholder (e.g. "XX"). If the placeholder represents a port, then you only need to tell it the integer number it is plugged in (e.g. 0; 6; 3; ... ) 
 
 ---
 

@@ -20,3 +20,4 @@ This file will tell you things to consider and important stuff. This is very imp
 - The buttons mounted on the robot need to be the furthest point in the front and rear.
 - The tophats should be as low as possible, but they should not scratch the ground. If they are positioned too high, then the values are more inaccurate (since the sensor can not detect the difference between white and black as precise). If they are too low, they will scratch the ground and may get damaged. Also consider the shadow the robot casts onto the tophats.
 - If there is a new update in my GitHub repository and you want to pull it, then make sure that you save every code that you created. The source codes will be overwritten, so make sure that everything important is saved!
+- If you have no experience on the controller, then consider the [./controller_guide.md](./controller_guide.md) file

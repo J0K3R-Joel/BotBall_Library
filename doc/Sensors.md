@@ -39,7 +39,7 @@ k.analog(PORT)
 Where:
 
 - PORT is the corresponding port on the controller where the sensor is plugged in
-- k is the name of the library (`import _kipr as k`)
+- k is the name of the library (`import _kipr as k`)
 
 ##### 2.1.2 Digital
 
@@ -52,11 +52,11 @@ k.digital(PORT)
 Where:
 
 - PORT is the corresponding port on the controller where the sensor is plugged in
-- k is the name of the library (`import _kipr as k`)
+- k is the name of the library (`import _kipr as k`)
 
 ##### 2.1.3 Motor
 
-You can receive the value of the current motor position with the `gmpc()` or `get_motor_position_counter()` (which is the long form of "gpmc") function from the kipr library. In python the code will look something like this:
+You can receive the value of the current motor position with the `gmpc()` or `get_motor_position_counter()` (which is the long form of "gpmc") function from the kipr library. In python the code will look something like this:
 
 ```python
 k.gpmc(PORT)
@@ -67,11 +67,11 @@ k.get_motor_position_counter(PORT)
 Where:
 
 - PORT is the corresponding port on the controller where the sensor is plugged in
-- k is the name of the library (`import _kipr as k`)
+- k is the name of the library (`import _kipr as k`)
 
 ##### 2.1.4 Servo
 
-You can receive the value of the current servo position with the `get_servo_position()` function from the kipr library. In python the code will look something like this:
+You can receive the value of the current servo position with the `get_servo_position()` function from the kipr library. In python the code will look something like this:
 
 ```python
 k.get_servo_position(PORT)

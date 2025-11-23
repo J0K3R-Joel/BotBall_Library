@@ -37,10 +37,10 @@ pause_event = threading.Event()
 
 
 # ===== PORTS MOTORS =====
-#PORT_MOTOR_FR = XX
-#PORT_MOTOR_FL = XX
-#PORT_MOTOR_BR = XX
-#PORT_MOTOR_BL = XX
+#PORT_MOTOR_FR = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
+#PORT_MOTOR_FL = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
+#PORT_MOTOR_BR = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
+#PORT_MOTOR_BL = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
 
 # ===== PORTS SERVOS =====
 
@@ -61,6 +61,7 @@ def Comm_Setup(p_event, Communication_instance):
 	try:
 		if Communication_instance == None:
 			comm = RobotCommunicator('192.168.XX.XX', 10000, is_server=False) # one has to be the server, the other one has to be is_server=False (or be left out) -> both need the IP-Adress (IP from the the server) and the same port to communicate
+            #  XX here represents the complete IPv4-Address. eg: 192.168.0.10; 10.290.5.100; 172.100.5.134
 			pause_event.set()
 		else:
 			Communication_instance.set_pause_event_instance(p_event)
@@ -91,7 +92,7 @@ def Instancer_Setup():
 def fake_main_setup():  # see this as the call of the main function -> only execute this in the if __name__ == "__main__": line (if you want communication)
     try:
         Comm_Setup(pause_event, comm)
-        f_main = FakeR(thread_instance=pause_event, comm_instance  = comm)
+        f_main = FakeR(thread_instance=pause_event, comm_instance=comm)
         f_main.start()
     except Exception as e:
         log(str(e), important=True, in_exception=True)

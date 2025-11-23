@@ -19,19 +19,19 @@ except Exception as e:
 
 # ======================== VARIABLE DECLARATION =======================
 # ===== PORTS ANALOG =====
-#PORT_LIGHT_SENSOR_FRONT = XX
-#PORT_LIGHT_SENSOR_BACK = XX
-#PORT_LIGHT_SENSOR_SIDE = XX
-#PORT_DISTANCE_SENSOR = XX
+#PORT_LIGHT_SENSOR_FRONT = XX  # XX is an placeholder for the integor of the analog port where the sensor is plugged in. eg. 0; 1; 9; 4
+#PORT_LIGHT_SENSOR_BACK = XX  # XX is an placeholder for the integor of the analog port where the sensor is plugged in. eg. 0; 1; 9; 4
+#PORT_LIGHT_SENSOR_SIDE = XX  # XX is an placeholder for the integor of the analog port where the sensor is plugged in. eg. 0; 1; 9; 4
+#PORT_DISTANCE_SENSOR = XX  # XX is an placeholder for the integor of the analog port where the sensor is plugged in. eg. 0; 1; 9; 4
 
 # ===== PORTS DIGITAL =====
-#PORT_BUTTON = XX
+#PORT_BUTTON = XX  # XX is an placeholder for the integor of the digital port where the button is plugged in. eg. 0; 1; 9; 4
 
 # ===== PORTS MOTORS =====
-#PORT_MOTOR_FR = XX
-#PORT_MOTOR_FL = XX
-#PORT_MOTOR_BR = XX
-#PORT_MOTOR_BL = XX
+#PORT_MOTOR_FR = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
+#PORT_MOTOR_FL = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
+#PORT_MOTOR_BR = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
+#PORT_MOTOR_BL = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
 
 # ======================== SETUP FUNCTIONS =======================
 def Instance_Setup():
@@ -43,16 +43,17 @@ def Instance_Setup():
         globals()['DistanceSens'] = DistanceSensor(PORT_DISTANCE_SENSOR)
 
         # ============== LightSensor =============
-        globals()['LightSensorFront'] = LightSensor('front', PORT_LIGHT_SENSOR_FRONT, bias=XX)
-        globals()['LightSensorBack'] = LightSensor('back', PORT_LIGHT_SENSOR_BACK, bias=XX)
-        globals()['LightSensorSide'] = LightSensor('side', PORT_LIGHT_SENSOR_SIDE, bias=XX)
+        globals()['LightSensorFront'] = LightSensor('front', PORT_LIGHT_SENSOR_FRONT, bias=XX)  # the amount of error that you allow from the light sensor. Higher value means it is more forgiving. Integer value is required. eg: 150; 500; 300
+        globals()['LightSensorBack'] = LightSensor('back', PORT_LIGHT_SENSOR_BACK, bias=XX)  # the amount of error that you allow from the light sensor. Higher value means it is more forgiving. Integer value is required. eg: 150; 500; 300
+        globals()['LightSensorSide'] = LightSensor('side', PORT_LIGHT_SENSOR_SIDE, bias=XX)  # the amount of error that you allow from the light sensor. Higher value means it is more forgiving. Integer value is required. eg: 150; 500; 300
 
         # ================= DriveR ==================
+        # If your robot does not have mechanum wheels, then you most certainly do not need 4 wheels, everything here is just a placeholder!
         globals()['MechanumWheeler'] = driveR_four(Port_front_right_wheel=PORT_MOTOR_FR,
                                                    Port_front_left_wheel=PORT_MOTOR_FL,
                                                    Port_back_right_wheel=PORT_MOTOR_BR,
                                                    Port_back_left_wheel=PORT_MOTOR_BL,
-                                                   controller_standing=XX,                                  # change this
+                                                   controller_standing=XX,                                  # If the controller is standing up-right (True) or if it is laying flat on the surface of the chassis bracket (False)
                                                    Instance_light_sensor_front=LightSensorFront,
                                                    Instance_light_sensor_back=LightSensorBack,
                                                    Instance_light_sensor_side=LightSensorSide,
@@ -97,7 +98,7 @@ def main():
         print('uncomment to start. Do not forget to change the invalid params (like XX)', flush=True)
         #Instance_Setup()
         #register_light_values()
-        #MechanumWheeler.auto_calibration(times=10, on_line=XX)
+        #MechanumWheeler.auto_calibration(times=10, on_line=XX)  # XX is a placeholder if you are plaving the robot on top of a black line (True) or if it has to drive left to get onto the line (False). Also this parameter is not available on the RubberWheel (driveR_two) class!!
 
     except Exception as e:
         log(f'Main Exception {str(e)}', important=True, in_exception=True)

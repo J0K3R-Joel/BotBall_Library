@@ -32,7 +32,7 @@ pause_event = threading.Event()
 
 
 # ===== PORTS DIGITAL =====
-#PORT_BUTTON = XX
+#PORT_BUTTON = XX  # XX is an placeholder for the integor of the digital port where the button is plugged in. eg. 0; 1; 9; 4
 
 
 # ===== PORTS MOTORS =====
@@ -57,6 +57,7 @@ def Comm_Setup(p_event, Communication_instance):
 	try:
 		if Communication_instance == None:
 			comm = RobotCommunicator('192.168.XX.XX', 10000, is_server=True) # one has to be the server, the other one has to be is_server=False (or be left out) -> both need the IP-Adress (IP from the the server) and the same port to communicate
+            #  XX here represents the complete IPv4-Address. eg: 192.168.0.10; 10.290.5.100; 172.100.5.134
 			pause_event.set()
 		else:
 			Communication_instance.set_pause_event_instance(p_event)

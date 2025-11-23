@@ -59,7 +59,7 @@ PORT_BUTTON = 0
 def Camera_Setup():
     global camera_man, brightness_cam, object_cam
     try:
-        camera_man = CameraManager(cam_index=X)
+        camera_man = CameraManager(cam_index=X)  # integer number of the USB-port in which you plugged in the USB-camera. eg: 4; 2; 1; ...
         brightness_cam = CameraBrightnessDetector(camera_man)
         object_cam = CameraObjectDetector(camera_man)
     except Exception as e:
@@ -79,6 +79,7 @@ def Comm_Setup(p_event, Communication_instance):
 	try:
 		if Communication_instance == None:
 			comm = RobotCommunicator('192.168.XX.XX', 10000, is_server=True) # one has to be the server, the other one has to be is_server=False (or be left out) -> both need the IP-Adress (IP from the the server) and the same port to communicate
+			#  XX here represents the complete IPv4-Address. eg: 192.168.0.10; 10.290.5.100; 172.100.5.134
 			pause_event.set()
 		else:
 			Communication_instance.set_pause_event_instance(p_event)
@@ -117,7 +118,7 @@ def FileR_Setup():
 def fake_main_setup():  # see this as the call of the main function -> only execute this in the if __name__ == "__main__": line (if you want communication)
     try:
         Comm_Setup(pause_event, comm)
-        f_main = FakeR(thread_instance=pause_event, comm_instance  = comm)
+        f_main = FakeR(thread_instance=pause_event, comm_instance=comm)
         f_main.start()
     except Exception as e:
         log(str(e), important=True, in_exception=True)

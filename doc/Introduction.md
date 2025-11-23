@@ -49,7 +49,7 @@ Before you start, consider that you have access to the following points:
 
 5. Open your browser
 
-6. Type in the IP-Adress of the controller alongside the Port `8888`. In conclusion, the URL has to look like this: `192.168.0.10:8888` 
+6. Type in the IP-Adress of the controller alongside the Port `8888`. In conclusion, the URL has to look like this: `192.168.0.10:8888`. More specifically: `http://192.168.0.10:8888` to use the unsecure connection
 
 7. Afterwards you will get to the website that looks something like this:
    
@@ -74,6 +74,8 @@ Before you start, consider that you have access to the following points:
 ![](./img/Compiling.png)
 
 **HINT**: a very common error in python (at least in the KISS IDE) is the `TabError` or `inconsistent use of tabs`. This is because the KISS IDE distinguishes between using 4 spaces or one tab. Normally this does not matter but unfortunately in the KISS IDE it does.
+
+**HINT**: before switching files, make sure that you compiled / safe the file in which you just coded / edited the program. This is because your changed would otherwise be overwritten with the original / last safe of the file.
 
 ---
 

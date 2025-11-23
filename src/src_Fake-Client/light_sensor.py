@@ -69,7 +69,7 @@ class LightSensor(Analog):
 
     # ======================== Save-Methods =======================
 
-    def save_value_black(self, measured_value: int) -> None:
+    def save_value_black(self, measured_value: int = None) -> None:
         '''
         Saves the black value of the light sensor into a file
 
@@ -79,6 +79,9 @@ class LightSensor(Analog):
         Returns:
             None
         '''
+        if measured_value is None:
+            measured_value = self.current_value()
+
         file_name = os.path.join(self.BIAS_FOLDER, f'{self.std_black_file_name + self.position}.txt')
         try:
             if os.path.exists(file_name):
@@ -89,16 +92,19 @@ class LightSensor(Analog):
         except Exception as e:
             log(str(e), important=True, in_exception=True)
 
-    def save_value_white(self, measured_value: int) -> None:
+    def save_value_white(self, measured_value: int = None) -> None:
         '''
         Saves the white value of the light sensor into a file
 
         Args:
-            measured_value (int): The value that should be averaged and written into the file
+            measured_value (int, optional): The value that should be averaged and written into the file
 
         Returns:
             None
         '''
+        if measured_value is None:
+            measured_value = self.current_value()
+
         file_name = os.path.join(self.BIAS_FOLDER, f'{self.std_white_file_name + self.position}.txt')
         try:
             if os.path.exists(file_name):
@@ -205,7 +211,7 @@ class LightSensor(Analog):
 
 
     # ======================== Normal methods =======================
-    def sees_Black(self) -> bool:
+    def sees_black(self) -> bool:
         '''
         tells you, if the sensor sees black (True) or not (False)
 
@@ -220,7 +226,7 @@ class LightSensor(Analog):
             raise TypeError('You need to set the white value before trying to see if it is black')
         return self.current_value() >= self.val_white + self.bias
 
-    def sees_White(self) -> bool:
+    def sees_white(self) -> bool:
         '''
         tells you, if the sensor sees white (True) or not (False)
 

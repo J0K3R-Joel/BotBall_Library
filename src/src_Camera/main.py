@@ -22,7 +22,7 @@ def main():
     print('uncomment to start camera detection', flush=True)
     #try:
         #global camera_man
-        #camera_man = CameraManager(cam_index=X)
+        #camera_man = CameraManager(cam_index=X)  # integer number of the USB-port in which you plugged in the USB-camera. eg: 4; 2; 1; ...
         #brightness_man = CameraBrightnessDetector(camera_man, tiles_x=2, tiles_y=5)
         #object_man = CameraObjectDetector(camera_man)
     

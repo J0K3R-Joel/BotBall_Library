@@ -180,3 +180,21 @@
 - **Status:** Open
 
 ---
+
+### Issue ID: 008
+
+- **Title:** No Secure Connection / SSL Protocol Error
+- **Category:** Connection
+- **Affected Components:** controller and pc
+- **Description:**  
+  When typing in the IP-Address and the port into the browser, then you get an error, that there is no secure connection available
+- **Symptoms / Indicators:**
+  - Errors like:
+    - `SSL_ERROR_RX_RECORD_TOO_LONG`
+    - `ERR_SSL_PROTOCOL_ERROR`
+    - `This site can't provide a secure connection`
+- **Cause:**  
+  - There is no secure connection (until now - 23.11.2025) available
+- **Solution / Workaround:**  
+  - before the IP-Address and Port (eg. `192.168.1.1:8888`) type `http://`, so you specifically tell it to use it the unsecure connection (your browser-search should look like this: `http://192.168.1.1:8888`)
+- **Status:** Resolved

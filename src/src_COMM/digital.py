@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 import os, sys
+from typing import Tuple, Any
+
 sys.path.append("/usr/lib")
 
 from logger import *
@@ -11,6 +13,7 @@ from logger import *
 
 try:
     import _kipr as k
+    from typing import *
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
@@ -21,6 +24,7 @@ class Digital:
         self.last_state = 0  # initialized while the button is not pressed
         self.pressed_at = 0  # to know when the button was first pressed
         self.state_timer = 0  # initialized while the button is not pressed
+        self.got_pressed = False
 
 
     # ======================== PUBLIC METHODS ========================
@@ -47,19 +51,27 @@ class Digital:
        Returns:
             If the digital Port is set to 1 at the moment (bool)
         '''
-        return k.digital(self.port) == 1
+        res = k.digital(self.port) == 1
 
-    def state_changed(self) -> bool:
+        if res:
+            self.got_pressed = True
+
+        return res
+
+    def state_changed(self, recognise_press: bool = False) -> bool:
         '''
         tells you, if the state of the button got changed since the last call
 
         Args:
-            None
+            recognise_press (bool, optional): If the class should count a button hit (True) or not (False). This is only for the time_end function.
 
        Returns:
             If the state got changed (True) or not (False)
         '''
         curr_state = self.current_value()
+
+        if recognise_press and curr_state:
+            self.got_pressed = True
 
         if curr_state != self.last_state:
             self.last_state = curr_state
@@ -78,31 +90,47 @@ class Digital:
             None
         '''
         self.state_timer = self.current_value()
+        self.got_pressed = False
         self.pressed_at = k.seconds()
 
-    def time_end(self) -> int:
+    def time_end(self, end_timer: bool = True, raiser_last_pressed: str = '') -> tuple[bool, bool, int | Any]:
         '''
         tells you how the time since the last time when the beginner function was called. The state has to be changed since the last beginner function was called
 
         Args:
-            None
+            end_timer (bool, optional): If the timer should reset to 0 (default: True) or continue counting (False)
+            raiser_last_pressed (str, optional): If you want an exception, warning or just do not care that the last time it got pressed the state did not chance (default: '' -> do not care)
 
        Returns:
-            the time between this function is called and the last time the beginnemr function was called
+            tuple:
+                bool: did the state change since the last call (True) or is it the same (False)
+                bool: did the state changed since the last time_begin call (True) or is it the same (False)
+                int: the time between this function is called and the last time the begin function was called
         '''
         if self.pressed_at == 0:
             log(f'If you want to know how long the button was (not) pressed, please initialize the beginning of the time to count!', in_exception=True)
             raise RuntimeError('If you want to know how long the button was (not) pressed, please initialize the beginning of the time to count!')
 
-        if self.state_timer == self.current_value():
-            log(f'The button is in the same state as it was when the beginner function got called! Time counting still continues though...', in_exception=True)
-            raise RuntimeError('The button is in the same state as it was when the beginner function got called! Time counting still continues though...')
 
+        current_v = self.current_value()
+        state_changed = self.state_timer == current_v
+        warn_lst = ['warning', 'info']
+        exc_lst = ['error', 'exception', 'interrupt']
+        res = k.seconds() - self.pressed_at
+        total_changed = self.got_pressed
 
-        return k.seconds() - self.pressed_at
+        self.pressed_at = 0 if end_timer else self.pressed_at
 
+        if not state_changed and raiser_last_pressed:
+            if raiser_last_pressed.lower() in warn_lst:
+                log(f'The button is in the same state as it was when the beginner function got called! Time counting still continues though...', in_exception=True)
 
+            elif raiser_last_pressed.lower() in exc_lst:
+                log(f'The button is in the same state as it was when the beginner function got called! Time counting still continues though...',in_exception=True)
+                raise RuntimeError('The button is in the same state as it was when the beginner function got called! Time counting still continues though...')
 
+            else:
+                log(f'raiser_last_pressed can only contain either anything of {warn_lst} or anything of {exc_lst}.', in_exception=True)
+                raise ValueError(f'raiser_last_pressed can only contain either anything of {warn_lst} or anything of {exc_lst}.')
 
-
-
+        return state_changed, total_changed, res

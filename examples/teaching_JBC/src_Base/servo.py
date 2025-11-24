@@ -112,8 +112,7 @@ class ServoX:
         Returns:
             None
         '''
-        millis = (abs(self.get_pos() - value) / 100) + 20 # + 20 is just a kind of bias.
-        print(millis, flush=True)
+        millis = (abs(self.get_pos() - value) / 100) + 20  # + 20 is just a kind of bias. 
         if enabler_needed:
             self._servo_enabler()
         if self._valid_range(value):
@@ -176,7 +175,7 @@ class ServoX:
             self._set_pos_internal(value=value, enabler_needed=enabler_needed)
         self._manage_servo_stopper(False)
 
-    def add_to_pos(self, value: int, enabler_needed: bool=True) -> None:
+    def add_to_pos(self, value: int, enabler_needed: bool = True) -> None:
         '''
         Adds the value to the current pos
 
@@ -191,7 +190,7 @@ class ServoX:
         if self._valid_range(new_pos):
             self._set_pos_internal(new_pos, enabler_needed=enabler_needed)
 
-    def range_to_pos(self, value:int, multi: int = 2, disabler_needed: bool= True) -> None:
+    def range_to_pos(self, value: int, multi: int = 2, disabler_needed: bool= True) -> None:
         '''
         Changes the position smoothly from the current position to the position given
 

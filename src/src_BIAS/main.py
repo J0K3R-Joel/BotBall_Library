@@ -12,6 +12,7 @@ from logger import *  # selfmade
 try:
     import time
     from driveR import *  # selfmade
+    from wheelR import WheelR  # selfmade
     from light_sensor import LightSensor  # selfmade
     from digital import Digital  # selfmade
 except Exception as e:
@@ -47,12 +48,19 @@ def Instance_Setup():
         globals()['LightSensorBack'] = LightSensor('back', PORT_LIGHT_SENSOR_BACK, bias=XX)  # the amount of error that you allow from the light sensor. Higher value means it is more forgiving. Integer value is required. eg: 150; 500; 300
         globals()['LightSensorSide'] = LightSensor('side', PORT_LIGHT_SENSOR_SIDE, bias=XX)  # the amount of error that you allow from the light sensor. Higher value means it is more forgiving. Integer value is required. eg: 150; 500; 300
 
+        # ================== WheelR =================
+        globals()['Wheel_FR'] = WheelR(PORT_MOTOR_FR)
+        globals()['Wheel_FL'] = WheelR(PORT_MOTOR_FL)
+        globals()['Wheel_BR'] = WheelR(PORT_MOTOR_BR)
+        globals()['Wheel_BL'] = WheelR(PORT_MOTOR_BL)
+
+
         # ================= DriveR ==================
         # If your robot does not have mechanum wheels, then you most certainly do not need 4 wheels, everything here is just a placeholder!
-        globals()['MechanumWheeler'] = driveR_four(Port_front_right_wheel=PORT_MOTOR_FR,
-                                                   Port_front_left_wheel=PORT_MOTOR_FL,
-                                                   Port_back_right_wheel=PORT_MOTOR_BR,
-                                                   Port_back_left_wheel=PORT_MOTOR_BL,
+        globals()['MechanumWheeler'] = Mechanum_Wheels_four(Instance_front_right_wheel=Wheel_FR,
+                                                   Instance_front_left_wheel=Wheel_FL,
+                                                   Instance_back_left_wheel=Wheel_BL,
+                                                   Instance_back_right_wheel=Wheel_BR,
                                                    controller_standing=XX,                                  # If the controller is standing up-right (True) or if it is laying flat on the surface of the chassis bracket (False)
                                                    Instance_light_sensor_front=LightSensorFront,
                                                    Instance_light_sensor_back=LightSensorBack,

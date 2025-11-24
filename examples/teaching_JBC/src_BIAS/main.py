@@ -11,6 +11,7 @@ from logger import *  # selfmade
 
 try:
     import time
+    from wheelR import WheelR  # selfmade
     from driveR import *  # selfmade
     from light_sensor import LightSensor  # selfmade
     from digital import Digital  # selfmade
@@ -43,9 +44,13 @@ def Instance_Setup():
         globals()['LightSensorFront'] = LightSensor('front', PORT_LIGHT_SENSOR_FRONT, bias=150)
         globals()['LightSensorBack'] = LightSensor('back', PORT_LIGHT_SENSOR_BACK, bias=150)
 
+        # ================== WheelR =================
+        globals()['Wheel_R'] = WheelR(PORT_MOTOR_R)
+        globals()['Wheel_L'] = WheelR(PORT_MOTOR_L)
+
         # ================= DriveR ==================
-        globals()['RubberWheeler'] = driveR_two(PORT_MOTOR_R,
-                                                PORT_MOTOR_L,
+        globals()['RubberWheeler'] = Rubber_Wheels_two(Instance_right_wheel=Wheel_R,
+                                                Instance_left_wheel=Wheel_L,
                                                 False,
                                                 Instance_distance_sensor=DistanceSens,
                                                 Instance_light_sensor_front=LightSensorFront,

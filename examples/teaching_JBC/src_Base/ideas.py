@@ -173,3 +173,225 @@ def setup(at_competition: bool) -> None:
         print('////////////////////////////////////////////\n', flush=True)
         tryout()
     k.cmpc(PORT_MOTOR_CLAW)
+
+def align_on_black_line(self, crossing: bool, direction: str = 'vertical', leaning_side: str = None) -> None:
+    '''
+   Align yourself on the black line. If there is a crossing you can choose on which line you want to get onto by switching the direction parameter. You need to be somewhere on top of the black line to let this function work!
+
+   Args:
+       crossing (bool): are there two overlapping black lines (True) or not (False)
+       direction (str, optional): "vertical" (default) or "horizontal" - depends on where you want to go
+       leaning_side (str, optional): "left" or "right" - helps the roboter to turn in the right direction (-> faster)
+       precise (bool, optional): if True, then it takes longer, but is slightly better aligned on the black line. If False, it takes less time but the bias is therefor more forgiving
+
+   Returns:
+       None
+   '''
+    self.check_instance_light_sensors_middle()
+    motor_id = self._manage_motor_stopper(True)
+    try:
+        if direction != 'vertical' and direction != 'horizontal':
+            log('Only "vertical" or "horizontal" are valid options for the "direction" parameter',
+                in_exception=True)
+            raise ValueError(
+                'align_on_black_line() Exception: Only "vertical" or "horizontal" are valid options for the "direction" parameter')
+
+        if leaning_side != None and leaning_side != 'right' and leaning_side != 'left':
+            log('Only "right", "left" or None / nothing are valid options for the "leaning_side" parameter',
+                in_exception=True)
+            raise ValueError(
+                'align_on_black_line() Exception: Only "right", "left" or None / nothing are valid options for the "leaning_side" parameter')
+
+        if not crossing:
+            log('no crossing')
+            if not leaning_side or leaning_side == 'right':
+                ports = self.port_wheel_left, self.port_wheel_right
+            else:
+                ports = self.port_wheel_right, self.port_wheel_left
+            startTime = k.seconds()
+            while self.light_sensor_back.sees_white() and self.light_sensor_front.sees_white() and self.is_motor_active(motor_id):
+                if k.seconds() - startTime < self.NINETY_DEGREES_SECS:
+                    k.mav(ports[0], self.ds_speed)
+                    k.mav(ports[1], -self.ds_speed)
+                else:
+                    k.mav(ports[0], -self.ds_speed)
+                    k.mav(ports[1], self.ds_speed // 2)
+                    k.msleep(1)
+
+            self.break_all_motors()
+
+            if not self.light_sensor_back.sees_white():  # hinten ist oben
+                while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
+                    k.mav(ports[0], -self.ds_speed)
+                    k.mav(ports[1], -self.ds_speed)
+                self.break_all_motors()
+                while self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
+                    k.mav(ports[0], 1500)
+                self.break_all_motors()
+                while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
+                    k.mav(ports[1], 1500)
+                self.break_all_motors()
+                while self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
+                    k.mav(ports[1], 1500)
+                self.break_all_motors()
+                while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
+                    k.mav(ports[1], -1500)
+                    k.mav(ports[0], -200)
+                self.break_all_motors()
+
+            elif not self.light_sensor_front.sees_white():  # vorne ist oben
+                while not self.light_sensor_back.sees_black() and self.is_motor_active(motor_id):
+                    k.mav(ports[0], self.ds_speed)
+                    k.mav(ports[1], self.ds_speed)
+                while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
+                    k.mav(ports[0], -1500)
+                    k.mav(ports[1], 1500)
+
+            self.break_all_motors()
+
+            if not self.light_sensor_front.sees_black():
+                self.break_all_motors()
+                while not self.light_sensor_front.sees_white() and self.is_motor_active(motor_id):
+                    k.mav(ports[1], 1500)
+
+                while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
+                    k.mav(ports[1], 1500)
+
+            if not self.light_sensor_back.sees_black():
+                while self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
+                    k.mav(ports[1], 1500)
+                while self.light_sensor_back.sees_white() and self.is_motor_active(motor_id):
+                    k.mav(ports[1], -1500)
+                    k.mav(ports[0], 1500)
+
+            self.break_all_motors()
+
+        else:
+            ports = self.port_wheel_left, self.port_wheel_right
+            on_line = False
+            first_line_hit = None
+            line_counter = 0
+            line_timer = 0
+            line_timer_collector = []
+
+            startTime_front = k.seconds()
+            while k.seconds() - startTime_front < self.ONEEIGHTY_DEGREES_SECS * 2 + 0.2  and self.is_motor_active(motor_id):  # +0.2 is a kind of bias
+                while self.light_sensor_front.sees_black()  and self.is_motor_active(motor_id):
+                    on_line = True
+                    line_timer += 1
+                    k.mav(ports[0], -self.ds_speed)
+                    k.mav(ports[1], self.ds_speed)
+                if on_line:
+                    if not first_line_hit:
+                        first_line_hit = k.seconds() - startTime_front
+                    on_line = False
+                    line_counter += 1
+                    line_timer_collector.append(line_timer)
+                    line_timer = 0
+                k.mav(ports[0], -self.ds_speed)
+                k.mav(ports[1], self.ds_speed)
+
+            if line_counter > 4:
+                line_counter = 4
+
+            on_line = False
+            direct = 'right', 'left'
+            dir_picker = self.NINETY_DEGREES_SECS / 1.4, first_line_hit
+            if direction == 'horizontal':
+                dir_picker = dir_picker[1], dir_picker[0]
+
+            if line_counter == 1 and line_timer_collector[0] < 400:  # There is no crossing, just the normal line
+                self.align_on_black_line(False, direction=direction, leaning_side=leaning_side)
+                return
+
+            if line_counter == 2 and line_timer_collector[0] < 400 and line_timer_collector[
+                1] < 400:  # There is no crossing, just the normal line
+                self.align_on_black_line(False, direction=direction, leaning_side=leaning_side)
+                return
+
+            if line_counter == 4:
+                if dir_picker[0] < dir_picker[1]:
+                    d = direct[0]
+                    while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
+                        k.mav(ports[0], self.ds_speed)
+                        k.mav(ports[1], -self.ds_speed)
+                    self.break_all_motors()
+                    while not self.light_sensor_back.sees_black() and self.is_motor_active(motor_id):
+                        k.mav(ports[0], self.ds_speed)
+                        k.mav(ports[1], self.ds_speed)
+                    while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
+                        k.mav(ports[0], self.ds_speed)
+                        k.mav(ports[1], -self.ds_speed)
+                    self.break_all_motors()
+                else:
+                    d = direct[1]
+                    while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
+                        k.mav(ports[0], -self.ds_speed)
+                        k.mav(ports[1], self.ds_speed)
+                    self.break_all_motors()
+                    while not self.light_sensor_back.sees_black() and self.is_motor_active(motor_id):
+                        k.mav(ports[0], self.ds_speed)
+                        k.mav(ports[1], self.ds_speed)
+                    self.break_all_motors()
+                    while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
+                        k.mav(ports[0], -self.ds_speed)
+                        k.mav(ports[1], self.ds_speed)
+                    self.break_all_motors()
+
+            elif line_counter == 3:
+                if dir_picker[0] > dir_picker[1]:
+                    d = direct[0]
+                    while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
+                        k.mav(ports[0], self.ds_speed)
+                        k.mav(ports[1], -self.ds_speed)
+                    self.break_all_motors()
+                    while not self.light_sensor_back.sees_black() and self.is_motor_active(motor_id):
+                        k.mav(ports[0], self.ds_speed)
+                        k.mav(ports[1], self.ds_speed)
+                    self.break_all_motors()
+                    if not self.light_sensor_front.sees_black():
+                        while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
+                            k.mav(ports[0], -self.ds_speed)
+                            k.mav(ports[1], self.ds_speed)
+                        self.break_all_motors()
+                else:
+                    d = direct[1]
+                    while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
+                        k.mav(ports[0], -self.ds_speed)
+                        k.mav(ports[1], self.ds_speed)
+                    self.break_all_motors()
+                    while not self.light_sensor_back.sees_black() and self.is_motor_active(motor_id):
+                        k.mav(ports[0], self.ds_speed)
+                        k.mav(ports[1], self.ds_speed)
+                    self.break_all_motors()
+                    if not self.light_sensor_front.sees_black():
+                        while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
+                            k.mav(ports[0], -self.ds_speed)
+                            k.mav(ports[1], self.ds_speed)
+                        self.break_all_motors()
+
+            else:  # line_counter == 2
+                if dir_picker[0] < dir_picker[1]:
+                    d = direct[0]
+                    while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
+                        k.mav(ports[0], self.ds_speed)
+                        k.mav(ports[1], -self.ds_speed)
+                    self.break_all_motors()
+                    while not self.light_sensor_back.sees_black() and self.is_motor_active(motor_id):
+                        k.mav(ports[0], self.ds_speed)
+                        k.mav(ports[1], self.ds_speed)
+                    self.break_all_motors()
+                else:
+                    d = direct[1]
+                    while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
+                        k.mav(ports[0], -self.ds_speed)
+                        k.mav(ports[1], self.ds_speed)
+                    self.break_all_motors()
+
+            #self.next_to_onto_line(d)
+        self.break_all_motors()
+        self._manage_motor_stopper(False)
+
+
+    except Exception as e:
+        log(str(e), important=True, in_exception=True)

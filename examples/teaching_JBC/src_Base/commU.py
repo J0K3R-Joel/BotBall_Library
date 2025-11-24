@@ -138,7 +138,7 @@ class WifiConnector:
         try:
             log('Scanning all available networks ...')
             result = subprocess.run(
-                ["nmcli", "-t", "-f", "SSID,SIGNAL", "dev", "wifi"],
+                ["sudo", "nmcli", "-t", "-f", "SSID,SIGNAL", "dev", "wifi"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 check=True

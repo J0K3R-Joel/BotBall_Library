@@ -11,7 +11,7 @@ DEST_BASE="/home/kipr/Documents/KISS"
 USERS_FILE="/home/kipr/Documents/KISS/users.json"
 SRC_FAKE_SERVER_FOLDER_NAME="src_Fake-Server"
 
-# ==== Skript-Verzeichnis bestimmen ====
+# ==== Declare script folder ====
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC_DIR="$(realpath "$SCRIPT_DIR/..")"
 

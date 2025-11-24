@@ -14,6 +14,7 @@ try:
     import time
     import threading
     import subprocess
+    from wheelR import WheelR  # selfmade
     from commU import WifiConnector  # selfmade
     from RoboComm import RobotCommunicator  # selfmade
     from fake import FakeR  # selfmade
@@ -76,15 +77,28 @@ def Instancer_Setup():
 
         # ================== Util ===================
 
-        # ================= DriveR ==================
-        #globals()['Noris'] = driveR_four(Port_front_right_wheel=PORT_MOTOR_FR,
-        #                                 Port_front_left_wheel=PORT_MOTOR_FL,
-        #                                 Port_back_right_wheel=PORT_MOTOR_BR,
-        #                                 Port_back_left_wheel=PORT_MOTOR_BL,
-		#			                     controller_standing=XX)
         # ============== DistanceSensor =============
 
         # =============== LightSensor ===============
+
+        # ================== WheelR =================
+        #globals()['Wheel_FR'] = WheelR(PORT_MOTOR_FR)
+        #globals()['Wheel_FL'] = WheelR(PORT_MOTOR_FL)
+        #globals()['Wheel_BR'] = WheelR(PORT_MOTOR_BR)
+        #globals()['Wheel_BL'] = WheelR(PORT_MOTOR_BL)
+
+        # ================= DriveR ==================
+        # If your robot does not have mechanum wheels, then you most certainly do not need 4 wheels, everything here is just a placeholder!
+        #globals()['Noris'] = Mechanum_Wheels_four(Instance_front_right_wheel=Wheel_FR,
+        #                                                    Instance_front_left_wheel=Wheel_FL,
+        #                                                    Instance_back_left_wheel=Wheel_BL,
+        #                                                    Instance_back_right_wheel=Wheel_BR,
+        #                                                    controller_standing=XX,
+        #                                                    # If the controller is standing up-right (True) or if it is laying flat on the surface of the chassis bracket (False)
+        #                                                    Instance_light_sensor_front=LightSensorFront,
+        #                                                    Instance_light_sensor_back=LightSensorBack,
+        #                                                    Instance_light_sensor_side=LightSensorSide,
+        #                                                    Instance_distance_sensor=DistanceSens)
     except Exception as e:
         log(f'Instancer Exception: {str(e)}', important=True, in_exception=True)
 

@@ -6,6 +6,7 @@ from logger import *  # selfmade
 
 try:
 	import threading
+	from fake import FakeR  # selfmade
 	from RoboComm import RobotCommunicator  # selfmade
 	import time
 except Exception as e:

@@ -88,7 +88,7 @@ This function is needed to be able to know all the distances for the distance se
 
 ---
 
-
+If you do not need some parts to calibrate, you can just leave them out
 
 ## driveR 
 

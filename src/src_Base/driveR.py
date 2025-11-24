@@ -36,7 +36,7 @@ BIAS_FOLDER = '/usr/lib/bias_files'
 os.makedirs(BIAS_FOLDER, exist_ok=True)
 
 
-class driveR_two():
+class Rubber_Wheels_two():
     def __init__(self,
                  Instance_right_wheel: WheelR,
                  Instance_left_wheel: WheelR,
@@ -2140,7 +2140,7 @@ class driveR_two():
         self._manage_motor_stopper(False)
 
 
-class driveR_four:
+class Mechanum_Wheels_four:
     def __init__(self,
                  Instance_front_right_wheel: WheelR,
                  Instance_front_left_wheel: WheelR,
@@ -4310,20 +4310,20 @@ class driveR_four:
             while (Instance.current_value() <= value) and (not ports[0].is_pressed() and not ports[
                 1].is_pressed()) and k.seconds() - startTime < millis / 1000 and self.is_motor_active(motor_id):
                 if 1000 > theta > -1000:
-                    k.mav(self.port_wheel_fl, speed)
-                    k.mav(self.port_wheel_fr, speed)
-                    k.mav(self.port_wheel_bl, speed)
-                    k.mav(self.port_wheel_br, speed)
+                    self.fl_wheel.drive(speed)
+                    self.fr_wheel.drive(speed)
+                    self.bl_wheel.drive(speed)
+                    self.br_wheel.drive(speed)
                 elif theta > 1000:
-                    k.mav(self.port_wheel_fl, speed - adjuster)
-                    k.mav(self.port_wheel_fr, speed + adjuster)
-                    k.mav(self.port_wheel_bl, speed - adjuster)
-                    k.mav(self.port_wheel_br, speed + adjuster)
+                    self.fl_wheel.drive(speed - adjuster)
+                    self.fr_wheel.drive(speed + adjuster)
+                    self.bl_wheel.drive(speed - adjuster)
+                    self.br_wheel.drive(speed + adjuster)
                 else:
-                    k.mav(self.port_wheel_fl, speed + adjuster)
-                    k.mav(self.port_wheel_fr, speed - adjuster)
-                    k.mav(self.port_wheel_bl, speed + adjuster)
-                    k.mav(self.port_wheel_br, speed - adjuster)
+                    self.fl_wheel.drive(speed + adjuster)
+                    self.fr_wheel.drive(speed - adjuster)
+                    self.bl_wheel.drive(speed + adjuster)
+                    self.br_wheel.drive(speed - adjuster)
                 k.msleep(10)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
@@ -4332,20 +4332,20 @@ class driveR_four:
                 1].is_pressed()) and k.seconds() - startTime < millis / 1000 and self.is_motor_active(motor_id):
                 print('condition ', self.is_motor_active(motor_id), flush=True)  #@TODO needs to be tested
                 if 1000 > theta > -1000:
-                    k.mav(self.port_wheel_fl, speed)
-                    k.mav(self.port_wheel_fr, speed)
-                    k.mav(self.port_wheel_bl, speed)
-                    k.mav(self.port_wheel_br, speed)
+                    self.fl_wheel.drive(speed)
+                    self.fr_wheel.drive(speed)
+                    self.bl_wheel.drive(speed)
+                    self.br_wheel.drive(speed)
                 elif theta > 1000:
-                    k.mav(self.port_wheel_fl, speed - adjuster)
-                    k.mav(self.port_wheel_fr, speed + adjuster)
-                    k.mav(self.port_wheel_bl, speed - adjuster)
-                    k.mav(self.port_wheel_br, speed + adjuster)
+                    self.fl_wheel.drive(speed - adjuster)
+                    self.fr_wheel.drive(speed + adjuster)
+                    self.bl_wheel.drive(speed - adjuster)
+                    self.br_wheel.drive(speed + adjuster)
                 else:
-                    k.mav(self.port_wheel_fl, speed + adjuster)
-                    k.mav(self.port_wheel_fr, speed - adjuster)
-                    k.mav(self.port_wheel_bl, speed + adjuster)
-                    k.mav(self.port_wheel_br, speed - adjuster)
+                    self.fl_wheel.drive(speed + adjuster)
+                    self.fr_wheel.drive(speed - adjuster)
+                    self.bl_wheel.drive(speed + adjuster)
+                    self.br_wheel.drive(speed - adjuster)
                 k.msleep(10)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
@@ -4353,20 +4353,20 @@ class driveR_four:
             while (Instance.current_value() > value) and (not ports[0].is_pressed() and not ports[
                 1].is_pressed() and k.seconds()) - startTime < millis / 1000 and self.is_motor_active(motor_id):
                 if 1000 > theta > -1000:
-                    k.mav(self.port_wheel_fl, speed)
-                    k.mav(self.port_wheel_fr, speed)
-                    k.mav(self.port_wheel_bl, speed)
-                    k.mav(self.port_wheel_br, speed)
+                    self.fl_wheel.drive(speed)
+                    self.fr_wheel.drive(speed)
+                    self.bl_wheel.drive(speed)
+                    self.br_wheel.drive(speed)
                 elif theta > 1000:
-                    k.mav(self.port_wheel_fl, speed - adjuster)
-                    k.mav(self.port_wheel_fr, speed + adjuster)
-                    k.mav(self.port_wheel_bl, speed - adjuster)
-                    k.mav(self.port_wheel_br, speed + adjuster)
+                    self.fl_wheel.drive(speed - adjuster)
+                    self.fr_wheel.drive(speed + adjuster)
+                    self.bl_wheel.drive(speed - adjuster)
+                    self.br_wheel.drive(speed + adjuster)
                 else:
-                    k.mav(self.port_wheel_fl, speed + adjuster)
-                    k.mav(self.port_wheel_fr, speed - adjuster)
-                    k.mav(self.port_wheel_bl, speed + adjuster)
-                    k.mav(self.port_wheel_br, speed - adjuster)
+                    self.fl_wheel.drive(speed + adjuster)
+                    self.fr_wheel.drive(speed - adjuster)
+                    self.bl_wheel.drive(speed + adjuster)
+                    self.br_wheel.drive(speed - adjuster)
                 k.msleep(10)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
@@ -4374,20 +4374,20 @@ class driveR_four:
             while (Instance.current_value() < value) and (not ports[0].is_pressed() and not ports[
                 1].is_pressed()) and k.seconds() - startTime < millis / 1000 and self.is_motor_active(motor_id):
                 if 1000 > theta > -1000:
-                    k.mav(self.port_wheel_fl, speed)
-                    k.mav(self.port_wheel_fr, speed)
-                    k.mav(self.port_wheel_bl, speed)
-                    k.mav(self.port_wheel_br, speed)
+                    self.fl_wheel.drive(speed)
+                    self.fr_wheel.drive(speed)
+                    self.bl_wheel.drive(speed)
+                    self.br_wheel.drive(speed)
                 elif theta > 1000:
-                    k.mav(self.port_wheel_fl, speed - adjuster)
-                    k.mav(self.port_wheel_fr, speed + adjuster)
-                    k.mav(self.port_wheel_bl, speed - adjuster)
-                    k.mav(self.port_wheel_br, speed + adjuster)
+                    self.fl_wheel.drive(speed - adjuster)
+                    self.fr_wheel.drive(speed + adjuster)
+                    self.bl_wheel.drive(speed - adjuster)
+                    self.br_wheel.drive(speed + adjuster)
                 else:
-                    k.mav(self.port_wheel_fl, speed + adjuster)
-                    k.mav(self.port_wheel_fr, speed - adjuster)
-                    k.mav(self.port_wheel_bl, speed + adjuster)
-                    k.mav(self.port_wheel_br, speed - adjuster)
+                    self.fl_wheel.drive(speed + adjuster)
+                    self.fr_wheel.drive(speed - adjuster)
+                    self.bl_wheel.drive(speed + adjuster)
+                    self.br_wheel.drive(speed - adjuster)
                 k.msleep(10)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
@@ -4426,9 +4426,9 @@ class driveR_four:
 
             if not crossing:
                 if not leaning_side or leaning_side == 'right':
-                    ports = self.port_wheel_fl, self.port_wheel_fr, self.port_wheel_bl, self.port_wheel_br
+                    instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
                 else:
-                    ports = self.port_wheel_fr, self.port_wheel_fl, self.port_wheel_br, self.port_wheel_bl
+                    instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
                 adjuster = self.ds_speed
                 if precise:
                     adjuster = self.ds_speed
@@ -4436,34 +4436,33 @@ class driveR_four:
 
                 while self.light_sensor_back.sees_white() and self.light_sensor_front.sees_white() and self.is_motor_active(motor_id):
                     if k.seconds() - startTime < self.NINETY_DEGREES_SECS:
-                        k.mav(ports[0], self.ds_speed)
-                        k.mav(ports[1], -self.ds_speed)
-                        k.mav(ports[2], self.ds_speed)
-                        k.mav(ports[3], -self.ds_speed)
+                        instances[0].drive_dfw()
+                        instances[1].drive_dbw()
+                        instances[2].drive_dfw()
+                        instances[3].drive_dbw()
                     else:
-                        k.mav(ports[0], -self.ds_speed)
-                        k.mav(ports[1], self.ds_speed)
-                        k.mav(ports[2], -self.ds_speed)
-                        k.msleep(1)
+                        instances[0].drive_dbw()
+                        instances[1].drive_dfw()
+                        instances[2].drive_dbw()
 
                 self.break_all_motors()
 
                 if not self.light_sensor_back.sees_white():  # hinten ist oben
                     while self.light_sensor_front.sees_white() and self.is_motor_active(motor_id):
-                        k.mav(ports[0], -adjuster)  # -750
-                        k.mav(ports[1], adjuster)
+                        instances[0].drive(-adjuster)
+                        instances[1].drive(adjuster)
 
                 if not self.light_sensor_front.sees_white():  # vorne ist oben
                     while self.light_sensor_back.sees_white() and self.is_motor_active(motor_id):
-                        k.mav(ports[2], -adjuster)  # -750
-                        k.mav(ports[3], adjuster)
+                        instances[2].drive(-adjuster)
+                        instances[3].drive(adjuster)
 
                 k.ao()
                 k.msleep(50)
                 if self.light_sensor_front.sees_white():
                     while self.light_sensor_front.sees_white() and self.is_motor_active(motor_id):
-                        k.mav(ports[0], -adjuster)
-                        k.mav(ports[1], adjuster)
+                        instances[0].drive(-adjuster)
+                        instances[1].drive(adjuster)
 
                 k.ao()
                 k.msleep(10)
@@ -4471,7 +4470,7 @@ class driveR_four:
                     self.drive_side_condition_analog('left', self.light_sensor_front, '<', self.light_sensor_front.get_value_black() - self.light_sensor_front.get_bias())
 
             else:
-                ports = self.port_wheel_fl, self.port_wheel_fr, self.port_wheel_bl, self.port_wheel_br
+                instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
                 on_line = False
                 first_line_hit = None
                 line_counter = 0
@@ -4483,10 +4482,10 @@ class driveR_four:
                     while self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
                         on_line = True
                         line_timer += 1
-                        k.mav(ports[0], -self.ds_speed)
-                        k.mav(ports[1], self.ds_speed)
-                        k.mav(ports[2], -self.ds_speed)
-                        k.mav(ports[3], self.ds_speed)
+                        instances[0].drive_dbw()
+                        instances[1].drive_dfw()
+                        instances[2].drive_dbw()
+                        instances[3].drive_dfw()
                     if on_line:
                         if not first_line_hit:
                             first_line_hit = k.seconds() - startTime_front
@@ -4494,10 +4493,10 @@ class driveR_four:
                         line_counter += 1
                         line_timer_collector.append(line_timer)
                         line_timer = 0
-                    k.mav(ports[0], -self.ds_speed)
-                    k.mav(ports[1], self.ds_speed)
-                    k.mav(ports[2], -self.ds_speed)
-                    k.mav(ports[3], self.ds_speed)
+                    instances[0].drive_dbw()
+                    instances[1].drive_dfw()
+                    instances[2].drive_dbw()
+                    instances[3].drive_dfw()
 
                 if line_counter > 4:
                     line_counter = 4
@@ -4520,37 +4519,37 @@ class driveR_four:
                     if dir_picker[0] < dir_picker[1]:
                         d = direct[0]
                         while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                            k.mav(ports[0], self.ds_speed)
-                            k.mav(ports[1], -self.ds_speed)
-                            k.mav(ports[2], self.ds_speed)
-                            k.mav(ports[3], -self.ds_speed)
+                            instances[0].drive_dfw()
+                            instances[1].drive_dbw()
+                            instances[2].drive_dfw()
+                            instances[3].drive_dbw()
                         self.break_all_motors()
                         while not self.light_sensor_back.sees_black() and self.is_motor_active(motor_id):
-                            k.mav(ports[0], self.ds_speed)
-                            k.mav(ports[1], self.ds_speed)
-                            k.mav(ports[2], -self.ds_speed)
-                            k.mav(ports[3], self.ds_speed)
+                            instances[0].drive_dfw()
+                            instances[1].drive_dfw()
+                            instances[2].drive_dbw()
+                            instances[3].drive_dfw()
                         while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                            k.mav(ports[0], self.ds_speed)
-                            k.mav(ports[1], -self.ds_speed)
+                            instances[0].drive_dfw()
+                            instances[1].drive_dbw()
                         self.break_all_motors()
                     else:
                         d = direct[1]
                         while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                            k.mav(ports[0], -self.ds_speed)
-                            k.mav(ports[1], self.ds_speed)
-                            k.mav(ports[2], -self.ds_speed)
-                            k.mav(ports[3], self.ds_speed)
+                            instances[0].drive_dbw()
+                            instances[1].drive_dfw()
+                            instances[2].drive_dbw()
+                            instances[3].drive_dfw()
                         self.break_all_motors()
                         while not self.light_sensor_back.sees_black() and self.is_motor_active(motor_id):
-                            k.mav(ports[0], self.ds_speed)
-                            k.mav(ports[1], self.ds_speed)
-                            k.mav(ports[2], self.ds_speed)
-                            k.mav(ports[3], -self.ds_speed)
+                            instances[0].drive_dfw()
+                            instances[1].drive_dfw()
+                            instances[2].drive_dfw()
+                            instances[3].drive_dbw()
                         self.break_all_motors()
                         while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                            k.mav(ports[0], -self.ds_speed)
-                            k.mav(ports[1], self.ds_speed)
+                            instances[0].drive_dbw()
+                            instances[1].drive_dfw()
                         self.break_all_motors()
                     self.drive_side(d, 5)
 
@@ -4558,40 +4557,40 @@ class driveR_four:
                     if dir_picker[0] > dir_picker[1]:
                         d = direct[0]
                         while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                            k.mav(ports[0], self.ds_speed)
-                            k.mav(ports[1], -self.ds_speed)
-                            k.mav(ports[2], self.ds_speed)
-                            k.mav(ports[3], -self.ds_speed)
+                            instances[0].drive_dfw()
+                            instances[1].drive_dbw()
+                            instances[2].drive_dfw()
+                            instances[3].drive_dbw()
                         self.break_all_motors()
                         while not self.light_sensor_back.sees_black() and self.is_motor_active(motor_id):
-                            k.mav(ports[0], self.ds_speed)
-                            k.mav(ports[1], self.ds_speed)
-                            k.mav(ports[2], -self.ds_speed)
-                            k.mav(ports[3], self.ds_speed)
+                            instances[0].drive_dfw()
+                            instances[1].drive_dfw()
+                            instances[2].drive_dbw()
+                            instances[3].drive_dfw()
                         self.break_all_motors()
                         if not self.light_sensor_front.sees_black():
                             while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                                k.mav(ports[0], -self.ds_speed)
-                                k.mav(ports[1], self.ds_speed)
+                                instances[0].drive_dbw()
+                                instances[1].drive_dfw()
                             self.break_all_motors()
                     else:
                         d = direct[1]
                         while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                            k.mav(ports[0], -self.ds_speed)
-                            k.mav(ports[1], self.ds_speed)
-                            k.mav(ports[2], -self.ds_speed)
-                            k.mav(ports[3], self.ds_speed)
+                            instances[0].drive_dbw()
+                            instances[1].drive_dfw()
+                            instances[2].drive_dbw()
+                            instances[3].drive_dfw()
                         self.break_all_motors()
                         while not self.light_sensor_back.sees_black() and self.is_motor_active(motor_id):
-                            k.mav(ports[0], self.ds_speed)
-                            k.mav(ports[1], self.ds_speed)
-                            k.mav(ports[2], self.ds_speed)
-                            k.mav(ports[3], -self.ds_speed)
+                            instances[0].drive_dfw()
+                            instances[1].drive_dfw()
+                            instances[2].drive_dfw()
+                            instances[3].drive_dbw()
                         self.break_all_motors()
                         if not self.light_sensor_front.sees_black():
                             while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                                k.mav(ports[0], -self.ds_speed)
-                                k.mav(ports[1], self.ds_speed)
+                                instances[0].drive_dbw()
+                                instances[1].drive_dfw()
                             self.break_all_motors()
                     self.drive_side(d, 5)
 
@@ -4599,24 +4598,24 @@ class driveR_four:
                     if dir_picker[0] < dir_picker[1]:
                         d = direct[0]
                         while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                            k.mav(ports[0], self.ds_speed)
-                            k.mav(ports[1], -self.ds_speed)
-                            k.mav(ports[2], self.ds_speed)
-                            k.mav(ports[3], -self.ds_speed)
+                            instances[0].drive_dfw()
+                            instances[1].drive_dbw()
+                            instances[2].drive_dfw()
+                            instances[3].drive_dbw()
                         self.break_all_motors()
                         while not self.light_sensor_back.sees_black() and self.is_motor_active(motor_id):
-                            k.mav(ports[0], self.ds_speed)
-                            k.mav(ports[1], self.ds_speed)
-                            k.mav(ports[2], -self.ds_speed)
-                            k.mav(ports[3], self.ds_speed)
+                            instances[0].drive_dfw()
+                            instances[1].drive_dfw()
+                            instances[2].drive_dbw()
+                            instances[3].drive_dfw()
                         self.break_all_motors()
                     else:
                         d = direct[1]
                         while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                            k.mav(ports[0], -self.ds_speed)
-                            k.mav(ports[1], self.ds_speed)
-                            k.mav(ports[2], -self.ds_speed)
-                            k.mav(ports[3], self.ds_speed)
+                            instances[0].drive_dbw()
+                            instances[1].drive_dfw()
+                            instances[2].drive_dbw()
+                            instances[3].drive_dfw()
                         self.break_all_motors()
                     self.drive_side(d, 5)
         except Exception as e:
@@ -4639,23 +4638,23 @@ class driveR_four:
             speed = self.ds_speed
         self.check_instance_light_sensors_middle()
         motor_id = self._manage_motor_stopper(True)
-        ports = self.port_wheel_fl, self.port_wheel_fr, self.port_wheel_bl, self.port_wheel_br, self.light_sensor_front
+        instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel, self.light_sensor_front
         if speed < 0:
-            ports = self.port_wheel_bl, self.port_wheel_br, self.port_wheel_fl, self.port_wheel_fr, self.light_sensor_back
+            instances = self.bl_wheel, self.br_wheel, self.fl_wheel, self.fr_wheel, self.light_sensor_back
 
         if direction == 'right':
-            while not ports[4].sees_black() and self.is_motor_active(motor_id):
-                k.mav(ports[0], self.max_speed)
-                k.mav(ports[1], -self.max_speed)
-                k.mav(ports[2], self.max_speed)
-                k.mav(ports[3], -self.max_speed)
+            while not instances[4].sees_black() and self.is_motor_active(motor_id):
+                instances[0].drive_mfw()
+                instances[1].drive_mbw()
+                instances[2].drive_mfw()
+                instances[3].drive_mbw()
                 k.msleep(millis)
         elif direction == 'left':
-            while not ports[4].sees_black() and self.is_motor_active(motor_id):
-                k.mav(ports[0], -self.max_speed)
-                k.mav(ports[1], self.max_speed)
-                k.mav(ports[2], -self.max_speed)
-                k.mav(ports[3], self.max_speed)
+            while not instances[4].sees_black() and self.is_motor_active(motor_id):
+                instances[0].drive_mbw()
+                instances[1].drive_mfw()
+                instances[2].drive_mbw()
+                instances[3].drive_mfw()
                 k.msleep(millis)
         else:
             log('Only "right" and "left" are valid commands for the direction!', in_exception=True)
@@ -4704,25 +4703,25 @@ class driveR_four:
             self.turn_degrees(direction, 10)  # this is just so it is a little bit better aligned on the line
         else:
             startTime = k.seconds()
-            ports = self.port_wheel_fl, self.port_wheel_fr, self.port_wheel_bl, self.port_wheel_br, self.button_fl, self.button_fr, self.light_sensor_front
+            instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel, self.button_fl, self.button_fr, self.light_sensor_front
             direction = 'right', 'left'
             if speed < 0:
-                ports = self.port_wheel_bl, self.port_wheel_br, self.port_wheel_fl, self.port_wheel_fr, self.button_bl, self.button_br, self.light_sensor_back
+                instances = self.bl_wheel, self.br_wheel, self.fl_wheel, self.fr_wheel, self.button_bl, self.button_br, self.light_sensor_back
                 direction = 'left', 'right'
 
             while self.is_motor_active(motor_id):
-                k.mav(ports[0], speed)
-                k.mav(ports[1], -speed)
-                k.mav(ports[2], speed)
-                k.mav(ports[3], -speed)
+                instances[0].drive(speed)
+                instances[1].drive(-speed)
+                instances[2].drive(speed)
+                instances[3].drive(-speed)
                 if k.seconds() - startTime > maxDuration / 1000:
                     self.turn_to_black_line(direction[1], millis=20, speed=speed)
                     break
-                if ports[6].sees_black():
+                if instances[6].sees_black():
                     k.ao()
                     self.turn_to_black_line(direction[0], millis=20, speed=speed)
                     break
-                if ports[4].is_pressed() or ports[5].is_pressed():
+                if instances[4].is_pressed() or instances[5].is_pressed():
                     if speed < 0:
                         self.align_drive_back()
                     else:
@@ -4751,7 +4750,7 @@ class driveR_four:
         ports = self.button_fl, self.button_fr, self.light_sensor_front
         if speed < 0:
             ports = self.button_bl, self.button_br, self.light_sensor_back
-        while (k.seconds() - startTime < (millis) / 1000) and (not ports[0].is_pressed() and not ports[1].is_pressed()) and self.is_motor_active(motor_id):
+        while (k.seconds() - startTime < millis / 1000) and (not ports[0].is_pressed() and not ports[1].is_pressed()) and self.is_motor_active(motor_id):
             self.drive_straight_condition_analog(ports[2], '>=', ports[2].get_value_black() - ports[2].get_bias(), speed=speed, millis=100)
             if ports[2].current_value() < ports[2].get_value_black() - ports[2].get_bias():
                 self.align_line(True, speed=-speed, maxDuration=100)
@@ -4782,7 +4781,7 @@ class driveR_four:
         div = 90 / degree
         amount = degree
         value = self.NINETY_DEGREES_SECS / div
-        ports = self.port_wheel_fl, self.port_wheel_fr, self.port_wheel_bl, self.port_wheel_br
+        instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
         distance_saver = [None] * amount
         portion = (value * 2) / amount
 
@@ -4804,14 +4803,14 @@ class driveR_four:
                 i += 1
 
         def adjust():
-            p = ports[1], ports[0], ports[3], ports[2]
+            inst = instances[1], instances[0], instances[3], instances[2]
             index = distance_saver.index(max(distance_saver))
             newTime = k.seconds()
             while k.seconds() - newTime < portion * (amount - index) and self.is_motor_active(motor_id):
-                k.mav(p[0], self.max_speed)
-                k.mav(p[1], -self.max_speed)
-                k.mav(p[2], self.max_speed)
-                k.mav(p[3], -self.max_speed)
+                inst[0].drive_mfw()
+                inst[1].drive_mbw()
+                inst[2].drive_mfw()
+                inst[3].drive_mbw()
 
             self.break_all_motors()
 
@@ -4821,13 +4820,13 @@ class driveR_four:
                     th1 = threading.Thread(target=slicer)
                     th1.start()
                     value = value * 2
-                k.mav(ports[0], self.max_speed)
-                k.mav(ports[1], -self.max_speed)
-                k.mav(ports[2], self.max_speed)
-                k.mav(ports[3], -self.max_speed)
+                instances[0].drive_mfw()
+                instances[1].drive_mbw()
+                instances[2].drive_mfw()
+                instances[3].drive_mbw()
                 time.sleep(value)
                 if i % 2 != 0:
-                    ports = ports[1], ports[0], ports[3], ports[2]
+                    instances = instances[1], instances[0], instances[3], instances[2]
             else:
                 break
         self.break_all_motors()

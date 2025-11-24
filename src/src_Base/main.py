@@ -14,6 +14,7 @@ try:
     import time
     import threading
     import subprocess
+    from wheelR import WheelR  # selfmade
     from commU import WifiConnector  # selfmade
     from RoboComm import RobotCommunicator  # selfmade
     from util import Util  # selfmade

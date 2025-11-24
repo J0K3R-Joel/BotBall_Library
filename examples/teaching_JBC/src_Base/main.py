@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import os, sys
+
 sys.path.append("/usr/lib")
 
 from logger import *  # selfmade
@@ -14,6 +15,7 @@ try:
     import time
     import threading
     import subprocess
+    from wheelR import WheelR  # selfmade
     from commU import WifiConnector  # selfmade
     from RoboComm import RobotCommunicator  # selfmade
     from util import Util  # selfmade
@@ -29,7 +31,6 @@ try:
     from object_detector import CameraObjectDetector  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
-
 
 # ======================== VARIABLE DECLARATION =======================
 # ===== GLOBAL VARIABLES =====
@@ -67,7 +68,7 @@ def Instancer_Setup():
         # ================= ServoX ==================
         globals()['Servo_Arm'] = ServoX(PORT_SERVO_ARM)
         globals()['Servo_Hand'] = ServoX(PORT_SERVO_HAND)
-    
+
         # ============== DistanceSensor =============
         globals()['Distanz'] = DistanceSensor(PORT_ANALOG_DISTANZ)
 
@@ -75,10 +76,13 @@ def Instancer_Setup():
         globals()['Helligkeit_V'] = LightSensor('front', PORT_ANALOG_HELLIGKEIT_V, bias=150)
         globals()['Helligkeit_H'] = LightSensor('back', PORT_ANALOG_HELLIGKEIT_H, bias=150)
 
+        # ================= WheelR ==================
+        globals()['Rad_L'] = WheelR(PORT_MOTOR_L)
+        globals()['Rad_R'] = WheelR(PORT_MOTOR_R)
 
         # ================= DriveR ==================
-        globals()['Fahrzeug'] = driveR_two(PORT_MOTOR_R,
-                                           PORT_MOTOR_L,
+        globals()['Fahrzeug'] = Rubber_Wheels_two(Instance_right_wheel=Rad_R,
+                                           Instance_left_wheel=Rad_L,
                                            False,
                                            Instance_distance_sensor=Distanz,
                                            Instance_light_sensor_front=Helligkeit_V,
@@ -87,7 +91,7 @@ def Instancer_Setup():
                                            Instance_button_front_left=Knopf_VL,
                                            Instance_button_back_right=Knopf_HR,
                                            Instance_button_back_left=Knopf_HL)
-        
+
     except Exception as e:
         log(f'Instancer Exception: {str(e)}', important=True, in_exception=True)
 
@@ -98,8 +102,8 @@ def setup():
     except Exception as e:
         log(f'Setup Exception: {str(e)}', important=True, in_exception=True)
 
-# ======================== CUSTOM METHODS =======================
 
+# ======================== CUSTOM METHODS =======================
 
 
 # ======================== MAIN =======================

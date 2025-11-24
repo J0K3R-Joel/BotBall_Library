@@ -4,6 +4,7 @@ sys.path.append("/usr/lib")
 
 from logger import *  # selfmade
 import threading
+import builtins
 
 # Author: Joel Kalkusch
 # Email: kalkusch.joel@gmail.com
@@ -14,7 +15,7 @@ class FileR:
 	def __init__(self):
 		self._writer_lock = threading.Lock()
 
-	def reader(self, file_name: str) -> str:
+	def reader(self, file_name: str, type_name: str = 'str') -> str:
 		'''
 		read the content of a file
 
@@ -26,7 +27,8 @@ class FileR:
 		'''
 		try:
 			with open(file_name, 'r') as f:
-				return f.read()
+				text = f.read()
+				return getattr(builtins, type_name)(text)
 		except Exception as e:
 			log(str(e), important=True, in_exception=True)
 

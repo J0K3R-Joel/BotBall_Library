@@ -78,12 +78,12 @@ class WheelR:
             log('You need to call the WheelR class with the name parameter, if you want to use the calibration!', in_exception=True)
             raise ValueError('You need to call the WheelR class with the name parameter, if you want to use the calibration!')
 
-        self.cmpc()
-        begin_counter = self.gmpc()
+        self.cmpc(self.port)
+        begin_counter = self.gmpc(self.port)
         self.drive_time(100, 500)
-        if self.gpmc() - begin_counter > 0:
+        if self.gpmc(self.port) - begin_counter > 0:
             self.file_manager.writer(self.file_path, 'w', '1')
-        elif self.gpmc() - begin_counter < 0:
+        elif self.gpmc(self.port) - begin_counter < 0:
             self.file_manager.writer(self.file_path, 'w', '-1')
         else:
             log(f'Motor on port {self.port} is not plugged in!', in_exception=True)

@@ -19,17 +19,10 @@ except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 class WheelR:
-    def __init__(self, Port: int, wheel_name: str = None, max_speed: int = 1500, default_speed: int = 1400, servo_like: bool = False):  # @TODO -> servo like motor
+    def __init__(self, Port: int, max_speed: int = 1500, default_speed: int = 1400, servo_like: bool = False):  # @TODO -> servo like motor
         self.port = Port
         self.max_speed = max_speed
         self.d_speed = default_speed
-        self.folder_path = '/usr/lib/bias_files'
-        self.file_manager = FileR()
-        self.file_path = None
-        self.sign = 1
-        if wheel_name:
-            self.file_path = self.folder_path + '/' + wheel_name + '.txt'
-            self.sign = self._get_direction()
 
     def __getattr__(self, name):
         if hasattr(k, name):
@@ -43,12 +36,7 @@ class WheelR:
         raise AttributeError(f'"{type(self).__name__}" object has no attribute "{name}"')
 
     def _base_speed_func(self, speed: int):
-        k.mav(self.port, speed * self.sign)
-
-    def _get_direction(self):
-        if os.path.exists(self.file_path):
-            return self.file_manager.reader(self.file_path, 'int')
-        return 1
+        k.mav(self.port, speed)
 
 
 
@@ -73,23 +61,15 @@ class WheelR:
 
 
 
-    def calibrate_direction(self):
-        if not self.file_path:
-            log('You need to call the WheelR class with the name parameter, if you want to use the calibration!', in_exception=True)
-            raise ValueError('You need to call the WheelR class with the name parameter, if you want to use the calibration!')
-
+    def test_plugged_in(self):
         self.cmpc(self.port)
         begin_counter = self.gmpc(self.port)
-        self.drive_time(100, 500)
-        if self.gpmc(self.port) - begin_counter > 0:
-            self.file_manager.writer(self.file_path, 'w', '1')
-        elif self.gpmc(self.port) - begin_counter < 0:
-            self.file_manager.writer(self.file_path, 'w', '-1')
-        else:
+        self.drive_time(100, 100)
+        if self.gpmc(self.port) - begin_counter == 0:
             log(f'Motor on port {self.port} is not plugged in!', in_exception=True)
             raise Exception(f'Motor on port {self.port} is not plugged in!')
 
-        self.sign = self._get_direction()
+        print(f'Success! Motor {self.port} plugged in.', flush=True)
 
 
 

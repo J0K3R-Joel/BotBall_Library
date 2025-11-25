@@ -35,8 +35,615 @@ except Exception as e:
 BIAS_FOLDER = '/usr/lib/bias_files'
 os.makedirs(BIAS_FOLDER, exist_ok=True)
 
+class base_driver:
+    def __init__(self, default_speed: int, standing: bool, *motors: WheelR):
+        self.ds_speed = default_speed
+        self.standing = standing
+        self.motors = motors
+        self._motor_lock = threading.Lock()
+        self._motor_stoppers = {}
+        self._next_motor_id = 0
+        self.mm_per_sec_file = BIAS_FOLDER + '/mm_per_sec.txt'
+        self.distance_far_values, self.distance_far_mm = self.get_distances()
 
-class Rubber_Wheels_two():
+
+    # ======================== PRIVATE METHODS =======================
+    def _set_values(self):
+        '''
+        Sets all internal values
+
+        Args:
+            None
+
+        Returns:
+            None
+        '''
+        self.mm_per_sec = self.get_mm_per_sec()
+        self.ONEEIGHTY_DEGREES_SECS = self.get_degrees()
+        self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
+        self.bias_gyro_z = self.get_bias_gyro_z()
+        self.bias_gyro_y = self.get_bias_gyro_y()
+        self.bias_accel_z = self.get_bias_accel_z()  # There are no function where you can do anything with the accel y -> you need to invent them by yourself
+        self.bias_accel_y = self.get_bias_accel_y()  # There are no function where you can do anything with the accel y -> you need to invent them by yourself
+        self._handle_standard_bias()
+
+    def _handle_standard_bias(self):
+        if self.standing:
+            self.standard_bias_gyro = self.bias_gyro_y
+            self.standard_bias_accel = self.bias_accel_z
+            self.rev_standard_bias_gyro = self.bias_gyro_z
+            self.rev_standard_bias_accel = self.bias_gyro_y
+        else:
+            self.standard_bias_gyro = self.bias_gyro_z
+            self.standard_bias_accel = self.bias_accel_y
+            self.rev_standard_bias_gyro = self.bias_gyro_y
+            self.rev_standard_bias_accel = self.bias_gyro_z
+    def _manage_motor_stopper(self, beginning: bool) -> int:
+        '''
+        Manages the Lock of every class method, so if it (for example) gets spun clockwise and counterclockwise at the same time, the one that was sent through high priority will get executed and the other one does not
+
+        Args:
+            beginning (bool): is it in the beginning of a function (True) or at the end of a function (False)
+
+        Returns:
+            int: the ID of the motor at this moment
+        '''
+        with self._motor_lock:
+            if beginning:
+                self._next_motor_id += 1
+                motor_id = self._next_motor_id
+                self._motor_stoppers[motor_id] = True
+                return motor_id
+            else:
+                if self._next_motor_id in self._motor_stoppers:
+                    self._motor_stoppers[self._next_motor_id] = False
+                return self._next_motor_id
+
+    # ================== GET / OVERWRITE BIAS ==================
+
+    def get_current_standard_gyro(self, reverse: bool = False) -> int:
+        '''
+        Getting the current value of the bias depending on if the controller is standing or laying down
+
+        Args:
+            reverse (bool): it it should return the reversed value or not
+
+        Returns:
+            int: the gyro_z or gyro_y value
+        '''
+        if reverse:
+            return k.gyro_z() if self.standing else k.gyro_y()
+        return k.gyro_y() if self.standing else k.gyro_z()
+
+    def get_degrees(self, calibrated: bool = False) -> float:
+        '''
+        Getting the average degrees from the bias_degrees.txt file
+
+        Args:
+            calibrated (bool, optional): Writing to the file bias_degrees.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
+
+        Returns:
+            Average of the bias_degrees.txt file (optionally with the recent calibrated bias as well)
+        '''
+        avg = 0
+        file_name = os.path.join(BIAS_FOLDER, 'bias_degrees.txt')
+        try:
+            temp_deg = file_Manager.reader(file_name)
+            if calibrated:
+                avg = (float(temp_deg) + self.ONEEIGHTY_DEGREES_SECS) / 2
+                file_Manager.writer(file_name, 'w', str(avg))
+            else:
+                avg = float(temp_deg)
+
+            return avg
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
+
+    def get_bias_gyro_z(self, calibrated: bool = False) -> float:
+        '''
+        Getting the average bias from the bias_gyro_z.txt file
+
+        Args:
+            calibrated (bool, optional): Writing to the file bias_gyro_z.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
+
+
+        Returns:
+            Average of the bias_gyro_z.txt file (optionally with the recent calibrated bias as well)
+        '''
+        avg = 0
+        file_name = os.path.join(BIAS_FOLDER, 'bias_gyro_z.txt')
+        try:
+            with open(file_name, "r") as f:
+                temp_bias = f.read()
+                if calibrated:
+                    avg = (float(temp_bias) + self.bias_gyro_z) / 2
+                    file_Manager.writer(file_name, 'w', str(avg))
+                else:
+                    avg = float(temp_bias)
+            return avg
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
+
+    def get_bias_gyro_y(self, calibrated: bool = False) -> float:
+        '''
+        Getting the average bias from the bias_gyro_y.txt file
+
+        Args:
+            calibrated (bool, optional): Writing to the file bias_gyro_y.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
+
+
+        Returns:
+            Average of the bias_gyro_y.txt file (optionally with the recent calibrated bias as well)
+        '''
+        avg = 0
+        file_name = os.path.join(BIAS_FOLDER, 'bias_gyro_y.txt')
+        try:
+            with open(file_name, "r") as f:
+                temp_bias = f.read()
+                if calibrated:
+                    avg = (float(temp_bias) + self.bias_gyro_y) / 2
+                    file_Manager.writer(file_name, 'w', str(avg))
+                else:
+                    avg = float(temp_bias)
+            return avg
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
+
+    def get_bias_accel_z(self, calibrated: bool = False) -> float:
+        '''
+        Getting the average bias from the bias_accel_z.txt file
+
+        Args:
+            calibrated (bool, optional): Writing to the file bias_accel_z.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
+
+
+        Returns:
+            Average of the bias_accel_z.txt file (optionally with the recent calibrated bias as well)
+        '''
+        avg = 0
+        file_name = os.path.join(BIAS_FOLDER, 'bias_accel_z.txt')
+        try:
+            with open(file_name, "r") as f:
+                temp_bias = f.read()
+                if calibrated:
+                    avg = (float(temp_bias) + self.bias_accel_z) / 2
+                    file_Manager.writer(file_name, 'w', str(avg))
+                else:
+                    avg = float(temp_bias)
+            return avg
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
+
+    def get_bias_accel_y(self, calibrated: bool = False) -> float:
+        '''
+        Getting the average bias from the bias_accel_y.txt file
+
+        Args:
+            calibrated (bool, optional): Writing to the file bias_accel_y.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
+
+
+        Returns:
+            Average of the bias_accel_y.txt file (optionally with the recent calibrated bias as well)
+        '''
+        avg = 0
+        file_name = os.path.join(BIAS_FOLDER, 'bias_accel_y.txt')
+        try:
+            with open(file_name, "r") as f:
+                temp_bias = f.read()
+                if calibrated:
+                    avg = (float(temp_bias) + self.bias_accel_y) / 2
+                    file_Manager.writer(file_name, 'w', str(avg))
+                else:
+                    avg = float(temp_bias)
+            return avg
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
+
+    def get_standard_speed(self) -> int:
+        '''
+        Getting the default speed on which the robot moves
+
+        Args:
+            None
+
+        Returns:
+            int: the speed it is set to
+        '''
+        return self.ds_speed
+
+    def get_distances(self, calibrated: bool = False) -> tuple:
+        '''
+        Getting the disances from the distances_arr.txt file
+
+        Args:
+            calibrated (bool, optional): Writing to the file distances_arr.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
+
+
+        Returns:
+            tuple[list[int], list[int]] | None:
+                If calibrated=False: (values, mm)
+                If calibrated=True: None
+        '''
+        file_name = os.path.join(BIAS_FOLDER, 'distances_arr.txt')
+
+        try:
+            if calibrated:
+                with open(file_name, "w") as f:
+                    f.write("value=" + ",".join(map(str, self.distance_far_values)) + "\n")
+                    f.write("mm=" + ",".join(map(str, self.distance_far_mm)) + "\n")
+                log(f"Distances saved to {file_name}")
+
+            else:
+                if not os.path.exists(file_name):
+                    raise FileNotFoundError(f"{file_name} not found. Run calibration first.")
+
+                with open(file_name, "r") as f:
+                    lines = f.readlines()
+
+                values = []
+                mm = []
+
+                for line in lines:
+                    if line.startswith("value="):
+                        values = list(map(int, line.strip().split("=")[1].split(",")))
+                    elif line.startswith("mm="):
+                        mm = list(map(int, line.strip().split("=")[1].split(",")))
+
+                if not values or not mm:
+                    raise ValueError("File format is invalid or empty.")
+
+                return values, mm
+
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
+            return None
+
+    def get_mm_per_sec(self, only_mm: bool = False,
+                       only_sec: bool = False) -> None:  # @TODO schauen, wie man float ODER int (ODER list) zurückgeben kann als typ
+        '''
+        Getting the mm, sec, mm and sec or total it takes to drive a certain distance (in mm)
+
+        Args:
+            only_mm (bool, optional): If you specifically need the mm
+            only_sec (bool, optional): If you specifically need the sec
+
+        Returns:
+            One of the following options:
+                - List[int, float]: the mm and time in seconds it takes to drive
+                - int: the mm of distance for driving
+                - float: time in seconds for driving
+                - float: calculated value of mm/sec
+        '''
+
+        text = file_Manager.reader(self.mm_per_sec_file).split('\n')
+        total = float(text[0])
+        mm = int(text[1])
+        sec = float(text[2])
+
+        if only_mm and only_sec:
+            return mm, sec
+        if only_mm:
+            return mm
+        if only_sec:
+            return sec
+        return total
+
+    # ======================== SET METHODS ========================
+    def set_degrees(self, secs: float) -> None:
+        '''
+        Sets the amount of degrees for a 180° turn
+
+        Args:
+            secs (float): the time in seconds it takes for a 180° turn
+
+        Returns:
+            None
+        '''
+        self.ONEEIGHTY_DEGREES_SECS = secs
+        self.NINETY_DEGREES_SECS = secs / 2
+
+    def set_gyro_z(self, bias: float) -> None:
+        '''
+        Sets the amount of bias where the controller is laying down (for example) and getting turned from left to right or right to left
+
+        Args:
+            bias (float): the average of gyro_z after some time
+
+        Returns:
+            None
+        '''
+        self.bias_gyro_z = bias
+        self._handle_standard_bias()
+
+    def set_gyro_y(self, bias: float) -> None:
+        '''
+        Sets the amount of bias where the controller is standing (for example) and getting turned from left to right or right to left
+
+        Args:
+            bias (float): the average of _kipr.gyro_y() after some time
+
+        Returns:
+            None
+        '''
+        self.bias_gyro_y = bias
+        self._handle_standard_bias()
+
+    def set_accel_z(self, bias: float) -> None:
+        '''
+        Sets the amount of bias where the controller is standing (for example) and moving backward or forward
+
+        Args:
+            bias (float): the average of _kipr.accel_y() after some time
+
+        Returns:
+            None
+        '''
+        self.bias_accel_z = bias
+        self._handle_standard_bias()
+
+    def set_accel_y(self, bias: float) -> None:
+        '''
+        Sets the amount of bias where the controller is laying down (for example) and moving backward or forward
+
+        Args:
+            bias (float): the average of _kipr.accel_y() after some time
+
+        Returns:
+            None
+        '''
+        self.bias_accel_y = bias
+        self._handle_standard_bias()
+
+    def set_TOTAL_mm_per_sec(self, mm: int = None, sec: float = None) -> None:
+        '''
+        Sets the millimeters and / or seconds for driving mm per seconds
+
+        Args:
+            sec (float): The amount of time (in seconds) it took to drive
+             mm (int): How far it drove (in mm)
+
+        Returns:
+            None
+        '''
+        if mm is None and sec is None:
+            log('By setting the mm and sec at least one of those values need to be assigned to a number!',
+                important=True, in_exception=True)
+            raise ValueError(
+                'By setting the mm and sec at least one of those values need to be assigned to a number!')
+        if not isinstance(mm, int) and mm is not None:
+            log('mm need to stay in mm! make sure mm is not in seconds!', important=True, in_exception=True)
+            raise TypeError('mm need to stay in mm! make sure mm is not in seconds!')
+        if (not isinstance(sec, int) and not isinstance(sec, float)) and sec is not None:
+            str_instance = isinstance(sec, str)
+            log(f'seconds need to stay as a float or int! seconds being a string: {str_instance}', important=True,
+                in_exception=True)
+            raise TypeError(f'seconds need to stay as a float or int! seconds being a string: {str_instance}')
+
+        text = file_Manager.reader(self.mm_per_sec_file).split('\n')
+        file_mm = int(text[1].strip())
+        file_sec = float(text[2].strip())
+        actual_sec = sec if sec is not None else file_sec
+        actual_mm = mm if mm is not None else file_mm
+
+        self.mm_per_sec = actual_mm / actual_sec
+        file_Manager.writer(self.mm_per_sec_file, 'w', str(self.mm_per_sec))
+        file_Manager.writer(self.mm_per_sec_file, 'a', '\n' + str(actual_mm))
+        file_Manager.writer(self.mm_per_sec_file, 'a', '\n' + str(actual_sec))
+
+    def set_MM_mm_per_sec(self, mm: int) -> None:
+        '''
+        Specifically sets the millimeters for driving mm per seconds
+
+        Args:
+            mm (int): How far it drove (in mm)
+
+        Returns:
+            None
+        '''
+        self.set_TOTAL_mm_per_sec(mm=mm)
+
+    def set_SEC_mm_per_sec(self, sec: float) -> None:
+        '''
+        Specifically sets the seconds for driving mm per seconds
+
+        Args:
+            sec (float): The amount of time (in seconds) it took to drive
+
+        Returns:
+            None
+        '''
+        self.set_TOTAL_mm_per_sec(sec=sec)
+
+    # ===================== CALIBRATE BIAS =====================
+    def calibrate_degrees(self, output):
+        log(f'You need to create a {self.calibrate_degrees.__name__} method in your own class!', in_exception=True)
+        raise NotImplementedError(
+            f'You need to create a {self.calibrate_degrees.__name__} method in your own class!')
+
+    def auto_calibration(self, times: int) -> None:
+        '''
+        Automatically calibrates as often as you wish
+
+        Args:
+            times (int): The number of times it should calibrate
+            on_line (bool): If it is already perfectly aligned in the middle of a black line (True) or if it still has to align itself (False)
+
+        Returns:
+            None
+        '''
+        for i in range(times):
+            self.calibrate(output=False)
+            self.break_all_motors()
+            print(f'=== {i + 1} / {times} times calibrated ===', flush=True)
+        log('AUTO CALIBRATION DONE')
+
+    def calibrate(self, output: bool = True) -> None:
+        '''
+        Calibrates all necessairy bias
+
+        Args:
+            on_line (bool): If it is already perfectly aligned in the middle of a black line (True) or if it still has to align itself (False, default)
+            output (bool): If it should make an output, that it is done calibrating (True, default) or not (False)
+
+        Returns:
+            None. Writes bias into files
+        '''
+        self.calibrate_gyro_y(counter=1, max=4)
+        self.calibrate_accel_z(counter=2, max=4)
+        self.calibrate_gyro_z(counter=3, max=4)
+        self.calibrate_accel_y(counter=4, max=4)
+        self.bias_gyro_y = self.get_bias_gyro_y(True)
+        self.bias_accel_z = self.get_bias_accel_y(True)
+        self.bias_gyro_z = self.get_bias_gyro_z(True)
+        self.bias_accel_y = self.get_bias_accel_y(True)
+        self.calibrate_degrees(output)
+        self.ONEEIGHTY_DEGREES_SECS = self.get_degrees(True)
+        self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
+        if output:
+            log('CALIBRATION DONE', important=True)
+
+    def calibrate_gyro_z(self, counter: int = None, max: int = None, times: int = 8000) -> None:
+        '''
+        calibrates the bias from the gyro to be able to drive straight, since the bias is for telling us how far off from driving straight the wombat is
+
+        Args:
+            counter (int): the number where it is at the moment
+            max (int): how many caLibrations there are (to show it on the screen and for debugging usage)
+            times (int, optional): how many calibrations should be done (default: 8000)
+
+        Returns:
+            None
+        '''
+        i: int = 0
+        avg: float = 0
+        while i < times:
+            avg += k.gyro_z()
+            k.msleep(1)
+            i += 1
+        self.bias_gyro_z = avg / times
+        if counter is not None and max is not None:
+            log(f'{counter}/{max} - GYRO Z CALIBRATED')
+
+    def calibrate_gyro_y(self, counter: int = None, max: int = None, times: int = 8000) -> None:
+        '''
+        calibrates the bias from the gyro to be able to drive straight, since the bias is for telling us how far off from driving straight the wombat is (theoretically it is for driving sideways)
+
+        Args:
+            counter (int, default): the number where it is at the moment (default: None)
+            max (int, default): how many caLibrations there are (to show it on the screen and for debugging usage) (default: None)
+            times (int, optional): how many calibrations should be done (default: 8000)
+
+        Returns:
+            None
+        '''
+        i: int = 0
+        avg: float = 0
+        while i < times:
+            avg += k.gyro_y()
+            k.msleep(1)
+            i += 1
+        self.bias_gyro_y = avg / times
+        if counter is not None and max is not None:
+            log(f'{counter}/{max} - GYRO Y CALIBRATED')
+
+    def calibrate_accel_z(self, counter: int = None, max: int = None, times: int = 8000) -> None:
+        '''
+        calibrates the bias from the accelerometer to know how fast the wombat is going towards the x-axis(accelerometer is not yet in use though)
+
+        Args:
+            counter (int, optional): the number where it is at the moment (default: None)
+            max (int, optional): how many caLibrations there are (to show it on the screen and for debugging usage) (default: None)
+            times (int, optional): how many calibrations should be done (default: 8000)
+
+        Returns:
+            None
+        '''
+        i: int = 0
+        avg: float = 0
+        while i < times:
+            avg += k.accel_z()
+            k.msleep(1)
+            i += 1
+        self.bias_accel_z = avg / times
+        if counter is not None and max is not None:
+            log(f'{counter}/{max} - ACCEL X CALIBRATED')
+
+    def calibrate_accel_y(self, counter: int = None, max: int = None, times: int = 8000) -> None:
+        '''
+        calibrates the bias from the accelerometer to know how fast the wombat is going towards the y-axis(accelerometer is not yet in use though)
+
+        Args:
+            counter (int, optional): the number where it is at the moment (default: None)
+            max (int, optional): how many caLibrations there are (to show it on the screen and for debugging usage) (default: None)
+            times (int, optional): how many calibrations should be done (default: 8000)
+
+        Returns:
+            None
+        '''
+        i: int = 0
+        avg: float = 0
+        while i < times:
+            avg += k.accel_y()
+            k.msleep(1)
+            i += 1
+        self.bias_accel_y = avg / times
+        if counter is not None and max is not None:
+            log(f'{counter}/{max} - ACCEL Y CALIBRATED')
+
+    # ======================== PUBLIC METHODS =======================
+    def is_motor_active(self, motor_id: str) -> bool:
+        '''
+        Validates if the motor ID is still the same
+
+        Args:
+            motor_id (str): the ID from the manager
+
+        Returns:
+            bool: Is it still valid (True), or not (False)
+        '''
+        with self._motor_lock:
+            return self._motor_stoppers.get(motor_id, False)
+    def break_all_motors(self, stop:bool = False) -> None:
+        '''
+        immediately stop all motors
+
+        Args:
+            stop (bool, optional): If it should be turned off completely and everywhere (True), or just stop driving (False, default)
+
+        Returns:
+            None
+        '''
+        for motor in self.motors:
+            motor.stop()
+
+        if stop:
+            self._manage_motor_stopper(False)
+
+    def break_motor(self, *args) -> None:
+        '''
+        immediately stop the motor(s) of the given port
+
+        Args:
+            *args: All of the desired (motor) ports which should be stopped
+
+        Returns:
+            None
+        '''
+        try:
+            if isinstance(args[0], int):
+                for port in args:
+                    k.freeze(port)
+            elif isinstance(args[0], WheelR):
+                for wheel in args:
+                    wheel.stop()
+            else:
+                log('Only integer (port number) or WheelR instance are allowed!', in_exception=True)
+                raise TypeError('Only integer (port number) or WheelR instance are allowed!')
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
+
+
+class Rubber_Wheels_two(base_driver):
     def __init__(self,
                  Instance_right_wheel: WheelR,
                  Instance_left_wheel: WheelR,
@@ -51,6 +658,7 @@ class Rubber_Wheels_two():
                  Instance_light_sensor_side: LightSensor = None,
                  Instance_distance_sensor: DistanceSensor = None):
 
+        super().__init__(DS_SPEED, controller_standing, Instance_right_wheel, Instance_left_wheel)
         self.right_wheel = Instance_right_wheel
         self.left_wheel = Instance_left_wheel
 
@@ -73,142 +681,15 @@ class Rubber_Wheels_two():
         self.bias_accel_z = None  # There are no function where you can do anything with the accel x -> you need to invent them by yourself
         self.bias_accel_y = None  # There are no function where you can do anything with the accel y -> you need to invent them by yourself
         self.isClose = False
-        self.distance_far_values, self.distance_far_mm = self.get_distances()
         self.ONEEIGHTY_DEGREES_SECS = None
         self.NINETY_DEGREES_SECS = None
-        self._motor_stoppers = {}
-        self._next_id = 0
         self._motor_lock = threading.Lock()
         self.max_speed = 1500
-
         stop_manager.register_driver(self)
-        self.mm_per_sec_file = BIAS_FOLDER + '/mm_per_sec.txt'
 
         self._set_values()
 
-    # ======================== HELPER  ========================
-    def _set_values(self) -> None:
-        '''
-        Sets all internal values
-
-        Args:
-            None
-
-        Returns:
-            None
-        '''
-        self.mm_per_sec = self.get_mm_per_sec()
-        self.ONEEIGHTY_DEGREES_SECS = self.get_degrees()
-        self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
-        self.bias_gyro_z = self.get_bias_gyro_z()
-        self.bias_gyro_y = self.get_bias_gyro_y()
-        self.bias_accel_z = self.get_bias_accel_z()
-        self.bias_accel_y = self.get_bias_accel_y()
-
-        if self.standing:
-            self.standard_bias_gyro = self.bias_gyro_y
-            self.standard_bias_accel = self.bias_accel_z
-        else:
-            self.standard_bias_gyro = self.bias_gyro_z
-            self.standard_bias_accel = self.bias_accel_y
-
-    def _manage_motor_stopper(self, beginning: bool) -> str:
-        '''
-        Manages the Lock of every class method, so if it (for example) gets spun clockwise and counterclockwise at the same time, the one that was sent through high priority will get executed and the other one does not
-
-        Args:
-            beginning (bool): is it in the beginning of a function (True) or at the end of a function (False)
-
-        Returns:
-            str: the ID of the motor at this moment
-        '''
-        with self._motor_lock:
-            if beginning:
-                self._next_id += 1
-                motor_id = self._next_id
-                self._motor_stoppers[motor_id] = True
-                return motor_id
-            else:
-                if self._next_id in self._motor_stoppers:
-                    self._motor_stoppers[self._next_id] = False
-                return self._next_id
-
-
-    def is_motor_active(self, motor_id: str) -> bool:
-        '''
-        Validates if the motor ID is still the same
-
-        Args:
-            motor_id (str): the ID from the manager
-
-        Returns:
-            bool: Is it still valid (True), or not (False)
-        '''
-        with self._motor_lock:
-            return self._motor_stoppers.get(motor_id, False)
-
-
-    # ======================== SET INSTANCES ========================
-    def set_degrees(self, secs:float) -> None:
-        '''
-        Sets the amount of degrees for a 180° turn
-
-        Args:
-            secs (float): the time in seconds it takes for a 180° turn
-
-        Returns:
-            None
-        '''
-        self.ONEEIGHTY_DEGREES_SECS = secs
-        self.NINETY_DEGREES_SECS = secs / 2
-
-    def set_gyro_z(self, bias:float) -> None:
-        '''
-        Sets the amount of bias where the controller is laying down (for example) and getting turned from left to right or right to left
-
-        Args:
-            bias (float): the average of gyro_z after some time
-
-        Returns:
-            None
-        '''
-        self.bias_gyro_z = bias
-
-    def set_gyro_y(self, bias:float) -> None:
-        '''
-        Sets the amount of bias where the controller is standing (for example) and getting turned from left to right or right to left
-
-        Args:
-            bias (float): the average of _kipr.gyro_y() after some time
-
-        Returns:
-            None
-        '''
-        self.bias_gyro_y = bias
-
-    def set_accel_z(self, bias:float) -> None:
-        '''
-        Sets the amount of bias where the controller is standing (for example) and moving backward or forward
-
-        Args:
-            bias (float): the average of _kipr.accel_y() after some time
-
-        Returns:
-            None
-        '''
-        self.bias_accel_z = bias
-
-    def set_accel_y(self, bias:float) -> None:
-        '''
-        Sets the amount of bias where the controller is laying down (for example) and moving backward or forward
-
-        Args:
-            bias (float): the average of _kipr.accel_y() after some time
-
-        Returns:
-            None
-        '''
-        self.bias_accel_y = bias
+    # ======================== SET METHODS ========================
 
     def set_instance_distance_sensor(self, Instance_distance_sensor: DistanceSensor) -> None:
         '''
@@ -343,65 +824,7 @@ class Rubber_Wheels_two():
         '''
         self.button_br = Instance_button_back_right
 
-    def set_TOTAL_mm_per_sec(self, mm: int = None, sec: float = None) -> None:
-        '''
-        Sets the millimeters and / or seconds for driving mm per seconds
-
-        Args:
-            sec (float): The amount of time (in seconds) it took to drive
-             mm (int): How far it drove (in mm)
-
-        Returns:
-            None
-        '''
-        if mm is None and sec is None:
-            log('By setting the mm and sec at least one of those values need to be assigned to a number!', important=True, in_exception=True)
-            raise ValueError('By setting the mm and sec at least one of those values need to be assigned to a number!')
-        if not isinstance(mm, int) and mm is not None:
-            log('mm need to stay in mm! make sure mm is not in seconds!', important=True, in_exception=True)
-            raise TypeError('mm need to stay in mm! make sure mm is not in seconds!')
-        if (not isinstance(sec, int) and not isinstance(sec, float)) and sec is not None:
-            str_instance = isinstance(sec, str)
-            log(f'seconds need to stay as a float or int! seconds being a string: {str_instance}', important=True, in_exception=True)
-            raise TypeError(f'seconds need to stay as a float or int! seconds being a string: {str_instance}')
-
-
-        text = file_Manager.reader(self.mm_per_sec_file).split('\n')
-        file_mm = int(text[1].strip())
-        file_sec = float(text[2].strip())
-        actual_sec = sec if sec is not None else file_sec
-        actual_mm = mm if mm is not None else file_mm
-
-        self.mm_per_sec = actual_mm/actual_sec
-        file_Manager.writer(self.mm_per_sec_file, 'w', self.mm_per_sec)
-        file_Manager.writer(self.mm_per_sec_file, 'a', '\n' + str(actual_mm))
-        file_Manager.writer(self.mm_per_sec_file, 'a', '\n' + str(actual_sec))
-
-    def set_MM_mm_per_sec(self, mm: int) -> None:
-        '''
-        Specifically sets the millimeters for driving mm per seconds
-
-        Args:
-            mm (int): How far it drove (in mm)
-
-        Returns:
-            None
-        '''
-        self.set_TOTAL_mm_per_sec(mm=mm)
-
-    def set_SEC_mm_per_sec(self, sec: float) -> None:
-        '''
-        Specifically sets the seconds for driving mm per seconds
-
-        Args:
-            sec (float): The amount of time (in seconds) it took to drive
-
-        Returns:
-            None
-        '''
-        self.set_TOTAL_mm_per_sec(sec=sec)
-
-    # ======================== CHECK INSTANCES ========================
+    # ======================== CHECK METHODS ========================
 
     def check_instance_light_sensors(self) -> bool:
         '''
@@ -634,136 +1057,8 @@ class Rubber_Wheels_two():
         return True
 
     # ===================== CALIBRATE BIAS =====================
-    def auto_calibration(self, times:int) -> None:
-        '''
-        Automatically calibrates as often as you wish
 
-        Args:
-            times (int): The number of times it should calibrate
-
-        Returns:
-            None
-        '''
-        for i in range(times):
-            self.calibrate(False)
-            self.break_all_motors()
-            print(f'=== {i+1} / {times} times calibrated ===', flush=True)
-        log('AUTO CALIBRATION DONE')
-
-    def calibrate(self, output:bool = True) -> float:
-        '''
-        Calibrates all necessairy bias depending on the controller standing or laying down
-
-        Args:
-            output (bool): If it should make an output, that it is done calibrating (True, default) or not (False)
-
-        Returns:
-            None. Writes bias into files
-        '''
-        self.calibrate_gyro_y(counter=1, max=4)
-        self.calibrate_accel_z(counter=2, max=4)
-        self.calibrate_gyro_z(counter=3, max=4)
-        self.calibrate_accel_y(counter=4, max=4)
-        self.bias_gyro_y = self.get_bias_gyro_y(True)
-        self.bias_accel_z = self.get_bias_accel_y(True)
-        self.bias_gyro_z = self.get_bias_gyro_z(True)
-        self.bias_accel_y = self.get_bias_accel_y(True)
-        self.calibrate_degrees()
-        self.ONEEIGHTY_DEGREES_SECS = self.get_degrees(True)
-        self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
-        if output:
-            log('CALIBRATION DONE', important=True)
-
-    def calibrate_gyro_z(self, counter: int = None, max: int = None, times: int = 8000) -> None:
-        '''
-        calibrates the bias from the gyro to be able to drive straight, since the bias is for telling us how far off from driving straight the wombat is
-
-        Args:
-            counter (int): the number where it is at the moment
-            max (int): how many caLibrations there are (to show it on the screen and for debugging usage)
-            times (int, optional): how many calibrations should be done (default: 8000)
-
-        Returns:
-            None
-        '''
-        i: int = 0
-        avg: float = 0
-        while i < times:
-            avg += k.gyro_z()
-            k.msleep(1)
-            i += 1
-        self.bias_gyro_z = avg / times
-        if counter is not None and max is not None:
-            log(f'{counter}/{max} - GYRO Z CALIBRATED')
-
-    def calibrate_gyro_y(self, counter: int = None, max: int = None, times: int = 8000) -> None:
-        '''
-        calibrates the bias from the gyro to be able to drive straight, since the bias is for telling us how far off from driving straight the wombat is (theoretically it is for driving sideways)
-
-        Args:
-            counter (int, default): the number where it is at the moment (default: None)
-            max (int, default): how many caLibrations there are (to show it on the screen and for debugging usage) (default: None)
-            times (int, optional): how many calibrations should be done (default: 8000)
-
-        Returns:
-            None
-        '''
-        i: int = 0
-        avg: float = 0
-        time: int = 8000
-        while i < times:
-            avg += k.gyro_y()
-            k.msleep(1)
-            i += 1
-        self.bias_gyro_y = avg / times
-        if counter is not None and max is not None:
-            log(f'{counter}/{max} - GYRO Y CALIBRATED')
-
-    def calibrate_accel_z(self, counter: int = None, max: int = None, times: int = 8000) -> None:
-        '''
-        calibrates the bias from the accelerometer to know how fast the wombat is going towards the x-axis(accelerometer is not yet in use though)
-
-        Args:
-            counter (int, optional): the number where it is at the moment (default: None)
-            max (int, optional): how many caLibrations there are (to show it on the screen and for debugging usage) (default: None)
-            times (int, optional): how many calibrations should be done (default: 8000)
-
-        Returns:
-            None
-        '''
-        i: int = 0
-        avg: float = 0
-        while i < times:
-            avg += k.accel_z()
-            k.msleep(1)
-            i += 1
-        self.bias_accel_z = avg / times
-        if counter is not None and max is not None:
-            log(f'{counter}/{max} - ACCEL X CALIBRATED')
-
-    def calibrate_accel_y(self, counter: int = None, max: int = None, times: int = 8000) -> None:
-        '''
-        calibrates the bias from the accelerometer to know how fast the wombat is going towards the y-axis(accelerometer is not yet in use though)
-
-        Args:
-            counter (int, optional): the number where it is at the moment (default: None)
-            max (int, optional): how many caLibrations there are (to show it on the screen and for debugging usage) (default: None)
-            times (int, optional): how many calibrations should be done (default: 8000)
-
-        Returns:
-            None
-        '''
-        i: int = 0
-        avg: float = 0
-        while i < times:
-            avg += k.accel_y()
-            k.msleep(1)
-            i += 1
-        self.bias_accel_y = avg / times
-        if counter is not None and max is not None:
-            log(f'{counter}/{max} - ACCEL Y CALIBRATED')
-
-    def calibrate_degrees(self) -> None:
+    def calibrate_degrees(self, output: bool=True) -> None:
         '''
         The wombat has to be aligned on the black line. Afterwards it turns 180 degrees to see how long it takes for a full 180 degrees turn
         Improvement: Drives straight and after it recognises a black line it turns right (or left) to be aligned with the line. Afterwards doing a full 180 degrees turn to know how long it takes for a 180B0 turn
@@ -789,7 +1084,8 @@ class Rubber_Wheels_two():
         endTime = time.time()
         self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime) * 0.995
         self.NINETY_DEGREES_SECS = endTime - startTime
-        log('DEGREES CALIBRATED')
+        if output:
+            log('DEGREES CALIBRATED')
 
     def calibrate_mm_per_sec(self, millis: int = 5000, speed: int = None) -> None:
         '''
@@ -863,269 +1159,7 @@ class Rubber_Wheels_two():
 
         log(f"Calibration finished. {len(self.distance_far_mm)} datapoints collected.")
 
-    # ================== GET / OVERWRITE BIAS ==================
-    def get_mm_per_sec(self, only_mm: bool = False, only_sec: bool = False) -> None:  # @TODO schauen, wie man float ODER int (ODER list) zurückgeben kann als typ
-        '''
-        Getting the mm, sec, mm and sec or total it takes to drive a certain distance (in mm)
-
-        Args:
-            only_mm (bool, optional): If you specifically need the mm
-            only_sec (bool, optional): If you specifically need the sec
-
-        Returns:
-            One of the following options:
-                - List[int, float]: the mm and time in seconds it takes to drive
-                - int: the mm of distance for driving
-                - float: time in seconds for driving
-                - float: calculated value of mm/sec
-        '''
-
-        text = file_Manager.reader(self.mm_per_sec_file).split('\n')
-        total = float(text[0])
-        mm = int(text[1])
-        sec = float(text[2])
-
-        if only_mm and only_sec:
-            return mm, sec
-        if only_mm:
-            return mm
-        if only_sec:
-            return sec
-        return total
-
-
-    def get_distances(self, calibrated: bool = False) -> tuple:
-        '''
-        Getting the disances from the distances_arr.txt file
-
-        Args:
-            calibrated (bool, optional): Writing to the file distances_arr.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
-
-
-        Returns:
-            tuple[list[int], list[int]] | None:
-                If calibrated=False: (values, mm)
-                If calibrated=True: None
-        '''
-        file_name = os.path.join(BIAS_FOLDER, 'distances_arr.txt')
-
-        try:
-            if calibrated:
-                with open(file_name, "w") as f:
-                    f.write("value=" + ",".join(map(str, self.distance_far_values)) + "\n")
-                    f.write("mm=" + ",".join(map(str, self.distance_far_mm)) + "\n")
-                log(f"Distances saved to {file_name}")
-
-            else:
-                if not os.path.exists(file_name):
-                    raise FileNotFoundError(f"{file_name} not found. Run calibration first.")
-
-                with open(file_name, "r") as f:
-                    lines = f.readlines()
-                values = []
-                mm = []
-
-                for line in lines:
-                    if line.startswith("value="):
-                        values = list(map(int, line.strip().split("=")[1].split(",")))
-                    elif line.startswith("mm="):
-                        mm = list(map(int, line.strip().split("=")[1].split(",")))
-
-                return values, mm
-
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
-            return None
-
-
-    def get_current_standard_gyro(self) -> int:
-        '''
-        Getting the current value of the bias depending on if the controller is standing or laying down
-
-        Args:
-            None
-
-        Returns:
-            int: the gyro_z or gyro_y value
-        '''
-        return k.gyro_y() if self.standing else k.gyro_z()
-
-    def get_degrees(self, calibrated: bool = False) -> float:
-        '''
-        Getting the average degrees from the bias_degrees.txt file
-
-        Args:
-            calibrated (bool, optional): Writing to the file bias_degrees.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
-
-        Returns:
-            Average of the bias_degrees.txt file (optionally with the recent calibrated bias as well)
-        '''
-        avg = 0
-        file_name = os.path.join(BIAS_FOLDER, 'bias_degrees.txt')
-        try:
-            temp_deg = file_Manager.reader(file_name)
-            if calibrated:
-                avg = (float(temp_deg) + self.ONEEIGHTY_DEGREES_SECS) / 2
-                file_Manager.writer(file_name, 'w', avg)
-            else:
-                avg = float(temp_deg)
-
-            return avg
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
-
-    def get_bias_gyro_z(self, calibrated: bool = False) -> float:
-        '''
-        Getting the average bias from the bias_gyro_z.txt file
-
-        Args:
-            calibrated (bool, optional): Writing to the file bias_gyro_z.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
-
-
-        Returns:
-            Average of the bias_gyro_z.txt file (optionally with the recent calibrated bias as well)
-        '''
-        avg = 0
-        file_name = os.path.join(BIAS_FOLDER, 'bias_gyro_z.txt')
-        try:
-            with open(file_name, "r") as f:
-                temp_bias = f.read()
-                if calibrated:
-                    avg = (float(temp_bias) + self.bias_gyro_z) / 2
-                    file_Manager.writer(file_name, 'w', avg)
-                else:
-                    avg = float(temp_bias)
-            return avg
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
-
-    def get_bias_gyro_y(self, calibrated: bool = False) -> float:
-        '''
-        Getting the average bias from the bias_gyro_y.txt file
-
-        Args:
-            calibrated (bool, optional): Writing to the file bias_gyro_y.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
-
-
-        Returns:
-            Average of the bias_gyro_y.txt file (optionally with the recent calibrated bias as well)
-        '''
-        avg = 0
-        file_name = os.path.join(BIAS_FOLDER, 'bias_gyro_y.txt')
-        try:
-            with open(file_name, "r") as f:
-                temp_bias = f.read()
-                if calibrated:
-                    avg = (float(temp_bias) + self.bias_gyro_y) / 2
-                    file_Manager.writer(file_name, 'w', avg)
-                else:
-                    avg = float(temp_bias)
-            return avg
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
-
-    def get_bias_accel_z(self, calibrated: bool = False) -> float:
-        '''
-        Getting the average bias from the bias_accel_z.txt file
-
-        Args:
-            calibrated (bool, optional): Writing to the file bias_accel_z.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
-
-
-        Returns:
-            Average of the bias_accel_z.txt file (optionally with the recent calibrated bias as well)
-        '''
-        avg = 0
-        file_name = os.path.join(BIAS_FOLDER, 'bias_accel_z.txt')
-        try:
-            with open(file_name, "r") as f:
-                temp_bias = f.read()
-                if calibrated:
-                    avg = (float(temp_bias) + self.bias_accel_z) / 2
-                    file_Manager.writer(file_name, 'w', avg)
-                else:
-                    avg = float(temp_bias)
-            return avg
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
-
-    def get_bias_accel_y(self, calibrated: bool = False) -> float:
-        '''
-        Getting the average bias from the bias_accel_y.txt file
-
-        Args:
-            calibrated (bool, optional): Writing to the file bias_accel_y.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
-
-
-        Returns:
-            Average of the bias_accel_y.txt file (optionally with the recent calibrated bias as well)
-        '''
-        avg = 0
-        file_name = os.path.join(BIAS_FOLDER, 'bias_accel_y.txt')
-        try:
-            with open(file_name, "r") as f:
-                temp_bias = f.read()
-                if calibrated:
-                    avg = (float(temp_bias) + self.bias_accel_y) / 2
-                    file_Manager.writer(file_name, 'w', avg)
-                else:
-                    avg = float(temp_bias)
-            return avg
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
-
-
-    def get_standard_speed(self) -> int:
-        '''
-        Getting the default speed on which the robot moves
-
-        Args:
-            None
-
-        Returns:
-            int: the speed it is set to
-        '''
-        return self.ds_speed
-
     # ======================== PUBLIC METHODS =======================
-
-    def break_motor(self, *args) -> None:
-        '''
-        immediately stop the motor(s) of the given port
-
-        Args:
-            *args: All of the desired (motor) ports which should be stopped
-
-        Returns:
-            None
-        '''
-        try:
-            if isinstance(args[0], int):
-                for port in args:
-                    k.freeze(port)
-            elif isinstance(args[0], WheelR):
-                for wheel in args:
-                    wheel.stop()
-            else:
-                log('Only integer (port number) or WheelR instance are allowed!', in_exception=True)
-                raise TypeError('Only integer (port number) or WheelR instance are allowed!')
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
-
-    def break_all_motors(self, stop:bool = False) -> None:
-        '''
-        immediately stop all motors
-
-        Args:
-            stop (bool, optional): If it should be turned off completly and everywhere (True), or just stop driving (False, default)
-
-        Returns:
-            None
-        '''
-        self.left_wheel.stop()
-        self.right_wheel.stop()
-        if stop:
-            self._manage_motor_stopper(False)
 
     def align_drive_side(self, speed: int, drive_dir: bool = True, millis: int = 5000) -> None:
         '''
@@ -2140,7 +2174,7 @@ class Rubber_Wheels_two():
         self._manage_motor_stopper(False)
 
 
-class Mechanum_Wheels_four:
+class Mechanum_Wheels_four(base_driver):
     def __init__(self,
                  Instance_front_right_wheel: WheelR,
                  Instance_front_left_wheel: WheelR,
@@ -2157,6 +2191,8 @@ class Mechanum_Wheels_four:
                  Instance_light_sensor_side: LightSensor = None,
                  Instance_distance_sensor: DistanceSensor = None,
                  ):
+
+        super().__init__(DS_SPEED, controller_standing, Instance_front_right_wheel, Instance_front_left_wheel, Instance_back_left_wheel, Instance_back_right_wheel)
 
         self.fr_wheel = Instance_front_right_wheel
         self.fl_wheel = Instance_front_left_wheel
@@ -2177,151 +2213,14 @@ class Mechanum_Wheels_four:
         self.distance_sensor = Instance_distance_sensor
 
         self.ds_speed = DS_SPEED
-        self.distance_far_values, self.distance_far_mm = self.get_distances()
         self.isClose = False
-        self._motor_lock = threading.Lock()
-        self._motor_stoppers = {}
-        self._next_motor_id = 0
         self.max_speed = 1500
 
-        self.mm_per_sec_file = BIAS_FOLDER + '/mm_per_sec.txt'
         stop_manager.register_driver(self)
         self._set_values()
 
-    # ======================== HELPER  ========================
-    def _set_values(self):
-        '''
-        Sets all internal values
 
-        Args:
-            None
-
-        Returns:
-            None
-        '''
-        self.mm_per_sec = self.get_mm_per_sec()
-        self.ONEEIGHTY_DEGREES_SECS = self.get_degrees()
-        self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
-        self.bias_gyro_z = self.get_bias_gyro_z()
-        self.bias_gyro_y = self.get_bias_gyro_y()
-        self.bias_accel_z = self.get_bias_accel_z()  # There are no function where you can do anything with the accel y -> you need to invent them by yourself
-        self.bias_accel_y = self.get_bias_accel_y()  # There are no function where you can do anything with the accel y -> you need to invent them by yourself
-        self._handle_standard_bias()
-
-
-    def _handle_standard_bias(self):
-        if self.standing:
-            self.standard_bias_gyro = self.bias_gyro_y
-            self.standard_bias_accel = self.bias_accel_z
-            self.rev_standard_bias_gyro = self.bias_gyro_z
-            self.rev_standard_bias_accel = self.bias_gyro_y
-        else:
-            self.standard_bias_gyro = self.bias_gyro_z
-            self.standard_bias_accel = self.bias_accel_y
-            self.rev_standard_bias_gyro = self.bias_gyro_y
-            self.rev_standard_bias_accel = self.bias_gyro_z
-
-
-    def _manage_motor_stopper(self, beginning: bool) -> str:
-        '''
-        Manages the Lock of every class method, so if it (for example) gets spun clockwise and counterclockwise at the same time, the one that was sent through high priority will get executed and the other one does not
-
-        Args:
-            beginning (bool): is it in the beginning of a function (True) or at the end of a function (False)
-
-        Returns:
-            str: the ID of the motor at this moment
-        '''
-        with self._motor_lock:
-            if beginning:
-                self._next_motor_id += 1
-                motor_id = self._next_motor_id
-                self._motor_stoppers[motor_id] = True
-                return motor_id
-            else:
-                if self._next_motor_id in self._motor_stoppers:
-                    self._motor_stoppers[self._next_motor_id] = False
-                return self._next_motor_id
-
-    def is_motor_active(self, motor_id: str) -> bool:
-        '''
-        Validates if the motor ID is still the same
-
-        Args:
-            motor_id (str): the ID from the manager
-
-        Returns:
-            bool: Is it still valid (True), or not (False)
-        '''
-        with self._motor_lock:
-            return self._motor_stoppers.get(motor_id, False)
-
-    # ======================== SET INSTANCES ========================
-
-    def set_degrees(self, secs:float) -> None:
-        '''
-        Sets the amount of degrees for a 180° turn
-
-        Args:
-            secs (float): the time in seconds it takes for a 180° turn
-
-        Returns:
-            None
-        '''
-        self.ONEEIGHTY_DEGREES_SECS = secs
-        self.NINETY_DEGREES_SECS = secs / 2
-
-    def set_gyro_z(self, bias:float) -> None:
-        '''
-        Sets the amount of bias where the controller is laying down (for example) and getting turned from left to right or right to left
-
-        Args:
-            bias (float): the average of gyro_z after some time
-
-        Returns:
-            None
-        '''
-        self.bias_gyro_z = bias
-        self._handle_standard_bias()
-
-    def set_gyro_y(self, bias:float) -> None:
-        '''
-        Sets the amount of bias where the controller is standing (for example) and getting turned from left to right or right to left
-
-        Args:
-            bias (float): the average of _kipr.gyro_y() after some time
-
-        Returns:
-            None
-        '''
-        self.bias_gyro_y = bias
-        self._handle_standard_bias()
-
-    def set_accel_z(self, bias:float) -> None:
-        '''
-        Sets the amount of bias where the controller is standing (for example) and moving backward or forward
-
-        Args:
-            bias (float): the average of _kipr.accel_y() after some time
-
-        Returns:
-            None
-        '''
-        self.bias_accel_z = bias
-        self._handle_standard_bias()
-
-    def set_accel_y(self, bias:float) -> None:
-        '''
-        Sets the amount of bias where the controller is laying down (for example) and moving backward or forward
-
-        Args:
-            bias (float): the average of _kipr.accel_y() after some time
-
-        Returns:
-            None
-        '''
-        self.bias_accel_y = bias
-        self._handle_standard_bias()
+    # ======================== SET METHODS ========================
 
     def set_instance_distance_sensor(self, Instance_distance_sensor: DistanceSensor) -> None:
         '''
@@ -2456,66 +2355,7 @@ class Mechanum_Wheels_four:
         '''
         self.button_br = Instance_button_back_right
 
-    def set_TOTAL_mm_per_sec(self, mm: int = None, sec: float = None) -> None:
-        '''
-        Sets the millimeters and / or seconds for driving mm per seconds
-
-        Args:
-            sec (float): The amount of time (in seconds) it took to drive
-             mm (int): How far it drove (in mm)
-
-        Returns:
-            None
-        '''
-        if mm is None and sec is None:
-            log('By setting the mm and sec at least one of those values need to be assigned to a number!',
-                important=True, in_exception=True)
-            raise ValueError('By setting the mm and sec at least one of those values need to be assigned to a number!')
-        if not isinstance(mm, int) and mm is not None:
-            log('mm need to stay in mm! make sure mm is not in seconds!', important=True, in_exception=True)
-            raise TypeError('mm need to stay in mm! make sure mm is not in seconds!')
-        if (not isinstance(sec, int) and not isinstance(sec, float)) and sec is not None:
-            str_instance = isinstance(sec, str)
-            log(f'seconds need to stay as a float or int! seconds being a string: {str_instance}', important=True,
-                in_exception=True)
-            raise TypeError(f'seconds need to stay as a float or int! seconds being a string: {str_instance}')
-
-        text = file_Manager.reader(self.mm_per_sec_file).split('\n')
-        file_mm = int(text[1].strip())
-        file_sec = float(text[2].strip())
-        actual_sec = sec if sec is not None else file_sec
-        actual_mm = mm if mm is not None else file_mm
-
-        self.mm_per_sec = actual_mm/actual_sec
-        file_Manager.writer(self.mm_per_sec_file, 'w', self.mm_per_sec)
-        file_Manager.writer(self.mm_per_sec_file, 'a', '\n' + str(actual_mm))
-        file_Manager.writer(self.mm_per_sec_file, 'a', '\n' + str(actual_sec))
-
-    def set_MM_mm_per_sec(self, mm: int) -> None:
-        '''
-        Specifically sets the millimeters for driving mm per seconds
-
-        Args:
-            mm (int): How far it drove (in mm)
-
-        Returns:
-            None
-        '''
-        self.set_TOTAL_mm_per_sec(mm=mm)
-
-    def set_SEC_mm_per_sec(self, sec: float) -> None:
-        '''
-        Specifically sets the seconds for driving mm per seconds
-
-        Args:
-            sec (float): The amount of time (in seconds) it took to drive
-
-        Returns:
-            None
-        '''
-        self.set_TOTAL_mm_per_sec(sec=sec)
-
-    # ======================== CHECK INSTANCES ========================
+    # ======================== CHECK METHODS ========================
 
     def check_instance_light_sensors(self) -> bool:
         '''
@@ -2748,52 +2588,8 @@ class Mechanum_Wheels_four:
         return True
 
     # ===================== CALIBRATE BIAS =====================
-    def auto_calibration(self, times: int, on_line: bool) -> None:
-        '''
-        Automatically calibrates as often as you wish
 
-        Args:
-            times (int): The number of times it should calibrate
-            on_line (bool): If it is already perfectly aligned in the middle of a black line (True) or if it still has to align itself (False)
-
-        Returns:
-            None
-        '''
-        line_found = on_line
-        for i in range(times):
-            self.calibrate(on_line=line_found, output=False)
-            self.break_all_motors()
-            line_found = True
-            print(f'=== {i+1} / {times} times calibrated ===', flush=True)
-        log('AUTO CALIBRATION DONE')
-
-
-    def calibrate(self, on_line:bool = False, output:bool = True) -> None:
-        '''
-        Calibrates all necessairy bias
-
-        Args:
-            on_line (bool): If it is already perfectly aligned in the middle of a black line (True) or if it still has to align itself (False, default)
-            output (bool): If it should make an output, that it is done calibrating (True, default) or not (False)
-
-        Returns:
-            None. Writes bias into files
-        '''
-        self.calibrate_gyro_y(counter=1, max=4)
-        self.calibrate_accel_z(counter=2, max=4)
-        self.calibrate_gyro_z(counter=3, max=4)
-        self.calibrate_accel_y(counter=4, max=4)
-        self.bias_gyro_y = self.get_bias_gyro_y(True)
-        self.bias_accel_z = self.get_bias_accel_y(True)
-        self.bias_gyro_z = self.get_bias_gyro_z(True)
-        self.bias_accel_y = self.get_bias_accel_y(True)
-        self.calibrate_degrees(on_line=on_line, output=output)
-        self.ONEEIGHTY_DEGREES_SECS = self.get_degrees(True)
-        self.NINETY_DEGREES_SECS =  self.ONEEIGHTY_DEGREES_SECS / 2
-        if output:
-            log('CALIBRATION DONE', important=True)
-
-    def calibrate_degrees(self, on_line: bool = False, output:bool = True) -> None:
+    def calibrate_degrees(self, output:bool = True) -> None:
         '''
         drive to the side until a black line was found and then slowly turn 180 degrees to know how long it takes to make one 180B0 turn
 
@@ -2805,9 +2601,6 @@ class Mechanum_Wheels_four:
             None (but sets a class variable)
         '''
         self.check_instance_light_sensors_middle()
-        if not on_line:
-            self.drive_side_condition_analog('left', self.light_sensor_front, '<', self.light_sensor_front.get_value_black() - self.light_sensor_front.get_bias(), speed=self.ds_speed // 2)
-            k.msleep(1000)
         startTime = time.time()
         while k.seconds() - startTime < (1200) / 1000:
             self.fl_wheel.drive(self.fl_wheel.get_default_speed()//2)
@@ -2831,94 +2624,26 @@ class Mechanum_Wheels_four:
         if output:
             log('DEGREES CALIBRATED')
 
-    def calibrate_gyro_z(self, counter: int = None, max: int = None, times: int = 8000) -> None:
+    def calibrate_mm_per_sec(self, millis: int = 5000, speed: int = None) -> None:
         '''
-        calibrates the bias from the gyro to be able to drive straight, since the bias is for telling us how far off from driving straight the wombat is
+        calibrates the mm per second. You need to mark the beginning on where it began to drive from, since you need to know how far it went (in mm)
 
         Args:
-            counter (int): the number where it is at the moment
-            max (int): how many caLibrations there are (to show it on the screen and for debugging usage)
-            times (int, optional): how many calibrations should be done (default: 8000)
+            millis (int, optional): How long it should drive (in milliseconds) (default: 5000)
+            speed (int, optional): How fast it should drive (default: ds_speed)
 
         Returns:
             None
         '''
-        i: int = 0
-        avg: float = 0
-        while i < times:
-            avg += k.gyro_z()
-            k.msleep(1)
-            i += 1
-        self.bias_gyro_z = avg / time
-        if counter is not None and max is not None:
-            log(f'{counter}/{max} - GYRO Z CALIBRATED')
+        if speed is None:
+            speed = self.ds_speed
 
-    def calibrate_gyro_y(self, counter: int = None, max: int = None, times: int = 8000) -> None:
-        '''
-        calibrates the bias from the gyro to be able to drive straight, since the bias is for telling us how far off from driving straight the wombat is (theoretically it is for driving sideways)
+        start_time = time.time()
+        self.drive_straight(speed=speed, millis=millis)
+        sec = time.time() - start_time
+        mm = int(input('How many mm did the robot drive from the beginning on?: '))
 
-        Args:
-            counter (int, default): the number where it is at the moment (default: None)
-            max (int, default): how many caLibrations there are (to show it on the screen and for debugging usage) (default: None)
-            times (int, optional): how many calibrations should be done (default: 8000)
-
-        Returns:
-            None
-        '''
-        i: int = 0
-        avg: float = 0
-        time: int = 8000
-        while i < time:
-            avg += k.gyro_y()
-            k.msleep(1)
-            i += 1
-        self.bias_gyro_y = avg / time
-        if counter is not None and max is not None:
-            log(f'{counter}/{max} - GYRO Y CALIBRATED')
-
-    def calibrate_accel_z(self, counter: int = None, max: int = None, times: int = 8000) -> None:
-        '''
-        calibrates the bias from the accelerometer to know how fast the wombat is going towards the x-axis(accelerometer is not yet in use though)
-
-        Args:
-            counter (int, optional): the number where it is at the moment (default: None)
-            max (int, optional): how many caLibrations there are (to show it on the screen and for debugging usage) (default: None)
-            times (int, optional): how many calibrations should be done (default: 8000)
-
-        Returns:
-            None
-        '''
-        i: int = 0
-        avg: float = 0
-        while i < times:
-            avg += k.accel_z()
-            k.msleep(1)
-            i += 1
-        self.bias_accel_z = avg / time
-        if counter is not None and max is not None:
-            log(f'{counter}/{max} - ACCEL X CALIBRATED')
-
-    def calibrate_accel_y(self, counter: int = None, max: int = None, times: int = 8000) -> None:
-        '''
-        calibrates the bias from the accelerometer to know how fast the wombat is going towards the y-axis(accelerometer is not yet in use though)
-
-        Args:
-            counter (int, optional): the number where it is at the moment (default: None)
-            max (int, optional): how many caLibrations there are (to show it on the screen and for debugging usage) (default: None)
-            times (int, optional): how many calibrations should be done (default: 8000)
-
-        Returns:
-            None
-        '''
-        i: int = 0
-        avg: float = 0
-        while i < times:
-            avg += k.accel_y()
-            k.msleep(1)
-            i += 1
-        self.bias_accel_y = avg / time
-        if counter is not None and max is not None:
-            log(f'{counter}/{max} - ACCEL Y CALIBRATED')
+        self.set_TOTAL_mm_per_sec(mm=mm, sec=sec)
 
     def calibrate_distance(self, start_mm: int, min_sensor_value: int, speed: int = None, step: float = 0.1) -> None:
         '''
@@ -2971,258 +2696,6 @@ class Mechanum_Wheels_four:
 
         log(f"Calibration finished. {len(self.distance_far_mm)} datapoints collected.")
 
-    def calibrate_mm_per_sec(self, millis: int = 5000, speed: int = None) -> None:
-        '''
-        calibrates the mm per second. You need to mark the beginning on where it began to drive from, since you need to know how far it went (in mm)
-
-        Args:
-            millis (int, optional): How long it should drive (in milliseconds) (default: 5000)
-            speed (int, optional): How fast it should drive (default: ds_speed)
-
-        Returns:
-            None
-        '''
-        if speed is None:
-            speed = self.ds_speed
-
-        start_time = time.time()
-        self.drive_straight(speed=speed, millis=millis)
-        sec = time.time() - start_time
-        mm = int(input('How many mm did the robot drive from the beginning on?: '))
-
-        self.mm_per_sec = mm/sec
-        self.set_TOTAL_mm_per_sec(mm=mm, sec=sec)
-
-    # ================== GET / OVERWRITE BIAS ==================
-    def get_mm_per_sec(self, only_mm: bool = False, only_sec: bool = False) -> None:  # @TODO schauen, wie man float ODER int (ODER list) zurückgeben kann als typ
-        '''
-        Getting the mm, sec, mm and sec or total it takes to drive a certain distance (in mm)
-
-        Args:
-            only_mm (bool, optional): If you specifically need the mm
-            only_sec (bool, optional): If you specifically need the sec
-
-        Returns:
-            One of the following options:
-                - List[int, float]: the mm and time in seconds it takes to drive
-                - int: the mm of distance for driving
-                - float: time in seconds for driving
-                - float: calculated value of mm/sec
-        '''
-
-        text = file_Manager.reader(self.mm_per_sec_file).split('\n')
-        total = float(text[0])
-        mm = int(text[1])
-        sec = float(text[2])
-
-        if only_mm and only_sec:
-            return mm, sec
-        if only_mm:
-            return mm
-        if only_sec:
-            return sec
-        return total
-
-    def get_distances(self, calibrated: bool = False) -> tuple:
-        '''
-        Getting the disances from the distances_arr.txt file
-
-        Args:
-            calibrated (bool, optional): Writing to the file distances_arr.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
-
-
-        Returns:
-            tuple[list[int], list[int]] | None:
-                If calibrated=False: (values, mm)
-                If calibrated=True: None
-        '''
-        file_name = os.path.join(BIAS_FOLDER, 'distances_arr.txt')
-
-        try:
-            if calibrated:
-                with open(file_name, "w") as f:
-                    f.write("value=" + ",".join(map(str, self.distance_far_values)) + "\n")
-                    f.write("mm=" + ",".join(map(str, self.distance_far_mm)) + "\n")
-                log(f"Distances saved to {file_name}")
-
-            else:
-                if not os.path.exists(file_name):
-                    raise FileNotFoundError(f"{file_name} not found. Run calibration first.")
-
-                with open(file_name, "r") as f:
-                    lines = f.readlines()
-
-                values = []
-                mm = []
-
-                for line in lines:
-                    if line.startswith("value="):
-                        values = list(map(int, line.strip().split("=")[1].split(",")))
-                    elif line.startswith("mm="):
-                        mm = list(map(int, line.strip().split("=")[1].split(",")))
-
-                if not values or not mm:
-                    raise ValueError("File format is invalid or empty.")
-
-                return values, mm
-
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
-            return None
-
-
-    def get_current_standard_gyro(self, reverse: bool = False) -> int:
-        '''
-        Getting the current value of the bias depending on if the controller is standing or laying down
-
-        Args:
-            reverse (bool): it it should return the reversed value or not
-
-        Returns:
-            int: the gyro_z or gyro_y value
-        '''
-        if reverse:
-            return k.gyro_z() if self.standing else k.gyro_y()
-        return k.gyro_y() if self.standing else k.gyro_z()
-
-
-    def get_degrees(self, calibrated: bool = False) -> float:
-        '''
-        Getting the average degrees from the bias_degrees.txt file
-
-        Args:
-            calibrated (bool, optional): Writing to the file bias_degrees.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
-
-
-        Returns:
-            Average of the bias_degrees.txt file (optionally with the recent calibrated bias as well)
-        '''
-        avg = 0
-        file_name = os.path.join(BIAS_FOLDER, 'bias_degrees.txt')
-        try:
-            temp_deg = file_Manager.reader(file_name)
-            if calibrated:
-                avg = (float(temp_deg) + self.ONEEIGHTY_DEGREES_SECS) / 2
-                file_Manager.writer(file_name, 'w', avg)
-            else:
-                avg = float(temp_deg)
-
-            return avg
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
-
-
-    def get_bias_gyro_z(self, calibrated: bool = False) -> float:
-        '''
-        Getting the average bias from the bias_gyro_z.txt file
-
-        Args:
-            calibrated (bool, optional): Writing to the file bias_gyro_z.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
-
-
-        Returns:
-            Average of the bias_gyro_z.txt file (optionally with the recent calibrated bias as well)
-        '''
-        avg = 0
-        file_name = os.path.join(BIAS_FOLDER, 'bias_gyro_z.txt')
-        try:
-            with open(file_name, "r") as f:
-                temp_bias = f.read()
-                if calibrated:
-                    avg = (float(temp_bias) + self.bias_gyro_z) / 2
-                    file_Manager.writer(file_name, 'w', avg)
-                else:
-                    avg = float(temp_bias)
-            return avg
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
-
-    def get_bias_gyro_y(self, calibrated: bool = False) -> float:
-        '''
-        Getting the average bias from the bias_gyro_y.txt file
-
-        Args:
-            calibrated (bool, optional): Writing to the file bias_gyro_y.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
-
-
-        Returns:
-            Average of the bias_gyro_y.txt file (optionally with the recent calibrated bias as well)
-        '''
-        avg = 0
-        file_name = os.path.join(BIAS_FOLDER, 'bias_gyro_y.txt')
-        try:
-            with open(file_name, "r") as f:
-                temp_bias = f.read()
-                if calibrated:
-                    avg = (float(temp_bias) + self.bias_gyro_y) / 2
-                    file_Manager.writer(file_name, 'w', avg)
-                else:
-                    avg = float(temp_bias)
-            return avg
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
-
-    def get_bias_accel_z(self, calibrated: bool = False) -> float:
-        '''
-        Getting the average bias from the bias_accel_z.txt file
-
-        Args:
-            calibrated (bool, optional): Writing to the file bias_accel_z.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
-
-
-        Returns:
-            Average of the bias_accel_z.txt file (optionally with the recent calibrated bias as well)
-        '''
-        avg = 0
-        file_name = os.path.join(BIAS_FOLDER, 'bias_accel_z.txt')
-        try:
-            with open(file_name, "r") as f:
-                temp_bias = f.read()
-                if calibrated:
-                    avg = (float(temp_bias) + self.bias_accel_z) / 2
-                    file_Manager.writer(file_name, 'w', avg)
-                else:
-                    avg = float(temp_bias)
-            return avg
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
-
-    def get_bias_accel_y(self, calibrated: bool = False) -> float:
-        '''
-        Getting the average bias from the bias_accel_y.txt file
-
-        Args:
-            calibrated (bool, optional): Writing to the file bias_accel_y.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
-
-
-        Returns:
-            Average of the bias_accel_y.txt file (optionally with the recent calibrated bias as well)
-        '''
-        avg = 0
-        file_name = os.path.join(BIAS_FOLDER, 'bias_accel_y.txt')
-        try:
-            with open(file_name, "r") as f:
-                temp_bias = f.read()
-                if calibrated:
-                    avg = (float(temp_bias) + self.bias_accel_y) / 2
-                    file_Manager.writer(file_name, 'w', avg)
-                else:
-                    avg = float(temp_bias)
-            return avg
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
-
-    def get_standard_speed(self) -> int:
-        '''
-        Getting the default speed on which the robot moves
-
-        Args:
-            None
-
-        Returns:
-            int: the speed it is set to
-        '''
-        return self.ds_speed
 
     # ======================== PUBLIC METHODS =======================
 
@@ -3794,46 +3267,6 @@ class Mechanum_Wheels_four:
 
         self.break_all_motors()
         self._manage_motor_stopper(False)
-
-    def break_motor(self, *args) -> None:
-        '''
-        immediately stop the motor(s) of the given port
-
-        Args:
-            *args: All of the desired (motor) ports which should be stopped
-
-        Returns:
-            None
-        '''
-        try:
-            if isinstance(args[0], int):
-                for port in args:
-                    k.freeze(port)
-            elif isinstance(args[0], WheelR):
-                for wheel in args:
-                    wheel.stop()
-            else:
-                log('Only integer (port number) or WheelR instance are allowed!', in_exception=True)
-                raise TypeError('Only integer (port number) or WheelR instance are allowed!')
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
-
-    def break_all_motors(self, stop:bool = False) -> None:
-        '''
-        immediately stop all motors
-
-        Args:
-            stop (bool, optional): If it should be turned off completly and everywhere (True), or just stop driving (False, default)
-
-        Returns:
-            None
-        '''
-        self.fl_wheel.stop()
-        self.fr_wheel.stop()
-        self.bl_wheel.stop()
-        self.br_wheel.stop()
-        if stop:
-            self._manage_motor_stopper(False)
 
     def shake_side(self, times: int, millis: int = 90) -> None:
         '''

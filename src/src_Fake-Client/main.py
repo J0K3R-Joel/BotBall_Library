@@ -38,10 +38,9 @@ pause_event = threading.Event()
 
 
 # ===== PORTS MOTORS =====
-#PORT_MOTOR_FR = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
-#PORT_MOTOR_FL = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
-#PORT_MOTOR_BR = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
-#PORT_MOTOR_BL = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
+#PORT_MOTOR_R = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
+#PORT_MOTOR_L = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
+
 
 # ===== PORTS SERVOS =====
 
@@ -78,23 +77,23 @@ def Instancer_Setup():
         # ================== Util ===================
 
         # ============== DistanceSensor =============
+        #globals()['DistanceSens'] = DistanceSensor(PORT_DISTANCE_SENSOR)
 
-        # =============== LightSensor ===============
+        # ============== LightSensor =============
+        #globals()['LightSensorFront'] = LightSensor('front', PORT_LIGHT_SENSOR_FRONT, bias=XX)  # the amount of error that you allow from the light sensor. Higher value means it is more forgiving. Integer value is required. eg: 150; 500; 300
+        #globals()['LightSensorBack'] = LightSensor('back', PORT_LIGHT_SENSOR_BACK, bias=XX)  # the amount of error that you allow from the light sensor. Higher value means it is more forgiving. Integer value is required. eg: 150; 500; 300
+        #globals()['LightSensorSide'] = LightSensor('side', PORT_LIGHT_SENSOR_SIDE, bias=XX)  # the amount of error that you allow from the light sensor. Higher value means it is more forgiving. Integer value is required. eg: 150; 500; 300
+
 
         # ================== WheelR =================
-        #globals()['Wheel_FR'] = WheelR(PORT_MOTOR_FR)
-        #globals()['Wheel_FL'] = WheelR(PORT_MOTOR_FL)
-        #globals()['Wheel_BR'] = WheelR(PORT_MOTOR_BR)
-        #globals()['Wheel_BL'] = WheelR(PORT_MOTOR_BL)
+        #globals()['Wheel_R'] = WheelR(PORT_MOTOR_R)
+        #globals()['Wheel_L'] = WheelR(PORT_MOTOR_L)
+
 
         # ================= DriveR ==================
-        # If your robot does not have mechanum wheels, then you most certainly do not need 4 wheels, everything here is just a placeholder!
-        #globals()['Noris'] = Mechanum_Wheels_four(Instance_front_right_wheel=Wheel_FR,
-        #                                                    Instance_front_left_wheel=Wheel_FL,
-        #                                                    Instance_back_left_wheel=Wheel_BL,
-        #                                                    Instance_back_right_wheel=Wheel_BR,
-        #                                                    controller_standing=XX,
-        #                                                    # If the controller is standing up-right (True) or if it is laying flat on the surface of the chassis bracket (False)
+        #globals()['Noris'] = Rubber_Wheels_two(Instance_right_wheel=Wheel_R,
+        #                                                    Instance_left_wheel=Wheel_L,
+        #                                                    controller_standing=XX,  # If the controller is standing up-right (True) or if it is laying flat on the surface of the chassis bracket (False)
         #                                                    Instance_light_sensor_front=LightSensorFront,
         #                                                    Instance_light_sensor_back=LightSensorBack,
         #                                                    Instance_light_sensor_side=LightSensorSide,

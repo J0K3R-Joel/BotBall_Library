@@ -29,10 +29,9 @@ except Exception as e:
 #PORT_BUTTON = XX  # XX is an placeholder for the integor of the digital port where the button is plugged in. eg. 0; 1; 9; 4
 
 # ===== PORTS MOTORS =====
-#PORT_MOTOR_FR = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
-#PORT_MOTOR_FL = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
-#PORT_MOTOR_BR = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
-#PORT_MOTOR_BL = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
+#PORT_MOTOR_R = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
+#PORT_MOTOR_L = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
+
 
 # ======================== SETUP FUNCTIONS =======================
 def Instance_Setup():
@@ -49,18 +48,13 @@ def Instance_Setup():
         globals()['LightSensorSide'] = LightSensor('side', PORT_LIGHT_SENSOR_SIDE, bias=XX)  # the amount of error that you allow from the light sensor. Higher value means it is more forgiving. Integer value is required. eg: 150; 500; 300
 
         # ================== WheelR =================
-        globals()['Wheel_FR'] = WheelR(PORT_MOTOR_FR)
-        globals()['Wheel_FL'] = WheelR(PORT_MOTOR_FL)
-        globals()['Wheel_BR'] = WheelR(PORT_MOTOR_BR)
-        globals()['Wheel_BL'] = WheelR(PORT_MOTOR_BL)
+        globals()['Wheel_R'] = WheelR(PORT_MOTOR_R)
+        globals()['Wheel_L'] = WheelR(PORT_MOTOR_L)
 
 
         # ================= DriveR ==================
-        # If your robot does not have mechanum wheels, then you most certainly do not need 4 wheels, everything here is just a placeholder!
-        globals()['MechanumWheeler'] = Mechanum_Wheels_four(Instance_front_right_wheel=Wheel_FR,
-                                                   Instance_front_left_wheel=Wheel_FL,
-                                                   Instance_back_left_wheel=Wheel_BL,
-                                                   Instance_back_right_wheel=Wheel_BR,
+        globals()['RubberWheeler'] = Rubber_Wheels_two(Instance_right_wheel=Wheel_R,
+                                                   Instance_left_wheel=Wheel_L,
                                                    controller_standing=XX,                                  # If the controller is standing up-right (True) or if it is laying flat on the surface of the chassis bracket (False)
                                                    Instance_light_sensor_front=LightSensorFront,
                                                    Instance_light_sensor_back=LightSensorBack,
@@ -106,7 +100,7 @@ def main():
         print('uncomment to start. Do not forget to change the invalid params (like XX)', flush=True)
         #Instance_Setup()
         #register_light_values()
-        #MechanumWheeler.auto_calibration(times=10, on_line=XX)  # XX is a placeholder if you are plaving the robot on top of a black line (True) or if it has to drive left to get onto the line (False). Also this parameter is not available on the RubberWheel (driveR_two) class!!
+        #RubberWheeler.auto_calibration(times=10)  # make sure that the robot is standing on top of a black line and is aligned in the direction of the black line
 
     except Exception as e:
         log(f'Main Exception {str(e)}', important=True, in_exception=True)

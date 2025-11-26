@@ -15,11 +15,11 @@ except Exception as e:
 
 class StopManager:
     def __init__(self):
-        self.motors = []
+        self.wheels = []
         self.servos = []
         self._lock = threading.Lock()
         self.is_stopped = False
-        self.driver_classes = []
+        self.wheel_classes = []
         self.servo_classes = []
         
         try:
@@ -31,7 +31,7 @@ class StopManager:
             self.working_dir = os.getcwd()
 
     # ======================== LAZY CLASS LOADING ========================
-    def _load_driver_classes(self):
+    def _load_wheel_classes(self):
         '''
         lazy import of specific classes
 
@@ -41,11 +41,8 @@ class StopManager:
         Returns:
             None
         '''
-        import inspect, driveR
-        self.driver_classes = [
-            obj for name, obj in inspect.getmembers(driveR, inspect.isclass)
-            if obj.__module__ == driveR.__name__
-        ]
+        from wheelR import WheelR
+        self.wheel_classes = [WheelR]
 
     def _load_servo_classes(self):
         '''
@@ -62,7 +59,7 @@ class StopManager:
 
     # ======================== CHECK INSTANCES ========================
 
-    def check_motor_instance(self, driver) -> None:
+    def check_motor_instance(self, wheelr) -> None:
         '''
         Checks, if the wanted driver is a member of the driveR class
 
@@ -72,13 +69,13 @@ class StopManager:
         Returns:
             Either a TypeError if invalid or None
         '''
-        if not self.driver_classes:
-            self._load_driver_classes()
+        if not self.wheel_classes:
+            self._load_wheel_classes()
 
-        if not isinstance(driver, tuple(self.driver_classes)):
-            valid = [cls.__name__ for cls in self.driver_classes]
-            log(f"{driver} is not a valid driveR-class. Valid: {valid}", important=True, in_exception=True)
-            raise TypeError(f"{driver} is not a valid driveR-class. Valid: {valid}")
+        if not isinstance(wheelr, tuple(self.wheel_classes)):
+            valid = [cls.__name__ for cls in self.wheel_classes]
+            log(f"{wheelr} is not a valid driveR-class. Valid: {valid}", important=True, in_exception=True)
+            raise TypeError(f"{wheelr} is not a valid driveR-class. Valid: {valid}")
 
 
     def check_servo_instance(self, servox) -> None:
@@ -101,7 +98,7 @@ class StopManager:
 
 
     # ======================== PUBLIC METHODS ========================
-    def register_driver(self, driver) -> None:
+    def register_wheelr(self, wheelr) -> None:
         '''
         Let's you register a driveR class which has to stop if the emergency_stop() function gets executed
 
@@ -111,8 +108,9 @@ class StopManager:
         Returns:
             None
         '''
+        self.check_motor_instance(wheelr)
         with self._lock:
-            self.motors.append(driver)
+            self.wheels.append(wheelr)
 
     def register_servox(self, servox):
         '''
@@ -138,9 +136,9 @@ class StopManager:
         Returns:
             None
         '''
-        for m in self.motors:
+        for w in self.wheels:
             try:
-                m.break_all_motors(stop=True)
+                w.stop()
             except Exception as e:
                 log(f"Error stopping motor: {e}", important=True, in_exception=True)
 

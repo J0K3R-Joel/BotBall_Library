@@ -93,7 +93,7 @@ class Digital:
         self.got_pressed = False
         self.pressed_at = k.seconds()
 
-    def time_end(self, end_timer: bool = True, raiser_last_pressed: str = '') -> tuple[bool, bool, int | Any]:
+    def time_end(self, end_timer: bool = True, raiser_last_pressed: str = '') -> tuple[bool, bool, int]:
         '''
         tells you how the time since the last time when the beginner function was called. The state has to be changed since the last beginner function was called
 

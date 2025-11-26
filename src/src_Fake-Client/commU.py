@@ -173,7 +173,7 @@ class WifiConnector:
             If you are connected with the chosen wifi (True), or with any other wifi or just no wifi at all (False)
         '''
         try:
-            result = subprocess.run(['nmcli', '-t', '-f', 'active,ssid', 'dev', 'wifi'],
+            result = subprocess.run(['sudo', 'nmcli', '-t', '-f', 'active,ssid', 'dev', 'wifi'],
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.DEVNULL)
             for line in result.stdout.decode().splitlines():
@@ -200,12 +200,12 @@ class WifiConnector:
             raise RuntimeError('You need to tell the constructor the SSID and password of the WIFI you are trying to connect to!')
         try:
             subprocess.run(
-                ["nmcli", "dev", "wifi", "connect", self.ssid, "password", self.password],
+                ['sudo', 'nmcli', 'dev', 'wifi', 'connect', self.ssid, 'password', self.password],
                 check=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
-            log(f"Successfully connected with {self.ssid} .")
+            log(f'Successfully connected with {self.ssid} .')
         except subprocess.CalledProcessError as e:
             log(f'Wifi connection failed: {e.stderr.decode()}', important=True, in_exception=True)
 

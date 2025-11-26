@@ -16,6 +16,7 @@ try:
     from threading import Lock
     from fileR import FileR  # selfmade
     from motor_scheduler import MOTOR_SCHEDULER  # selfmade
+    from stop_manager import stop_manager  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
@@ -25,6 +26,7 @@ class WheelR:
         self.max_speed = max_speed
         self.d_speed = default_speed
         self.wheel_lock = Lock()
+        stop_manager.register_wheelr(self)
 
     # ======================== PRIVATE METHODS ========================
     def _base_speed_func(self, speed: int) -> None:

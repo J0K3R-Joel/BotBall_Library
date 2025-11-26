@@ -35,6 +35,7 @@ except Exception as e:
 BIAS_FOLDER = '/usr/lib/bias_files'
 os.makedirs(BIAS_FOLDER, exist_ok=True)
 
+
 class base_driver:
     def __init__(self, default_speed: int, standing: bool, *motors: WheelR):
         self.ds_speed = default_speed
@@ -45,6 +46,7 @@ class base_driver:
         self._next_motor_id = 0
         self.mm_per_sec_file = BIAS_FOLDER + '/mm_per_sec.txt'
         self.distance_far_values, self.distance_far_mm = self.get_distances()
+        self.check_wheelr_instance(motors)
 
 
     # ======================== PRIVATE METHODS =======================
@@ -269,9 +271,6 @@ class base_driver:
                     elif line.startswith("mm="):
                         mm = list(map(int, line.strip().split("=")[1].split(",")))
 
-                if not values or not mm:
-                    raise ValueError("File format is invalid or empty.")
-
                 return values, mm
 
         except Exception as e:
@@ -433,6 +432,17 @@ class base_driver:
             None
         '''
         self.set_TOTAL_mm_per_sec(sec=sec)
+
+
+    # ===================== CALIBRATE BIAS =====================
+    def check_wheelr_instance(self, *motors) -> bool:
+        for motor in motors:
+            if not isinstance(motor, WheelR):
+                log(f'{motor} is an instance of {type(motor).__name__} and not an instance of WheelR! {motor} needs to be an instance of WheelR!', in_exception=True)
+                raise TypeError(f'{motor} is an instance of {type(motor).__name__} and not an instance of WheelR! {motor} needs to be an instance of WheelR!')
+
+        return True
+
 
     # ===================== CALIBRATE BIAS =====================
     def calibrate_degrees(self, output):

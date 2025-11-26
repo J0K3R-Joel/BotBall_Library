@@ -1,4 +1,6 @@
 import os, sys
+from types import ModuleType
+
 sys.path.append("/usr/lib")
 
 from logger import *  # selfmade
@@ -350,7 +352,7 @@ class FakeR():
 
         return code_str
 
-    def __import_main_from_path(self, path_to_main_py : str) -> None:
+    def __import_main_from_path(self, path_to_main_py : str) -> ModuleType:
         '''
         Let's you import a main from another python file in another directory
 

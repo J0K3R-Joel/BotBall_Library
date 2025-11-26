@@ -15,6 +15,7 @@ try:
     import time
     from threading import Lock
     from fileR import FileR  # selfmade
+    from motor_scheduler import MOTOR_SCHEDULER  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
@@ -41,7 +42,7 @@ class WheelR:
         elif speed > self.max_speed:
             speed = self.max_speed
 
-        k.mav(self.port, speed)
+        MOTOR_SCHEDULER.set_speed(self.port, speed)
 
 
     # ======================== GET METHODS ========================
@@ -330,4 +331,4 @@ class WheelR:
         Returns:
             None
         '''
-        k.freeze(self.port)
+        MOTOR_SCHEDULER.stop_motor(self.port)

@@ -173,11 +173,12 @@
   - empty terminal window will not go away, even after waiting for minutes
   - You can not write into the terminal window
 - **Cause:**  
-  - Unknown, but it should not be a issue of the BotBall Library
+  - Mostly after [Issue ID: 006](#Issue ID: 006)
+  - Something is wrong with the USB-stick
 - **Solution / Workaround:**  
-  - No solution available
   - The only thing you can do is to wipe out the micro SD card and start all over again
-- **Status:** Open
+  - This time use another USB-stick for cloning the repository / running the `config.sh` script
+- **Status:** Resolved
 
 ---
 

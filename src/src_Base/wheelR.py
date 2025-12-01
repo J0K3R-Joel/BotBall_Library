@@ -43,7 +43,6 @@ class WheelR:
             None
         '''
         tid = threading.current_thread().ident
-        #fid = time.time_ns() ^ threading.get_ident()
         caller_frame = inspect.currentframe().f_back
         try:
             fid = id(caller_frame)

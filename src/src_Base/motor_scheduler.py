@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 import os, sys
 sys.path.append("/usr/lib")
-
 from logger import *
 
 # Author: Joel Kalkusch
@@ -21,7 +20,7 @@ except Exception as e:
 
 
 class MotorScheduler:
-    AUTO_STOP_TIMEOUT = 0.05  # 50ms
+    AUTO_STOP_TIMEOUT = 1  # 50ms
 
     def __init__(self):
         self._lock = threading.Lock()
@@ -40,62 +39,48 @@ class MotorScheduler:
         try:
             while self._running:
                 now = time.time()
-
                 with self._lock:
-                    commands_copy = list(self._commands.values())
-                    old_funcs_copy = set(self._old_funcs)
+                    commands_copy = list(self._commands.items())
 
-                for data in commands_copy:
+                stopped_ports = set()
+
+                for key, data in commands_copy:
                     port = data['port']
                     fid = data['func_id']
 
-                    if fid in old_funcs_copy:
+                    if self.last_fid.get(port) != fid:
                         continue
 
-                    if now - data['last_update'] > self.AUTO_STOP_TIMEOUT:
-                        with self._lock:
-                            self._commands[(port, fid)] = {
-                                'port': port,
-                                'speed': 0,
-                                'func_id': data['func_id'],
-                                'thread_id': data['thread_id'],
-                                'now': data['last_update']
-                            }
+                    if now - data['last_update'] > self.AUTO_STOP_TIMEOUT and port not in stopped_ports:
+                        stopped_ports.add(port)
+                        self.stop_motor(port)
                         continue
 
                     try:
-                        print('current fid: ', fid, flush=True)
-
-                        if data['speed'] > 0:
-                            print('positive', flush=True)
-                        else:
-                            print('negative', flush=True)
-
-                        k.mav(port, data['speed'])
-
+                        if self.last_fid.get(port) == data['func_id']:
+                            k.mav(port, data['speed'])
                     except Exception as e:
-                        print(e, flush=True)
+                        log(f"k.mav error for fid={fid}, port={port}: {str(e)}", in_exception=True)
 
-                k.msleep(10)
-
+                k.msleep(1)
         except Exception as e:
             log(str(e), in_exception=True)
 
     def set_speed(self, port, speed, thread_id, func_id):
         try:
-            now = time.time()
-
             with self._lock:
                 if func_id in self._old_funcs:
                     return
 
                 key = (port, func_id)
+                now = time.time()
 
                 if key in self._commands:
-                    self._commands[key]['speed'] = speed
-                    self._commands[key]['thread_id'] = thread_id
-                    self._commands[key]['last_update'] = now
-
+                    self._commands[key].update({
+                        'speed': speed,
+                        'thread_id': thread_id,
+                        'last_update': now
+                    })
                     self.last_fid[port] = func_id
                     self.last_tid[port] = thread_id
                     return
@@ -116,23 +101,15 @@ class MotorScheduler:
 
                 self.last_fid[port] = func_id
                 self.last_tid[port] = thread_id
-                print('valid fid: ', func_id, flush=True)
-
         except Exception as e:
             log(str(e), in_exception=True)
 
     def stop_motor(self, port):
-        print('stopping...', flush=True)
-
+        print(f"stopping motor {port}...", flush=True)
         with self._lock:
-            keys_to_delete = [
-                key for key, data in self._commands.items()
-                if data['port'] == port
-            ]
-
+            keys_to_delete = [k for k, data in self._commands.items() if data['port'] == port]
             for key in keys_to_delete:
                 del self._commands[key]
-
         try:
             k.freeze(port)
         except Exception as e:
@@ -142,8 +119,8 @@ class MotorScheduler:
         print('hard stop.', flush=True)
         try:
             with self._lock:
-                for port in self._commands:
-                    k.freeze(port)
+                for key, data in list(self._commands.items()):
+                    k.freeze(data['port'])
                 self._commands.clear()
         except Exception as e:
             log(str(e), in_exception=True)

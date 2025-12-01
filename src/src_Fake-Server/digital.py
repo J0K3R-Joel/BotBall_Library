@@ -79,6 +79,24 @@ class Digital:
 
         return False
 
+    def seperator(self, until_pressed: bool, millis_func_dict: dict = None) -> int:
+        num = 1 if until_pressed else 0
+        times_sorted = sorted(millis_func_dict.keys(), key=int, reverse=True)
+        start_time = k.millis()
+
+        while not self.is_pressed() == num:
+            continue
+
+        total_time = int(k.millis() - start_time)
+
+        if millis_func_dict is None:
+            return total_time
+
+        #for time in times_sorted:
+         #   if total_time > int(time):
+                # callable überprüfen, wenn ja dict an der stelle mit der funktion ausführen. Wenn nicht callable, dann exception
+
+
     def time_begin(self) -> None:
         '''
         remembers the state it is currently in and the time where the function got called

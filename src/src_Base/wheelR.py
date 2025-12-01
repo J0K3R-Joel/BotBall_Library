@@ -13,7 +13,8 @@ from logger import *
 try:
     import _kipr as k
     import time
-    from threading import Lock
+    import threading
+    import inspect
     from fileR import FileR  # selfmade
     from motor_scheduler import MOTOR_SCHEDULER  # selfmade
     from stop_manager import stop_manager  # selfmade
@@ -25,7 +26,9 @@ class WheelR:
         self.port = Port
         self.max_speed = max_speed
         self.d_speed = default_speed
-        self.wheel_lock = Lock()
+        self.wheel_lock = threading.Lock()
+        self._stop_flag = False
+        self.current_thread = None
         stop_manager.register_wheelr(self)
 
     # ======================== PRIVATE METHODS ========================
@@ -39,13 +42,20 @@ class WheelR:
         Returns:
             None
         '''
+        tid = threading.current_thread().ident
+        #fid = time.time_ns() ^ threading.get_ident()
+        caller_frame = inspect.currentframe().f_back
+        try:
+            fid = id(caller_frame)
+        finally:
+            del caller_frame
+
         if speed < -self.max_speed:
             speed = -self.max_speed
         elif speed > self.max_speed:
             speed = self.max_speed
 
-        MOTOR_SCHEDULER.set_speed(self.port, speed)
-
+        MOTOR_SCHEDULER.set_speed(self.port, speed, thread_id=tid, func_id=fid)
 
     # ======================== GET METHODS ========================
     def get_port(self) -> int:

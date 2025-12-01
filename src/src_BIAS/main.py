@@ -93,6 +93,7 @@ def register_light_values():
     print('Please press the Accept button to go on to the next step', flush=True)
     while not AcceptButton.is_pressed():
         continue
+    print('Finished with light sensor calibration. Continuing with next step...', flush=True)
 
 # ======================== MAIN =======================
 def main():

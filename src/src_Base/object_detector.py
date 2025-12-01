@@ -453,7 +453,7 @@ class CameraObjectDetector:
         Returns:
             If the shape was found (True) or not (False)
         '''
-        frame = self._capture_good_frame(min_brightness=100, timeout=8)
+        frame = self._capture_good_frame()
         if frame is None:
             log("Could not create a solid picture", important=True)
             return False
@@ -498,7 +498,7 @@ class CameraObjectDetector:
             log(f"Color '{color_name}' is not supported.")
             return False
 
-        frame = self._capture_good_frame(min_brightness=100, timeout=8)
+        frame = self._capture_good_frame()
         if frame is None:
             log("No solid picture could be made", important=True)
             return False
@@ -540,7 +540,7 @@ class CameraObjectDetector:
             log(f"Object '{object_name}' not found in the existing folder.")
             return False
 
-        frame = self._capture_good_frame(min_brightness=100, timeout=5)
+        frame = self._capture_good_frame()
         if frame is None:
             log("No solid picture could be made", important=True)
             return False
@@ -603,7 +603,7 @@ class CameraObjectDetector:
             log(f"Color'{color_name}' not supported.", important=True)
             return False
 
-        frame = self._capture_good_frame(min_brightness=100, timeout=8)
+        frame = self._capture_good_frame()
         if frame is None:
             log("No solid picture could be made.", important=True)
             return False

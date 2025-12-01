@@ -23,7 +23,6 @@ try:
     from light_sensor import LightSensor  # selfmade
     from digital import Digital  # selfmade
     from fileR import FileR  # selfmade
-    from stop_manager import stop_manager  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
@@ -436,7 +435,7 @@ class base_driver:
 
     # ===================== CALIBRATE BIAS =====================
     def check_wheelr_instance(self, *motors) -> bool:
-        for motor in motors:
+        for motor in motors[0]:
             if not isinstance(motor, WheelR):
                 log(f'{motor} is an instance of {type(motor).__name__} and not an instance of WheelR! {motor} needs to be an instance of WheelR!', in_exception=True)
                 raise TypeError(f'{motor} is an instance of {type(motor).__name__} and not an instance of WheelR! {motor} needs to be an instance of WheelR!')
@@ -581,7 +580,7 @@ class base_driver:
             log(f'{counter}/{max} - ACCEL Y CALIBRATED')
 
     # ======================== PUBLIC METHODS =======================
-    def break_all_motors(self, stop:bool = False) -> None:
+    def break_all_motors(self) -> None:
         '''
         immediately stop all motors
 
@@ -594,8 +593,6 @@ class base_driver:
         for motor in self.motors:
             motor.stop()
 
-        if stop:
-            self._manage_motor_stopper(False)
 
     def break_motor(self, *args) -> None:
         '''
@@ -663,7 +660,6 @@ class Rubber_Wheels_two(base_driver):
         self.NINETY_DEGREES_SECS = None
         self._motor_lock = threading.Lock()
         self.max_speed = 1500
-        stop_manager.register_driver(self)
 
         self._set_values()
 
@@ -1087,14 +1083,14 @@ class Rubber_Wheels_two(base_driver):
         self.set_TOTAL_mm_per_sec(mm=mm, sec=sec)
 
 
-    def calibrate_distance(self, start_mm: int, min_sensor_value: int, speed: int = None, step: float = 0.1) -> None:
+    def calibrate_distance(self, min_sensor_value: int, start_mm: int, speed: int = None, step: float = 0.1) -> None:
         '''
         calibrates the values for the distance sensor. HINT: calibrate the gyro first (if you did not already do that), so it drives straight. Also it calibrates one time, make sure it is as accurate as possible.
         It needs to be 800mm away from an object and both object has to be as parallel to each other as possible.
 
         Args:
             start_mm (int): known starting distance (e.g. 95)
-            max_sensor_value (int): the value until where the robot should drive (the lower the value,
+            min_sensor_value (int): the value until where the robot should drive (the lowest possible)
             speed (int, optional): constant speed (default: ds_speed)
             step (float, optional): time between two measurements (default: 0.1)
 
@@ -1132,7 +1128,7 @@ class Rubber_Wheels_two(base_driver):
                 break
 
             time.sleep(step)
-        self.break_all_motors(True)
+        self.break_all_motors()
         self.get_distances(calibrated=True)
 
         log(f"Calibration finished. {len(self.distance_far_mm)} datapoints collected.")
@@ -1313,6 +1309,7 @@ class Rubber_Wheels_two(base_driver):
         if speed < 0:
             instances = self.right_wheel, self.left_wheel
             adjuster = -adjuster
+
         if condition == "==":
             while (Instance.current_value() == value) and (k.seconds() - start_time < millis/1000):
                 if theta < 10 and theta > -10:
@@ -2164,7 +2161,6 @@ class Mechanum_Wheels_four(base_driver):
         self.isClose = False
         self.max_speed = 1500
 
-        stop_manager.register_driver(self)
         self._set_values()
 
 
@@ -2639,7 +2635,6 @@ class Mechanum_Wheels_four(base_driver):
                 break
 
             time.sleep(step)
-        self.break_all_motors(True)
         self.get_distances(calibrated=True)
 
         log(f"Calibration finished. {len(self.distance_far_mm)} datapoints collected.")

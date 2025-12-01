@@ -75,7 +75,7 @@ Before you start, consider that you have access to the following points:
 
 **HINT**: a very common error in python (at least in the KISS IDE) is the `TabError` or `inconsistent use of tabs`. This is because the KISS IDE distinguishes between using 4 spaces or one tab. Normally this does not matter but unfortunately in the KISS IDE it does.
 
-**HINT**: before switching files, make sure that you compiled / safe the file in which you just coded / edited the program. This is because your changed would otherwise be overwritten with the original / last safe of the file.
+**HINT**: before switching files, make sure that you compiled / safe the file in which you just coded / edited the program. This is because your changed would otherwise be overwritten with the original / last safe of the file.
 
 ---
 
@@ -109,12 +109,12 @@ These (at this time) four categories of scoring points are unequally destributed
 
 - A team member of mine created a VSCode Extension. His name is Markus Weberndorfer and [this](https://marketplace.visualstudio.com/items?itemName=markusweberndorfer0.kipr-wombat-vscode-extension) is the Extension's link. This could make your life easier in programming
 
-- **Do not be scared** of editing my code. No one is perfect, neither am I, so I also can make mistakes. Also, if something is deprecated many things will not work anymore, so it is in your hands to create a new solution
+- **Do not be afraid** of editing my code. No one is perfect, neither am I, so I also can make mistakes. Also, if something is deprecated many things will not work anymore, so it is in your hands to create a new solution
 
-- **Do not be scared** of adding new classes / code / software / interfaces /... 
+- **Do not be afraid** of adding new classes / code / software / interfaces /... 
 
-- **Do not be scared** of creating hardware
+- **Do not be afraid** of creating hardware
 
-- **Do not be scared** of failure. Failure is the first step to success 
+- **Do not be afraid** of failure. Failure is the first step to success 
 
-- **Do not be scared** of anything. It is an event for having fun, competing with other teams and establish connections between other people. Everyone is beginning the same, has the same problems. The only difference is how you handle failure and how to solve certain problems. 
+- **Do not be afraid** of anything. It is an event for having fun, competing with other teams and establish connections between other people. Everyone is beginning the same, has the same problems. The only difference is how you handle failure and how to solve certain problems. 

@@ -177,7 +177,7 @@
   - Something is wrong with the USB-stick
 - **Solution / Workaround:**  
   - The only thing you can do is to wipe out the micro SD card and start all over again
-  - This time use another USB-stick for cloning the repository / running the `config.sh` script
+  - This time use another USB-stick for cloning the repository / running the `config.sh` script
 - **Status:** Resolved
 
 ---
@@ -198,4 +198,29 @@
   - There is no secure connection (until now - 23.11.2025) available
 - **Solution / Workaround:**  
   - before the IP-Address and Port (eg. `192.168.1.1:8888`) type `http://`, so you specifically tell it to use it the unsecure connection (your browser-search should look like this: `http://192.168.1.1:8888`)
+- **Status:** Resolved
+
+---
+
+### Issue ID: 009
+
+- **Title:** No changed getting applied / not being able to compile or run the code
+- **Category:** Connection
+- **Affected Components:** KISS IDE
+- **Description:**  
+  When being in the KISS IDE and trying to compile, run or switch files, it simply does not allow you to
+- **Symptoms / Indicators:**
+  - Not being able to compile the code
+  - Not being able to run the code
+  - Not being able to switch the tabs
+- **Cause:**  
+  - Controller is not connected with the same WIFI as you are
+  - Controller has no battery charge left (it is turned off)
+  - The WIFI got out of reach and the controller connected with another, already saved WIFI
+  - (You entered the wrong IP-Address / an old IP-Address into the Browser)
+- **Solution / Workaround:**  
+  - Make sure that the controller's battery is charged (and is connected to the battery)
+  - Controller is turned on
+  - Make sure that you AND the controller are connected with the right WIFI
+  - Make sure you entered the right IP-Address and port
 - **Status:** Resolved

@@ -224,3 +224,23 @@
   - Make sure that you AND the controller are connected with the right WIFI
   - Make sure you entered the right IP-Address and port
 - **Status:** Resolved
+
+---
+
+### Issue ID: 010
+
+- **Title:** Null bytes error
+- **Category:** Software
+- **Affected Components:** Source code
+- **Description:**  
+  When compiling your code you get an "null bytes" error
+- **Symptoms / Indicators:**
+  - `Sorry: ValueError: source code string cannot contain null bytes`
+- **Cause:**  
+  - country specific characters which will not be recognized by the KISS IDE (e.g.:  ä, ö, ü. ß) (**ÜBERPRÜFEN**)
+  - When copy / pasting code from somewhere (often from ChatGPT)
+- **Solution / Workaround:**  
+  - Look at every string for some odd characters
+  - Look at every comment for some odd characters
+  - If you notice nothing odd then replace / remove every comment and try it again. Afterwards - if the error still accurs - you need to do the same with every string 
+- **Status:** Resolved

@@ -23,8 +23,8 @@ class MotorScheduler:
     AUTO_STOP_TIMEOUT = 1  # 50ms
 
     def __init__(self):
-        self._commands_lock = threading.RLock()
-        self._active_funcs = set()
+        self._lock = threading.RLock()
+        self._old_lock = threading.Lock()
         self._commands = {}  # port -> dict(speed, thread_id, func_id, last_update)
         self._old_funcs = set()
         self.last_tid = {}
@@ -40,91 +40,93 @@ class MotorScheduler:
         try:
             while self._running:
                 now = time.time()
-                with self._commands_lock:
-                    commands_copy = list(self._commands.items())
 
-                stopped_ports = set()
-                for (port, fid), data in commands_copy:
-                    if self.last_fid.get(port) != fid:
-                        continue
+                with self._lock:
+                    for key, data in list(self._commands.items()):
+                        port = data['port']
+                        fid = data['func_id']
 
-                    if now - data['last_update'] > self.AUTO_STOP_TIMEOUT and port not in stopped_ports:
-                        stopped_ports.add(port)
-                        self.stop_motor(port)
-                        continue
+                        if now - data['last_update'] > self.AUTO_STOP_TIMEOUT:
+                            if data['speed'] != 0:
+                                self.stop_motor(port)
+                            continue
 
-                    # Motor ansteuern
-                    try:
                         k.mav(port, data['speed'])
-                    except Exception as e:
-                        log(f"k.mav error for port={port}, fid={fid}: {e}", in_exception=True)
 
                 k.msleep(1)
         except Exception as e:
-            log(f"_loop Exception: {str(e)}", in_exception=True)
+            log(str(e), in_exception=True)
 
     def set_speed(self, port, speed, thread_id, func_id):
-        with self._commands_lock:
-            # Schon einmal ausgeführt? Dann abbrechen
+        try:
+            key = (port, func_id)
             if func_id in self._old_funcs:
+                #for old_key, data in list(self._commands.items()):
+                #    if data['func_id'] != func_id:
+                print('ollie 2: ', self._old_funcs, flush=True)
                 return
 
-            key = (port, func_id)
+            now = time.time()
+            print('commis: ', self._commands, flush=True)
+            #self.stop_all()
 
-            # Clean start für diesen Port
-            for old_key in list(self._commands.keys()):
-                if old_key[0] == port:
-                    self._old_funcs.add(old_key[1])
-                    del self._commands[old_key]
-                    try:
-                        k.freeze(port)
-                    except Exception as e:
-                        log(f"freeze in set_speed Exception: {str(e)}", in_exception=True)
-                    break
+            with self._lock:
+                if key in self._commands:
+                    self._commands[key].update({
+                        'speed': speed,
+                        'thread_id': thread_id,
+                        'last_update': now
+                    })
+                    self.last_fid[port] = func_id
+                    self.last_tid[port] = thread_id
+                    return
 
-            # Neuen Command hinzufügen
-            self._commands[key] = {
-                'port': port,
-                'speed': speed,
-                'thread_id': thread_id,
-                'last_update': time.time()
-            }
+                for old_key, data in list(self._commands.items()):
+                    if data['func_id'] != func_id:
+                        with self._old_lock:
+                            self._old_funcs.add(old_key[1])
+                        del self._commands[old_key]
+
+                if len(self._old_funcs) > 100:
+                    print('======================OVERFLOW=======================', flush=True)
+                    with self._old_lock:
+                        self._old_funcs = self._old_funcs[30:]
+
+                self._commands[key] = {
+                    'port': port,
+                    'speed': speed,
+                    'func_id': func_id,
+                    'thread_id': thread_id,
+                    'last_update': now
+                }
+            print('=====new tid: ', port, thread_id, func_id, flush=True)
+
             self.last_fid[port] = func_id
             self.last_tid[port] = thread_id
-
-            # Overflow für alte Funktionen vermeiden
-            if len(self._old_funcs) > 100:
-                self._old_funcs = set(list(self._old_funcs)[-80:])
-
-            print(f"new tid: {port} {thread_id} {func_id}", flush=True)
+        except Exception as e:
+            log(str(e), in_exception=True)
 
     def stop_motor(self, port):
-        with self._commands_lock:
-            keys_to_delete = [k for k, v in self._commands.items() if v['port'] == port]
-            for key in keys_to_delete:
-                self._old_funcs.add(key[1])
-                del self._commands[key]
-
-            self.last_fid.pop(port, None)
-            self.last_tid.pop(port, None)
+        with self._lock:
+            for key, data in list(self._commands.items()):
+                if data['port'] == port:
+                    data['speed'] = 0
 
         try:
             k.freeze(port)
         except Exception as e:
-            log(f"stop_motor Exception: {str(e)}", in_exception=True)
+            log(str(e), in_exception=True)
 
     def stop_all(self):
-        print("hard stop.", flush=True)
-        with self._commands_lock:
-            for key, data in list(self._commands.items()):
-                self._old_funcs.add(key[1])
-                try:
+        print('hard stop.', flush=True)
+        try:
+            with self._lock:
+                for key, data in list(self._commands.items()):
+                    data['speed'] = 0
                     k.freeze(data['port'])
-                except Exception as e:
-                    log(f"stop_all freeze Exception: {str(e)}", in_exception=True)
-            self._commands.clear()
-            self.last_fid.clear()
-            self.last_tid.clear()
+                #self._commands.clear()
+        except Exception as e:
+            log(str(e), in_exception=True)
 
     def shutdown(self):
         self._running = False

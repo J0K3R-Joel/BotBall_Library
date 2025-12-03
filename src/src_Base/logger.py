@@ -11,6 +11,7 @@ sys.path.append("/usr/lib")
 from datetime import datetime
 import inspect
 import subprocess
+import traceback
 
 LOG_FOLDER = "/usr/lib/logger_log"
 LOG_FILE = os.path.join(LOG_FOLDER, "log_file.txt")
@@ -41,46 +42,41 @@ def log(message: str, with_print: bool = True, important: bool = False, in_excep
     if in_exception:
         important = True
         label = "EXCEPTION"
-        caller_frame = inspect.stack()[1].frame
-        location = str(caller_frame)
-        location = '<' + location[location.find(',') + 2:]
-    else:
-        label = "INFO"
+        frame_info = inspect.stack()[1]
+        filename = os.path.basename(frame_info.filename)
+        func_name = frame_info.function
+
         if "self" in caller_frame.f_locals:
             class_name = caller_frame.f_locals["self"].__class__.__name__
 
         if class_name:
             location = f"{class_name}.{func_name}"
         else:
-            filename = caller_frame.f_code.co_filename
-            if in_exception:
-                if func_name == "<module>":
-                    location = filename
-                else:
-                    location = f"{filename}.{func_name}"
-            else:
-                if func_name == "<module>":
-                    location = os.path.basename(filename)
-                else:
-                    location = func_name
+            location = f"{filename}.{func_name}"
 
-    message = str(message)
+        tb = traceback.format_exc()
+        if tb and tb != 'NoneType: None\n':
+            message += f"\nStacktrace:\n{tb}"
+
+    else:
+        label = "INFO"
+        if "self" in caller_frame.f_locals:
+            class_name = caller_frame.f_locals["self"].__class__.__name__
+        if class_name:
+            location = f"{class_name}.{func_name}"
+        else:
+            filename = caller_frame.f_code.co_filename
+            location = func_name if func_name != "<module>" else os.path.basename(filename)
+
     if important:
         message = '=' * 10 + message + '=' * 10
 
     log_entry = f"{now} [{location}] - [{label}] {message}\n"
 
-    if in_exception:
-        print_text = (
-            "=================================\n"
-            f"[{location}] - [{label}] {message}\n"
-            "================================="
-        )
-    else:
-        print_text = f"[{location}] - [{label}] {message}"
-
     with open(LOG_FILE, 'a') as fwriter:
         fwriter.write(log_entry)
+
+    print_text = f"[{location}] - [{label}] {message}" if not in_exception else f"=================================\n[{location}] - [{label}] {message}\n================================="
 
     if with_print:
         print(print_text, flush=True)

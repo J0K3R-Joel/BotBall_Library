@@ -29,10 +29,11 @@ class WheelR:
         self.wheel_lock = threading.Lock()
         self._stop_flag = False
         self.current_thread = None
+        self.test = set()
         stop_manager.register_wheelr(self)
 
     # ======================== PRIVATE METHODS ========================
-    def _base_speed_func(self, speed: int) -> None:
+    def _base_speed_func(self, speed: int, tid, fid) -> None:
         '''
         Function where you can tell the robot the base function of how to drive / with which function and functionality it should drive
 
@@ -42,21 +43,20 @@ class WheelR:
         Returns:
             None
         '''
-        tid = threading.current_thread().ident
-        caller_frame = inspect.currentframe().f_back
-        try:
-            fid = id(caller_frame)
-        finally:
-            del caller_frame
 
         if speed < -self.max_speed:
             speed = -self.max_speed
         elif speed > self.max_speed:
             speed = self.max_speed
 
+        self.test.add(fid)
         MOTOR_SCHEDULER.set_speed(self.port, speed, thread_id=tid, func_id=fid)
 
     # ======================== GET METHODS ========================
+
+    def get_dict(self):
+        print('DIICCCIIII', self.test, flush=True)
+
     def get_port(self) -> int:
         '''
         Lets you see the port which this instance is assigned to
@@ -253,7 +253,13 @@ class WheelR:
         Returns:
             None
         '''
-        self._base_speed_func(speed)
+        tid = threading.current_thread().ident
+        caller_frame = inspect.currentframe().f_back
+        try:
+            fid = id(caller_frame)
+        finally:
+            del caller_frame
+        self._base_speed_func(speed, tid, fid)
 
     def drive_dfw(self, adjuster: int = None) -> None:
         '''

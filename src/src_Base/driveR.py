@@ -594,30 +594,6 @@ class base_driver:
             motor.stop()
 
 
-    def break_motor(self, *args) -> None:
-        '''
-        immediately stop the motor(s) of the given port
-
-        Args:
-            *args: All of the desired (motor) ports which should be stopped
-
-        Returns:
-            None
-        '''
-        try:
-            if isinstance(args[0], int):
-                for port in args:
-                    k.freeze(port)
-            elif isinstance(args[0], WheelR):
-                for wheel in args:
-                    wheel.stop()
-            else:
-                log('Only integer (port number) or WheelR instance are allowed!', in_exception=True)
-                raise TypeError('Only integer (port number) or WheelR instance are allowed!')
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
-
-
 class Rubber_Wheels_two(base_driver):
     def __init__(self,
                  Instance_right_wheel: WheelR,

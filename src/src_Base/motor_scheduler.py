@@ -59,7 +59,7 @@ class MotorScheduler:
         except Exception as e:
             log(str(e), in_exception=True)
 
-    def set_speed(self, port, speed, thread_id, func_id):
+    def set_speed(self, port, speed, func_id):
         try:
             key = (port, func_id)
             with self._lock:
@@ -72,7 +72,6 @@ class MotorScheduler:
                 if key in self._commands:
                     self._commands[key].update({
                         'speed': speed,
-                        'thread_id': thread_id,
                         'last_update': now
                     })
                     return
@@ -91,12 +90,10 @@ class MotorScheduler:
                 self._commands[key] = {
                     'port': port,
                     'speed': speed,
-                    'thread_id': thread_id,
                     'last_update': now
                 }
 
                 self.last_fid[port] = func_id
-                self.last_tid[port] = thread_id
 
                 with self._old_lock:
                     if len(self._old_funcs) > 100:

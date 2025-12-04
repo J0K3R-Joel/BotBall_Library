@@ -15,11 +15,23 @@ try:
     import time
     import threading
     import inspect
+    import random
     from fileR import FileR  # selfmade
     from motor_scheduler import MOTOR_SCHEDULER  # selfmade
     from stop_manager import stop_manager  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
+
+_call_ids = {}
+_call_ids_lock = threading.Lock()
+
+def get_call_id():
+    frame = inspect.currentframe().f_back
+    with _call_ids_lock:
+        if frame not in _call_ids:
+            _call_ids[frame] = f"{time.time_ns()}-{random.randint(0, 999999)}"
+        return _call_ids[frame]
+
 
 class WheelR:
     def __init__(self, Port: int, max_speed: int = 1500, default_speed: int = 1400, servo_like: bool = False):  # @TODO -> servo like motor
@@ -33,7 +45,7 @@ class WheelR:
         stop_manager.register_wheelr(self)
 
     # ======================== PRIVATE METHODS ========================
-    def _base_speed_func(self, speed: int, tid, fid) -> None:
+    def _base_speed_func(self, speed: int, fid) -> None:
         '''
         Function where you can tell the robot the base function of how to drive / with which function and functionality it should drive
 
@@ -50,7 +62,7 @@ class WheelR:
             speed = self.max_speed
 
         self.test.add(fid)
-        MOTOR_SCHEDULER.set_speed(self.port, speed, thread_id=tid, func_id=fid)
+        MOTOR_SCHEDULER.set_speed(self.port, speed, func_id=fid)
 
     # ======================== GET METHODS ========================
 
@@ -147,7 +159,7 @@ class WheelR:
         print(f'Success! Motor {self.port} plugged in.', flush=True)
 
 
-    def fw(self, speed: int) -> None:
+    def fw(self, speed: int, cid=None) -> None:
         '''
         Function for driving forward (expects that the motor will move forwards when the value gets positive)
 
@@ -157,7 +169,9 @@ class WheelR:
         Returns:
             None
         '''
-        self._base_speed_func(abs(speed))
+        if cid is None:
+            cid = get_call_id()
+        self._base_speed_func(abs(speed), cid)
     def forward(self, speed: int) -> None:
         '''
         Function for driving forward (expects that the motor will move forwards when the value gets positive)
@@ -168,7 +182,8 @@ class WheelR:
         Returns:
             None
         '''
-        self.fw(speed)
+        cid = get_call_id()
+        self.fw(speed, cid)
 
     def forward_default(self) -> None:
         '''
@@ -180,7 +195,8 @@ class WheelR:
         Returns:
             None
         '''
-        self.fw(self.d_speed)
+        cid = get_call_id()
+        self.fw(self.d_speed, cid)
 
     def forward_max(self):
         '''
@@ -192,10 +208,11 @@ class WheelR:
         Returns:
             None
         '''
-        self.fw(self.max_speed)
+        cid = get_call_id()
+        self.fw(self.max_speed, cid)
 
 
-    def bw(self, speed: int) -> None:
+    def bw(self, speed: int, cid=None) -> None:
         '''
         Function for driving backwards (expects that the motor will move backwards when the value gets negative)
 
@@ -205,7 +222,9 @@ class WheelR:
         Returns:
             None
         '''
-        self._base_speed_func(-abs(speed))
+        if cid is None:
+            cid = get_call_id()
+        self._base_speed_func(-abs(speed), cid)
     def backward(self, speed: int) -> None:
         '''
         Function for driving backwards (expects that the motor will move backwards when the value gets negative)
@@ -216,7 +235,8 @@ class WheelR:
         Returns:
             None
         '''
-        self.bw(-speed)
+        cid = get_call_id()
+        self.bw(-speed, cid)
 
     def backward_default(self) -> None:
         '''
@@ -228,7 +248,8 @@ class WheelR:
         Returns:
             None
         '''
-        self.bw(-self.d_speed)
+        cid = get_call_id()
+        self.bw(-self.d_speed, cid)
 
     def backward_max(self) -> None:
         '''
@@ -240,10 +261,11 @@ class WheelR:
         Returns:
             None
         '''
-        self.bw(-self.max_speed)
+        cid = get_call_id()
+        self.bw(-self.max_speed, cid)
 
 
-    def drive(self, speed:int):
+    def drive(self, speed:int, cid=None):
         '''
         Default Function for driving in any direction
 
@@ -253,13 +275,9 @@ class WheelR:
         Returns:
             None
         '''
-        tid = threading.current_thread().ident
-        caller_frame = inspect.currentframe().f_back
-        try:
-            fid = id(caller_frame)
-        finally:
-            del caller_frame
-        self._base_speed_func(speed, tid, fid)
+        if cid is None:
+            cid = get_call_id()
+        self._base_speed_func(speed, cid)
 
     def drive_dfw(self, adjuster: int = None) -> None:
         '''
@@ -275,7 +293,9 @@ class WheelR:
             adjuster = int(adjuster)
         elif not isinstance(adjuster, int):
             adjuster = 0
-        self.drive(self.d_speed + adjuster)
+
+        cid = get_call_id()
+        self.drive(self.d_speed + adjuster, cid)
 
     def drive_dbw(self, adjuster: int = None) -> None:
         '''
@@ -291,7 +311,9 @@ class WheelR:
             adjuster = int(adjuster)
         elif not isinstance(adjuster, int):
             adjuster = 0
-        self.drive(-self.d_speed + adjuster)
+
+        cid = get_call_id()
+        self.drive(-self.d_speed + adjuster, cid)
 
     def drive_mfw(self, adjuster: int = None) -> None:
         '''
@@ -307,7 +329,8 @@ class WheelR:
             adjuster = int(adjuster)
         elif not isinstance(adjuster, int):
             adjuster = 0
-        self.drive(self.max_speed - abs(adjuster))
+        cid = get_call_id()
+        self.drive(self.max_speed - abs(adjuster), cid)
 
     def drive_mbw(self, adjuster: int = None) -> None:
         '''
@@ -323,7 +346,8 @@ class WheelR:
             adjuster = int(adjuster)
         elif not isinstance(adjuster, int):
             adjuster = 0
-        self.drive(-self.max_speed + abs(adjuster))
+        cid = get_call_id()
+        self.drive(-self.max_speed + abs(adjuster), cid)
 
 
     def drive_time(self, speed: int, millis: int) -> None:
@@ -338,8 +362,9 @@ class WheelR:
             None
         '''
         start_time = k.seconds()
+        cid = get_call_id()
         while k.seconds() - start_time < millis/1000:
-            self.drive(speed)
+            self.drive(speed, cid)
 
     def stop(self) -> None:
         '''

@@ -8,7 +8,7 @@ This file tells you every necessary and good-to-know path which is on the contro
 
 The base folder structure of every user is the following:
 
-#### ==/home/kipr/Documents/KISS/{user_name}/{project_name}==
+#### /home/kipr/Documents/KISS/{user_name}/{project_name}
 
 this path is seperated into 4 other directories:
 
@@ -32,7 +32,7 @@ You can upload your own files for a user when going into the user base folder. T
 
 Every user that exists is also written down in:
 
-#### ==/home/kipr/Documents/KISS/users.json==
+#### /home/kipr/Documents/KISS/users.json
 
 In here you can find the name of every user with the corresponding level of experience (which just changes the functionality of the KISS IDE).  
 
@@ -45,7 +45,7 @@ In here you can find the name of every user with the corresponding level of expe
 If you are using my library, then the following base folder is necessary to know:
 
 
-#### ==/usr/lib==
+#### /usr/lib
 
 in here you can find the following:
 

@@ -8,15 +8,13 @@ In every user there will and should be the `logger.py` file, since with this use
 
 ### Base
 
-In this user every class is included. This makes you able to experiment across every class. 
-
-
+In this user every class is included. This makes you able to experiment across every class. Since this user has every (python) file included, you can do everything here that you can do in other users. The only difference is that in this user there is less of a template provided
 
 ---
 
 ### BIAS
 
-In this user every class that needs some kind of calibration (included with classes that they depend on) is included. In the `main.py` there is a template which you can use for calibration. Note that not everything is included in this template, for example `driveR.{driver_class_name}.calibrate_mm_per_sec()` and `driveR.{driver_class_name}.calibrate_distance()` are not included. Check out the [./Calibrations.md](./Calibrations.md) file to know more about this topic.
+In this user every class that needs some kind of calibration (included with classes that they depend on) is included. In the `main.py` there is a template which you can use for calibration. Note that not everything is included in this template, for example `driveR.{driver_class_name}.calibrate_mm_per_sec()` and `driveR.{driver_class_name}.calibrate_distance()` are not included. Check out the [./Calibrations.md](./Calibrations.md) file to know more about this topic.
 
 
 ---
@@ -35,22 +33,18 @@ In this user you can find everything related to communication between two contro
 
 ### Fake-Client
 
-This user is an example on how communication can look like on the client side. 
-
-
+This user is an example on how communication can look like on the client side. This provides an example of the complex `FakeR` class, which let's you be able to pause the main at any given moment using `high_priority` or `new_main`. For more information get into the [./explainer/user_server_client_fake.md](./explainer/user_server_client_fake.md) file.
 
 ---
 
 ### Fake-Server
 
-This user is an example on how communication can look like on the server side.
-
- 
+This user is an example on how communication can look like on the server side. This provides an example of the complex FakeR class, which let's you be able to pause the main at any given moment using `high_priority` or `new_main`. For more information get into the [./explainer/user_server_client_fake.md](./explainer/user_server_client_fake.md) file.
 
 ---
 
 ### WIFI
 
-
+The WIFI user provides you with the `commU` class and every class that is linked to this class. This provides you necessary functionality concerning the WIFI. 
 
 ---

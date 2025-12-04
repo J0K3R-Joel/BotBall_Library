@@ -26,6 +26,8 @@ this path is seperated into 4 other directories:
 
 On the other hand there is another file inside the base folder structure called `project.manifest`. In here you are able to find which programming language is linked to the user's name (`{user_name}`)  
 
+You can upload your own files for a user when going into the user base folder. Therefor you need to paste your files into `./bin` and `./src` (paste it into both folders, so no potential errors are able to occur). This makes you able to implement your own (python) files and classes.
+
 ---
 
 Every user that exists is also written down in:
@@ -47,7 +49,7 @@ If you are using my library, then the following base folder is necessary to know
 
 in here you can find the following:
 
-###### `./Local_STD_WIFI.conf`: Private network configuration file
+###### `./Local_STD_WIFI.conf`: Private network configuration file
 
 - in here you can specify which WIFI (ssid and password) you want to use for you local WIFI. Internet connection is not necssary, except you implement something where you want / need WIFI
 

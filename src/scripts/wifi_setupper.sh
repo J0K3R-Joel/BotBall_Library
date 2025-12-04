@@ -3,7 +3,7 @@
 SERVICE_NAME="wifi-autostart.service"
 TARGET_PY="/home/kipr/Documents/KISS/WIFI/setup/bin/main.py"
 
-echo "Erstelle systemd Service…"
+echo "Creating systemd service…"
 
 # write service-file
 sudo bash -c "cat > /etc/systemd/system/$SERVICE_NAME" <<EOF
@@ -22,9 +22,9 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
-echo "Service aktivieren…"
+echo "Activate service…"
 sudo systemctl daemon-reload
 sudo systemctl enable "$SERVICE_NAME"
 sudo systemctl start "$SERVICE_NAME"
 
-echo "FERTIG! Das Python-Skript wird jetzt bei jedem Bootvorgang gestartet."
+echo "FINISHED! The python script will get executed after every reboot."

@@ -69,7 +69,7 @@ Before you start, consider that you have access to the following points:
 
 2. Make sure, there are no Exceptions / Errors
 
-3. Press the `Run` button
+3. Press the `Run` button. The `Run` button ALWAYS executes the `main.py` file inside the project. 
 
 ![](./img/Compiling.png)
 

@@ -71,7 +71,7 @@ def log(message: str, with_print: bool = True, important: bool = False, in_excep
     if important:
         message = '=' * 10 + message + '=' * 10
 
-    log_entry = f"{now} [{location}] - [{label}] {message}\n"
+    log_entry = f"{'=' * 50} \n {now} [{location}] - [{label}] {message}\n{'=' * 50}\n"
 
     with open(LOG_FILE, 'a') as fwriter:
         fwriter.write(log_entry)

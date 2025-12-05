@@ -19,7 +19,7 @@ except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 class MotorScheduler:
-    AUTO_STOP_TIMEOUT = 1  # 50ms
+    AUTO_STOP_TIMEOUT = 0.05  # 50ms
 
     def __init__(self):
         self._lock = threading.RLock()
@@ -92,6 +92,7 @@ class MotorScheduler:
                     'speed': speed,
                     'last_update': now
                 }
+                #print('key: ', key, flush=True)
 
                 self.last_fid[port] = func_id
 

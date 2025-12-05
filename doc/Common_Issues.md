@@ -1,5 +1,11 @@
 # Known Issues & Solutions
 
+This file tells you many issues that occurred, how they occurred, why they occurred and (possibly) how to solve the issues. If you got an issue just as the issue describes and the solution does not work for you, the chances are high that there is a human error (using something wrong / unintentionally, something else is the problem, ...) involved. On the other hand, if you encounter an issue which is already described, but you got another solution, then feel free to write the new solution to me (Joel Kalkusch), so I can add them in here. If you encounter a new issue, which is not described in here, then please let me know, no matter how irrelevant the issue is.
+
+The issue IDs have (at least at this moment) no real purpose. The ID is only existing so you can communicate with others better. Other teams, which do not know this library / files do not know the IDs (since I came up with this idea and this does not exist in other teams the same way).
+
+---
+
 ### Issue ID: 001
 
 - **Title:** `driveR` not working correctly  
@@ -242,7 +248,7 @@
   - `Sorry: ValueError: source code string cannot contain null bytes`
   
 - **Cause:**  
-  - country specific characters which will not be recognized by the KISS IDE
+  - special characters which will not be recognized by the KISS IDE (e.g.: "—")
   - When copy / pasting code from somewhere (often from ChatGPT)
   
 - **Solution / Workaround:**  

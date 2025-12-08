@@ -31,30 +31,6 @@ class ServoX:
 
     # ======================== PRIVATE METHODS ========================
 
-    def _servo_enabler(self) -> None:
-        '''
-        Enables the servo port. Hint: If a servo is staying enabled, without being disabled, it stays at the place where it is at the moment. This is very useful if you use a servo for an arm
-
-        Args:
-            None
-
-        Returns:
-            None
-        '''
-        SERVO_SCHEDULER.set_position(self.port, k.get_servo_position(self.port))
-
-    def _servo_disabler(self) -> None:
-        '''
-        Disables the servo port
-
-        Args:
-            None
-
-        Returns:
-            None
-        '''
-        SERVO_SCHEDULER.disable_servo(self.port)
-
     def _valid_range(self, value:int) -> bool:
         '''
         Verifies, if the value is inside the min and max value of the servo
@@ -71,28 +47,20 @@ class ServoX:
             self.new_pos_val = self.min_value if value <= self.min_value else self.max_value
         return in_range
 
-    def _set_pos_internal(self, value: int, enabler_needed: bool = True) -> None:
+    def _set_pos_internal(self, value: int) -> None:
         '''
         Sets the position of the servo internally without a Lock, so you need to manage them
 
         Args:
             value (int): the value where it has to be
-            enabler_needed (bool, optional): If True (default), it enables and disables the servo port. If it is set to False, then the port will not move if you did not enabled it first
 
         Returns:
             None
         '''
-        millis = (abs(self.get_pos() - value) / 100) + 20  # + 20 is just a kind of bias. 
-        if enabler_needed:
-            self._servo_enabler()
         if self._valid_range(value):
             SERVO_SCHEDULER.set_position(self.port, int(value))
-            k.msleep(int(millis))
         else:
             SERVO_SCHEDULER.set_position(self.port, self.new_pos_val)
-            k.msleep(int(millis))
-        if enabler_needed:
-            self._servo_disabler()
 
     # ======================== PUBLIC METHODS ========================
     def get_max_value(self) -> int:
@@ -132,50 +100,46 @@ class ServoX:
         '''
         return k.get_servo_position(self.port)
 
-    def set_pos(self, value: int, enabler_needed: bool = True) -> None:
+    def set_pos(self, value: int) -> None:
         '''
         Sets the position of the servo
 
         Args:
             value (int): the value where it has to be
-            enabler_needed (bool, optional): If True (default), it enables and disables the servo port. If it is set to False, then the port will not move if you did not enabled it first
 
         Returns:
             None
         '''
-        self._set_pos_internal(value=value, enabler_needed=enabler_needed)
+        self._set_pos_internal(value)
 
 
-    def add_to_pos(self, value: int, enabler_needed: bool = True) -> None:
+    def add_to_pos(self, value: int) -> None:
         '''
         Adds the value to the current pos
 
         Args:
             value (int): the value to add to the current position
-            enabler_needed (bool, optional): If True (default), it enables and disables the servo port. If it is set to False, then the port will not move if you did not enabled it first
 
         Returns:
             None
         '''
         new_pos = self.get_pos() + value
         if self._valid_range(new_pos):
-            self._set_pos_internal(new_pos, enabler_needed=enabler_needed)
+            self._set_pos_internal(new_pos)
 
-    def range_to_pos(self, value: int, multi: int = 2, disabler_needed: bool= True) -> None:
+    def range_to_pos(self, value: int, multi: int = 2) -> None:
         '''
         Changes the position smoothly from the current position to the position given
 
         Args:
             value (int): the value where it has to be at the end of the transition
             multi (int, optional): the multiplicator on how fast it should get (hint: the higher the mutli, the faster but less smooth it gets) (default: 2)
-            disabler_needed (bool, optional): If True (default), it disables the servo port. If it is set to False, then the servo will not move when this function ends
 
         Returns:
             None
         '''
         if multi < 1:
             multi = 1
-        self._servo_enabler()
         curr_pos = self.get_pos()
 
         if value-curr_pos < 0:
@@ -184,22 +148,18 @@ class ServoX:
 
         if self._valid_range(value):
             for _ in range(abs(value-curr_pos)//abs(int(multi))):
-                self.add_to_pos(counter, enabler_needed=False)
+                self.add_to_pos(counter)
         else:
             for _ in range(abs(self.new_pos_val-curr_pos)//abs(int(multi))):
-                self.add_to_pos(counter, enabler_needed=False)
+                self.add_to_pos(counter)
 
-        if disabler_needed:
-            self._servo_disabler()
-
-    def range_from_to_pos(self, interval: list, multi: int = 2, disabler_needed: bool= True) -> None:
+    def range_from_to_pos(self, interval: list, multi: int = 2) -> None:
         '''
         Changes the position smoothly from the first position in the interval to the second position in the interval
 
         Args:
             interval (list(int1, int2)): the values from where (int1 in the list) the servo has to go smoothly to (int2 in the list)
             multi (int, optional): the multiplicator on how fast it should get (hint: the higher the mutli, the faster but less smooth it gets) (default: 2)
-            disabler_needed (bool, optional): If True (default), it disables the servo port. If it is set to False, then the servo will not move when this function ends
 
         Returns:
             None
@@ -219,13 +179,9 @@ class ServoX:
         if int(interval[0]) > int(interval[1]):
             multi = -multi
 
-        self._servo_enabler()
         counter = int(interval[0])
         adder = int(multi)
 
         for _ in range((max_val-min_val)//abs(int(multi))):
-            self._set_pos_internal(counter, enabler_needed=False)
+            self._set_pos_internal(counter)
             counter += adder
-
-        if disabler_needed:
-            self._servo_disabler()

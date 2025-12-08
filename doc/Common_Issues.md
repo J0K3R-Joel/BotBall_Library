@@ -121,7 +121,8 @@ The issue IDs have (at least at this moment) no real purpose. The ID is only exi
 
 - **Symptoms / Indicators:**
 
-  - After clicking the `Stop` - Button, the text won't change to `Run`  
+  - After clicking the `Stop` - Button, the text won't change to `Run` 
+  - Motors could still run and do not stop
 
 - **Cause:**  
   

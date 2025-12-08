@@ -27,48 +27,14 @@ except Exception as e:
 _GLOBAL_MAIN_ID = None
 
 class WheelR:
-    TIME_RECOGNIZER = 0.5  # 500ms
 
     def __init__(self, Port: int, max_speed: int = 1500, default_speed: int = 1400, servo_like: bool = False):  # @TODO -> servo like motor
         self.port = Port
         self.max_speed = max_speed
         self.d_speed = default_speed
-        self.wheel_lock = threading.Lock()
-        self._stop_flag = False
-        self._last_tid = None
-        self._last_valid_tid = None
-        self._all_tid = defaultdict(list)
-        self.last_call = None
-        self._tid_counter = 0
-        self._adjust_counter = 0
-        self.id_dict = {}
-        self.id_set = set()
-        self.test = set()
         stop_manager.register_wheelr(self)
 
     # ======================== PRIVATE METHODS ========================
-    def _get_ID(self):
-        tid = threading.current_thread().ident
-
-        if self._last_valid_tid != tid and tid not in self.id_set and \
-                (tid not in self.id_dict or time.time() - self.id_dict[tid] > self.TIME_RECOGNIZER):
-            if tid not in self._all_tid:
-                if len(self._all_tid[tid]) == 0 or self._all_tid[tid][-1] != self._tid_counter:  # does not exist yet
-                    self._tid_counter += 1
-                    self._all_tid[tid].append(self._tid_counter)
-            elif self._all_tid[tid][-1] != self._all_tid[self._last_valid_tid][-1]:  # exists, but is not up-to-date
-                self._tid_counter += 1
-                self._all_tid[tid].append(self._tid_counter)
-
-            if self._last_valid_tid in self.id_set:  # free the last tid from being blocked
-                self.id_set.remove(self._last_valid_tid)
-            self._last_valid_tid = tid
-            self.id_set.add(self._last_tid)  # block last tid from entering this function
-
-        self.id_dict[tid] = time.time()
-        self._last_tid = tid
-        return f'{tid}-{self._all_tid[tid][-1]}'
-
 
     def _base_speed_func(self, speed: int) -> None:
         '''
@@ -80,20 +46,14 @@ class WheelR:
         Returns:
             None
         '''
-        # self.last_call = time.time()  -> am ende wenn etwas schnell vorbei ist (drive_straight_condition_digital), dann kommt man erst beim fahren raus, nachdem nach ca 200ms nicht mehr reinkommt
         if speed < -self.max_speed:
             speed = -self.max_speed
         elif speed > self.max_speed:
             speed = self.max_speed
 
-        fid = self._get_ID()
-        self.test.add(fid)
-        MOTOR_SCHEDULER.set_speed(self.port, speed, func_id=fid)
+        MOTOR_SCHEDULER.set_speed(self.port, speed)
 
     # ======================== GET METHODS ========================
-
-    def get_dict(self):
-        print('DIICCCIIII', self.test, flush=True)
 
     def get_port(self) -> int:
         '''

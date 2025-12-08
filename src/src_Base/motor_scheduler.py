@@ -13,25 +13,25 @@ try:
     import threading
     import time
     import inspect
-    from collections import deque
-    from stop_manager import stop_manager
+    from stop_manager import stop_manager  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 class MotorScheduler:
     AUTO_STOP_TIMEOUT = 0.05  # 50ms
+    AUTO_SHUTDOWN_TIMEOUT = 0.2  # 200ms
 
     def __init__(self):
         self._lock = threading.RLock()
-        self._old_lock = threading.Lock()
-        self._commands = {}  # key=(port, func_id) -> dict(speed, thread_id, last_update)
+        self._commands = {}
         self._old_funcs = set()
-        self.last_tid = {}
-        self.last_fid = {}
+        self.last_fid = None
         self._running = True
+        self.last_activity = None
         self._setup_loop()
 
     def _setup_loop(self):
+        self._running = True
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
 
@@ -40,34 +40,44 @@ class MotorScheduler:
             while self._running:
                 now = time.time()
                 with self._lock:
-                    for key, data in list(self._commands.items()):
-                        port = data['port']
-                        fid = key[1]
+                    commands_copy = self._commands.copy()
 
-                        with self._old_lock:
-                            if fid in self._old_funcs:
-                                continue
+                for key, data in list(commands_copy.items()):
+                    port = data['port']
+                    fid = key[1]
 
-                        if now - data['last_update'] > self.AUTO_STOP_TIMEOUT:
-                            if data['speed'] != 0:
-                                print('motor to stop: ', port, flush=True)
-                                self._stop_motor_internal(port)
-                            continue
+                    if fid in self._old_funcs:
+                        continue
 
-                        k.mav(port, data['speed'])
+                    if now - data['last_update'] > self.AUTO_STOP_TIMEOUT or data['speed'] == 0:
+                        if data['speed'] != 0:
+                            self.stop_motor(port)
+                        continue
+
+                    k.mav(port, data['speed'])
+
                 k.msleep(1)
+
+            if time.time() - self.last_activity > self.AUTO_SHUTDOWN_TIMEOUT:
+                self._running = False
+
+
+
         except Exception as e:
             log(str(e), in_exception=True)
 
-    def set_speed(self, port, speed, func_id):
-        try:
-            key = (port, func_id)
-            with self._lock:
-                with self._old_lock:
-                    if func_id in self._old_funcs:
-                        return
 
+    def set_speed(self, port, speed, func_id):
+        if not self._running:
+            self._setup_loop()
+
+        try:
+            with self._lock:
+                if func_id in self._old_funcs:
+                    return
+                key = (port, func_id)
                 now = time.time()
+                self.last_activity = now
 
                 if key in self._commands:
                     self._commands[key].update({
@@ -76,72 +86,49 @@ class MotorScheduler:
                     })
                     return
 
-                to_remove = []
-                for old_key in self._commands:
-                    old_port, old_fid = old_key
-                    if old_port == port and old_fid != func_id:
-                        to_remove.append(old_key)
-                for old_key in to_remove:
-                    old_port, old_fid = old_key
-                    with self._old_lock:
-                        self._old_funcs.add(old_fid)
-                    del self._commands[old_key]
+                for old_key, data in list(self._commands.items()):
+                    if data['port'] == port:
+                        self.clear_list()
+                        break
 
                 self._commands[key] = {
                     'port': port,
                     'speed': speed,
+                    'func_id': func_id,
                     'last_update': now
                 }
-                #print('key: ', key, flush=True)
-
-                self.last_fid[port] = func_id
-
-                with self._old_lock:
-                    if len(self._old_funcs) > 100:
-                        self._old_funcs = set(list(self._old_funcs)[30:])
         except Exception as e:
             log(str(e), in_exception=True)
 
-    def _stop_motor_internal(self, port):
-        print(f'stopping motor int... {port}', flush=True)
-        with self._lock:
-            for key, data in list(self._commands.items()):
-                if data['port'] == port:
-                    data['speed'] = 0
-                    break
-        try:
-            k.freeze(port)
-        except Exception as e:
-            log(str(e), in_exception=True)
 
     def stop_motor(self, port):
-        print(f'stopping motor ext... {port}', flush=True)
         with self._lock:
             for key, data in list(self._commands.items()):
                 if data['port'] == port:
-                    with self._old_lock:
-                        self._old_funcs.add(key[1])
-                    del self._commands[key]
+                    self._commands[key]['speed'] = 0
+                    k.freeze(port)
                     break
-        try:
-            k.freeze(port)
-        except Exception as e:
-            log(str(e), in_exception=True)
 
     def stop_all(self):
-        print('hard stop.', flush=True)
         try:
             with self._lock:
                 for key, data in list(self._commands.items()):
-                    with self._old_lock:
-                        self._old_funcs.add(data['func_id'])
+                    self._commands[key]['speed'] = 0
                     k.freeze(data['port'])
-                self._commands.clear()
         except Exception as e:
             log(str(e), in_exception=True)
 
     def shutdown(self):
         self._running = False
+
+    def clear_list(self):
+        with self._lock:
+            if len(self._commands) != 0:
+                for old_key, data in list(self._commands.items()):
+                    self._old_funcs.add(old_key[1])
+                    break
+                self._commands.clear()
+
 
 
 MOTOR_SCHEDULER = MotorScheduler()

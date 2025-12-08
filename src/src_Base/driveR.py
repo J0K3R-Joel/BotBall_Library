@@ -462,7 +462,7 @@ class base_driver:
         '''
         for i in range(times):
             self.calibrate(output=False)
-            self.break_all_motors()
+
             print(f'=== {i + 1} / {times} times calibrated ===', flush=True)
         log('AUTO CALIBRATION DONE')
 
@@ -580,18 +580,6 @@ class base_driver:
             log(f'{counter}/{max} - ACCEL Y CALIBRATED')
 
     # ======================== PUBLIC METHODS =======================
-    def break_all_motors(self) -> None:
-        '''
-        immediately stop all motors
-
-        Args:
-            stop (bool, optional): If it should be turned off completely and everywhere (True), or just stop driving (False, default)
-
-        Returns:
-            None
-        '''
-        for motor in self.motors:
-            motor.stop()
 
 
 class Rubber_Wheels_two(base_driver):
@@ -1030,7 +1018,6 @@ class Rubber_Wheels_two(base_driver):
         while not self.light_sensor_back.sees_black():
             self.left_wheel.drive_dfw()
             self.right_wheel.drive_dbw()
-        self.break_all_motors()
         endTime = time.time()
         self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime) * 0.995
         self.NINETY_DEGREES_SECS = endTime - startTime
@@ -1104,7 +1091,6 @@ class Rubber_Wheels_two(base_driver):
                 break
 
             time.sleep(step)
-        self.break_all_motors()
         self.get_distances(calibrated=True)
 
         log(f"Calibration finished. {len(self.distance_far_mm)} datapoints collected.")
@@ -1158,7 +1144,6 @@ class Rubber_Wheels_two(base_driver):
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
         if drive_dir and hit:
             self.drive_straight(200, -speed)
-        self.break_all_motors()
 
     def align_drive_front(self, drive_bw: bool = True, millis: int = 2000) -> None:
         '''
@@ -1202,7 +1187,6 @@ class Rubber_Wheels_two(base_driver):
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
         if drive_bw and hit:
             self.drive_straight(200, -500)
-        self.break_all_motors()
 
 
     def align_drive_back(self, drive_fw: bool = True, millis: int = 2000) -> None:
@@ -1236,7 +1220,6 @@ class Rubber_Wheels_two(base_driver):
                 self.left_wheel.drive_mbw()
         if drive_fw and hit:
             self.drive_straight(200, 500)
-        self.break_all_motors()
 
     def turn_wheel(self, direction: str, millis: int, speed: int = None) -> None:
         '''
@@ -1260,7 +1243,6 @@ class Rubber_Wheels_two(base_driver):
         elif direction == 'right':
             while (time.time() - start_time) < millis / 1000:
                 self.left_wheel.drive(speed)
-        self.break_all_motors()
 
     def drive_straight_condition_digital(self, Instance: Digital, condition: str, value: int, millis: int = 9999999, speed: int = None):
         '''
@@ -1315,7 +1297,6 @@ class Rubber_Wheels_two(base_driver):
         else:
             log('Only "==" or "!=" is available for the condition!', important=True, in_exception=True)
             raise ValueError('Only "==" or "!=" is available for the condition!')
-        self.break_all_motors()
 
     def drive_straight_condition_analog(self, Instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
         '''
@@ -1397,7 +1378,6 @@ class Rubber_Wheels_two(base_driver):
                     instances[0].drive(speed - adjuster * 3)
                 k.msleep(10)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
-        self.break_all_motors()
 
 
     def turn_to_black_line(self, direction: str, millis: int = 80, speed: int = None) -> None:
@@ -1433,7 +1413,6 @@ class Rubber_Wheels_two(base_driver):
             log('Only "right" and "left" are valid commands for the direction!', in_exception=True)
             raise ValueError(
                 'turn_black_line() Exception: Only "right" and "left" are valid commands for the direction!')
-        self.break_all_motors()
 
     def drive_align_line(self, direction: str, speed: int = None) -> None:
         '''
@@ -1464,7 +1443,6 @@ class Rubber_Wheels_two(base_driver):
         start_time = k.seconds()
         self.drive_straight_condition_analog(ports[0], '<=', ports[0].get_value_black() - ports[0].get_bias(), speed=speed)
         end_time = k.seconds()
-        self.break_all_motors()
 
         seconds = end_time - start_time
         self.drive_straight((seconds * 1000) // 2, speed=-speed)
@@ -1595,7 +1573,6 @@ class Rubber_Wheels_two(base_driver):
             speed = -speed
             i += 1
 
-        self.break_all_motors()
 
 
     def on_line_align(self, millis: int = None, speed: int = None, leaning_side: str = None, adjust_wanted: bool = True) -> None:
@@ -1648,7 +1625,6 @@ class Rubber_Wheels_two(base_driver):
 
         if counter_drive and adjust_wanted:  #@TODO some kind of drift function here so the rear moves but the front stays still
             self.turn_to_black_line(direction[1], 20, speed=-speed)
-        self.break_all_motors()
 
     def black_line(self, millis: int, speed: int = None) -> None:
         '''
@@ -1674,7 +1650,6 @@ class Rubber_Wheels_two(base_driver):
 
             if ports[2].current_value() < ports[2].get_value_black() - ports[2].get_bias():
                 self.on_line_align(millis=80, speed=speed, adjust_wanted=False)
-        self.break_all_motors()
 
 
     def drive_straight(self, millis: int, speed: int = None) -> None:
@@ -1710,7 +1685,6 @@ class Rubber_Wheels_two(base_driver):
                 instances[1].drive(speed + adjuster)
             k.msleep(10)
             theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
-        self.break_all_motors()
 
     def next_to_onto_line(self, leaning_side: str = None) -> None:
         '''
@@ -1742,16 +1716,16 @@ class Rubber_Wheels_two(base_driver):
             while not self.light_sensor_front.sees_black():
                 instances[0].drive_dbw()
                 instances[1].drive_dbw()
-            self.break_all_motors()
+
             while self.light_sensor_front.sees_black():
                 instances[0].drive_mfw()
-            self.break_all_motors()
+
             while not self.light_sensor_front.sees_black():
                 instances[1].drive_mfw()
-            self.break_all_motors()
+
             while self.light_sensor_front.sees_black():
                 instances[1].drive_mfw()
-            self.break_all_motors()
+
             while not self.light_sensor_front.sees_black():
                 instances[1].drive_mbw()
                 instances[0].drive(-200)
@@ -1765,10 +1739,10 @@ class Rubber_Wheels_two(base_driver):
                 instances[0].drive_mbw()
                 instances[1].drive_mfw()
 
-            self.break_all_motors()
+
 
             if not self.light_sensor_front.sees_black():
-                self.break_all_motors()
+
                 while not self.light_sensor_front.sees_white():
                     instances[1].drive_mfw()
                 while not self.light_sensor_front.sees_black():
@@ -1780,7 +1754,6 @@ class Rubber_Wheels_two(base_driver):
                 while self.light_sensor_back.sees_white():
                     instances[1].drive_mbw()
                     instances[0].drive_mfw()
-        self.break_all_motors()
 
     def align_on_black_line(self, direction: str = 'vertical', leaning_side: str = None) -> None:
         '''
@@ -1822,26 +1795,26 @@ class Rubber_Wheels_two(base_driver):
                     instances[1].drive(instances[1].get_default_speed()//2)
                     k.msleep(1)
 
-            self.break_all_motors()
+
 
             if not self.light_sensor_back.sees_white():
                 while not self.light_sensor_front.sees_black():
                     instances[0].drive_dbw()
                     instances[1].drive_dbw()
-                self.break_all_motors()
+
                 while self.light_sensor_front.sees_black():
                     instances[0].drive_mfw()
-                self.break_all_motors()
+
                 while not self.light_sensor_front.sees_black():
                     instances[1].drive_mfw()
-                self.break_all_motors()
+
                 while self.light_sensor_front.sees_black():
                     instances[1].drive_mfw()
-                self.break_all_motors()
+
                 while not self.light_sensor_front.sees_black():
                     instances[1].drive_mbw()
                     instances[0].drive(-200)
-                self.break_all_motors()
+
 
             elif not self.light_sensor_front.sees_white():
                 while not self.light_sensor_back.sees_black():
@@ -1851,10 +1824,10 @@ class Rubber_Wheels_two(base_driver):
                     instances[0].drive_mbw()
                     instances[1].drive_mfw()
 
-            self.break_all_motors()
+
 
             if not self.light_sensor_front.sees_black():
-                self.break_all_motors()
+
                 while not self.light_sensor_front.sees_white():
                     instances[1].drive_mfw()
 
@@ -1870,7 +1843,7 @@ class Rubber_Wheels_two(base_driver):
 
             # @TODO a drift would fit here
 
-            self.break_all_motors()
+
 
 
         except Exception as e:
@@ -1929,7 +1902,7 @@ class Rubber_Wheels_two(base_driver):
                     self.left_wheel.drive(speed)
                     self.right_wheel.drive(speed)
                     k.msleep(20)
-                    self.break_all_motors()
+
 
         combination = dict(zip(self.distance_far_mm, self.distance_far_values))
         next_step = min(combination, key=lambda x: abs(x - mm_to_object))
@@ -2014,7 +1987,6 @@ class Rubber_Wheels_two(base_driver):
                     k.msleep(10)
                     theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
 
-        self.break_all_motors()
 
     def turn_degrees_far(self, direction: str, degree: int, straight: bool = True) -> None:
         '''
@@ -2045,7 +2017,6 @@ class Rubber_Wheels_two(base_driver):
         if degree <= 90:
             div = 90 / degree
             value = self.NINETY_DEGREES_SECS / div
-        self.break_all_motors()
         start_time = time.time()
         if direction == 'right':
             while time.time() - start_time < 2 * value:
@@ -2053,7 +2024,6 @@ class Rubber_Wheels_two(base_driver):
         elif direction == 'left':
             while time.time() - start_time < 2 * value:
                 self.right_wheel.drive(speed)
-        self.break_all_motors()
 
     def turn_degrees(self, direction: str, degree: int) -> None:
         '''
@@ -2091,7 +2061,6 @@ class Rubber_Wheels_two(base_driver):
             while time.time() - start_time < value:
                 self.left_wheel.drive_dbw()
                 self.right_wheel.drive_dfw()
-        self.break_all_motors()
         k.msleep(200)
 
 
@@ -2538,7 +2507,6 @@ class Mechanum_Wheels_four(base_driver):
             self.bl_wheel.drive(self.fl_wheel.get_default_speed()//2)
             self.br_wheel.drive(-self.fl_wheel.get_default_speed()//2)
         endTime = time.time()
-        self.break_all_motors()
         self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime) * 0.73
         self.NINETY_DEGREES_SECS = endTime - startTime
         if output:
@@ -2704,7 +2672,6 @@ class Mechanum_Wheels_four(base_driver):
             log('Only "right" and "left" are valid commands for the direction!', in_exception=True)
             raise ValueError('drive_side() Exception: Only "right" and "left" are valid commands for the direction!')
 
-        self.break_all_motors()
 
 
     def drive_straight(self, millis: int, speed: int = None) -> None:
@@ -2723,7 +2690,6 @@ class Mechanum_Wheels_four(base_driver):
         startTime: float = k.seconds()
         theta = 0
         adjuster = 100
-        self.break_all_motors()
         while k.seconds() - startTime < millis / 1000:
             if 1000 > theta > -1000:
                 self.fl_wheel.drive(speed)
@@ -2742,7 +2708,6 @@ class Mechanum_Wheels_four(base_driver):
                 self.br_wheel.drive(speed - adjuster)
             k.msleep(10)
             theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
-        self.break_all_motors()
 
     def drive_diagonal(self, end: str, side: str, millis: int, speed: int = None) -> None:
         # side -> left + right
@@ -2834,7 +2799,6 @@ class Mechanum_Wheels_four(base_driver):
                 k.msleep(t)
                 theta_z += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
-        self.break_all_motors()
 
     def turn_degrees_far(self, direction: str, degree: int, speed: int = None) -> None:
         '''
@@ -2879,7 +2843,6 @@ class Mechanum_Wheels_four(base_driver):
             while time.time() - start_time < 2 * value:
                 self.fr_wheel.drive(speed)
                 self.br_wheel.drive(speed)
-        self.break_all_motors()
 
     def turn_degrees(self, direction: str, degree: int) -> None:
         '''
@@ -2918,7 +2881,6 @@ class Mechanum_Wheels_four(base_driver):
                 self.fr_wheel.drive_mfw()
                 self.bl_wheel.drive_mbw()
                 self.br_wheel.drive_mfw()
-        self.break_all_motors()
 
     def drive_side_til_mm_found(self, mm_to_object: int, direction: str, speed: int = None) -> None:
         '''
@@ -3040,7 +3002,6 @@ class Mechanum_Wheels_four(base_driver):
 
                 k.msleep(t)
                 theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
-        self.break_all_motors()
 
 
     def drive_til_distance(self, mm_to_object: int, speed: int = None) -> None:
@@ -3096,7 +3057,7 @@ class Mechanum_Wheels_four(base_driver):
                 self.bl_wheel.drive(speed)
                 self.br_wheel.drive(speed)
                 k.msleep(20)
-                self.break_all_motors()
+
 
         combination = dict(zip(self.distance_far_mm, self.distance_far_values))
         next_step = min(combination, key=lambda x: abs(x - mm_to_object))
@@ -3171,7 +3132,6 @@ class Mechanum_Wheels_four(base_driver):
                 time.sleep(timer)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
-        self.break_all_motors()
 
     def shake_side(self, times: int, millis: int = 90) -> None:
         '''
@@ -3186,9 +3146,9 @@ class Mechanum_Wheels_four(base_driver):
         '''
         for i in range(times):
             self.drive_side('right', millis)
-            self.break_all_motors()
+
             self.drive_side('left', millis)
-            self.break_all_motors()
+
 
 
     def align_drive_front(self, drive_bw: bool = True, max_millis: int = 9999999) -> None:
@@ -3209,11 +3169,11 @@ class Mechanum_Wheels_four(base_driver):
             if self.button_fl.is_pressed() and self.button_fr.is_pressed():
                 break
             elif self.button_fl.is_pressed():
-                self.break_all_motors()
+
                 self.fl_wheel.drive(-self.fl_wheel.get_default_speed()//2)
                 self.fr_wheel.drive_dfw()
             elif self.button_fr.is_pressed():
-                self.break_all_motors()
+
                 self.fr_wheel.drive(-self.fl_wheel.get_default_speed()//2)
                 self.fl_wheel.drive_dfw()
             else:
@@ -3221,14 +3181,12 @@ class Mechanum_Wheels_four(base_driver):
                 self.fl_wheel.drive_dfw()
                 self.br_wheel.drive_dfw()
                 self.bl_wheel.drive_dfw()
-        self.break_all_motors()
         if drive_bw:
             self.fr_wheel.drive_dbw()
             self.fl_wheel.drive_dbw()
             self.br_wheel.drive_dbw()
             self.bl_wheel.drive_dbw()
             k.msleep(100)
-        self.break_all_motors()
 
     def align_drive_back(self, drive_fw: bool = True, max_millis: int = 9999999) -> None:
         '''
@@ -3247,11 +3205,11 @@ class Mechanum_Wheels_four(base_driver):
             if self.button_br.is_pressed() and self.button_bl.is_pressed():
                 break
             elif self.button_br.is_pressed():
-                self.break_all_motors()
+
                 self.bl_wheel.drive_dbw()
                 self.br_wheel.drive(self.br_wheel.get_default_speed()//2)
             elif self.button_bl.is_pressed():
-                self.break_all_motors()
+
                 self.br_wheel.drive_dbw()
                 self.bl_wheel.drive(self.br_wheel.get_default_speed() // 2)
             else:
@@ -3259,14 +3217,13 @@ class Mechanum_Wheels_four(base_driver):
                 self.fl_wheel.drive_dbw()
                 self.br_wheel.drive_dbw()
                 self.bl_wheel.drive_dbw()
-        self.break_all_motors()
         if drive_fw:
             self.fr_wheel.drive_dfw()
             self.fl_wheel.drive_dfw()
             self.br_wheel.drive_dfw()
             self.bl_wheel.drive_dfw()
             k.msleep(50)
-            self.break_all_motors()
+
 
     def drive_straight_condition_digital(self, Instance: Digital, condition: str, value: int, millis: int = 9999999, speed: int = None):
         # @TODO -> test this out
@@ -3331,7 +3288,6 @@ class Mechanum_Wheels_four(base_driver):
             log('Only "==" or "!=" is available for the condition!', important=True, in_exception=True)
             raise ValueError('Only "==" or "!=" is available for the condition!')
         print()
-        self.break_all_motors()
 
     def drive_side_condition_analog(self, direction: str, Instance, condition: str, value: int, millis: int = 9999999,
                                     speed: int = None) -> None:
@@ -3605,7 +3561,6 @@ class Mechanum_Wheels_four(base_driver):
                         theta = 0
                     k.msleep(t)
                     theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
-        self.break_all_motors()
 
 
     def drive_straight_condition_analog(self, Instance, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
@@ -3716,7 +3671,6 @@ class Mechanum_Wheels_four(base_driver):
                 k.msleep(10)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
-        self.break_all_motors()
 
     def align_on_black_line(self, crossing: bool, direction: str = 'vertical', leaning_side: str = None,
                             precise: bool = False) -> None:
@@ -3768,7 +3722,7 @@ class Mechanum_Wheels_four(base_driver):
                         instances[1].drive_dfw()
                         instances[2].drive_dbw()
 
-                self.break_all_motors()
+
 
                 if not self.light_sensor_back.sees_white():
                     while self.light_sensor_front.sees_white():
@@ -3846,7 +3800,7 @@ class Mechanum_Wheels_four(base_driver):
                             instances[1].drive_dbw()
                             instances[2].drive_dfw()
                             instances[3].drive_dbw()
-                        self.break_all_motors()
+
                         while not self.light_sensor_back.sees_black():
                             instances[0].drive_dfw()
                             instances[1].drive_dfw()
@@ -3855,7 +3809,7 @@ class Mechanum_Wheels_four(base_driver):
                         while not self.light_sensor_front.sees_black():
                             instances[0].drive_dfw()
                             instances[1].drive_dbw()
-                        self.break_all_motors()
+
                     else:
                         d = direct[1]
                         while not self.light_sensor_front.sees_black():
@@ -3863,17 +3817,17 @@ class Mechanum_Wheels_four(base_driver):
                             instances[1].drive_dfw()
                             instances[2].drive_dbw()
                             instances[3].drive_dfw()
-                        self.break_all_motors()
+
                         while not self.light_sensor_back.sees_black():
                             instances[0].drive_dfw()
                             instances[1].drive_dfw()
                             instances[2].drive_dfw()
                             instances[3].drive_dbw()
-                        self.break_all_motors()
+
                         while not self.light_sensor_front.sees_black():
                             instances[0].drive_dbw()
                             instances[1].drive_dfw()
-                        self.break_all_motors()
+
                     self.drive_side(d, 5)
 
                 elif line_counter == 3:
@@ -3884,18 +3838,18 @@ class Mechanum_Wheels_four(base_driver):
                             instances[1].drive_dbw()
                             instances[2].drive_dfw()
                             instances[3].drive_dbw()
-                        self.break_all_motors()
+
                         while not self.light_sensor_back.sees_black():
                             instances[0].drive_dfw()
                             instances[1].drive_dfw()
                             instances[2].drive_dbw()
                             instances[3].drive_dfw()
-                        self.break_all_motors()
+
                         if not self.light_sensor_front.sees_black():
                             while not self.light_sensor_front.sees_black():
                                 instances[0].drive_dbw()
                                 instances[1].drive_dfw()
-                            self.break_all_motors()
+
                     else:
                         d = direct[1]
                         while not self.light_sensor_front.sees_black():
@@ -3903,18 +3857,18 @@ class Mechanum_Wheels_four(base_driver):
                             instances[1].drive_dfw()
                             instances[2].drive_dbw()
                             instances[3].drive_dfw()
-                        self.break_all_motors()
+
                         while not self.light_sensor_back.sees_black():
                             instances[0].drive_dfw()
                             instances[1].drive_dfw()
                             instances[2].drive_dfw()
                             instances[3].drive_dbw()
-                        self.break_all_motors()
+
                         if not self.light_sensor_front.sees_black():
                             while not self.light_sensor_front.sees_black():
                                 instances[0].drive_dbw()
                                 instances[1].drive_dfw()
-                            self.break_all_motors()
+
                     self.drive_side(d, 5)
 
                 else:  # line_counter == 2
@@ -3925,13 +3879,13 @@ class Mechanum_Wheels_four(base_driver):
                             instances[1].drive_dbw()
                             instances[2].drive_dfw()
                             instances[3].drive_dbw()
-                        self.break_all_motors()
+
                         while not self.light_sensor_back.sees_black():
                             instances[0].drive_dfw()
                             instances[1].drive_dfw()
                             instances[2].drive_dbw()
                             instances[3].drive_dfw()
-                        self.break_all_motors()
+
                     else:
                         d = direct[1]
                         while not self.light_sensor_front.sees_black():
@@ -3939,7 +3893,7 @@ class Mechanum_Wheels_four(base_driver):
                             instances[1].drive_dfw()
                             instances[2].drive_dbw()
                             instances[3].drive_dfw()
-                        self.break_all_motors()
+
                     self.drive_side(d, 5)
         except Exception as e:
             log(str(e), important=True, in_exception=True)
@@ -3981,7 +3935,6 @@ class Mechanum_Wheels_four(base_driver):
             log('Only "right" and "left" are valid commands for the direction!', in_exception=True)
             raise ValueError(
                 'turn_black_line() Exception: Only "right" and "left" are valid commands for the direction!')
-        self.break_all_motors()
 
     def align_line(self, onLine: bool, direction: str = None, speed: int = None, maxDuration: int = 100) -> None:
         '''
@@ -4046,7 +3999,7 @@ class Mechanum_Wheels_four(base_driver):
                     else:
                         self.align_drive_front()
                     break
-            self.break_all_motors()
+
 
     def black_line(self, millis: int, speed: int = None) -> None:
         '''
@@ -4127,7 +4080,7 @@ class Mechanum_Wheels_four(base_driver):
                 inst[2].drive_mfw()
                 inst[3].drive_mbw()
 
-            self.break_all_motors()
+
 
         for i in range(1, maxRuns + 1):
             if i == 2:
@@ -4142,7 +4095,6 @@ class Mechanum_Wheels_four(base_driver):
             if i % 2 != 0:
                 instances = instances[1], instances[0], instances[3], instances[2]
 
-        self.break_all_motors()
         while th1.is_alive():
             continue
         adjust()

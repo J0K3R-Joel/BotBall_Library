@@ -21,6 +21,7 @@ class StopManager:
         self.is_stopped = False
         self.wheel_classes = []
         self.servo_classes = []
+
         
         try:
             result = subprocess.run(["pwd"], capture_output=True, text=True, check=True)

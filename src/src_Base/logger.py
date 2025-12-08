@@ -71,12 +71,15 @@ def log(message: str, with_print: bool = True, important: bool = False, in_excep
     if important:
         message = '=' * 10 + message + '=' * 10
 
-    log_entry = f"{'=' * 50} \n {now} [{location}] - [{label}] {message}\n{'=' * 50}\n"
+    if in_exception:
+        log_entry = f"{'=' * 50} \n {now} [{location}] - [{label}] \n {message}\n{'=' * 50}\n"
+    else:
+        log_entry = f"{now} [{location}] - [{label}] {message}\n"
 
     with open(LOG_FILE, 'a') as fwriter:
         fwriter.write(log_entry)
 
-    print_text = f"[{location}] - [{label}] {message}" if not in_exception else f"=================================\n[{location}] - [{label}] {message}\n================================="
+    print_text = f"[{location}] - [{label}] {message}" if not in_exception else f"=================================\n[{location}] - [{label}]\n{message}\n================================="
 
     if with_print:
         print(print_text, flush=True)

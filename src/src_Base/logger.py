@@ -133,8 +133,9 @@ def backup_log() -> None:
     next_num = max(numbers) + 1 if numbers else 1
     backup_file = os.path.join(LOG_FOLDER, f"backup_log_file_{next_num}.txt")
 
-    with open(LOG_FILE, 'r') as fsrc, open(backup_file, 'w') as fdst:
-        fdst.writelines(fsrc.readlines())
+    with open(LOG_FILE, 'r') as freader:
+        with open(backup_file, 'w') as fwriter:
+            fwriter.writelines(freader.readlines())
 
     log("Backup successful!", important=True)
 

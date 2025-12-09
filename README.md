@@ -147,7 +147,7 @@ git clone https://github.com/J0K3R-Joel/BotBall_Library.git
 
 6. Download the latest "KIPR Wombat OS Image" (scroll down).
 
-7. Flash the image onto the robot following the instructions on the KIPR website. Use a software like [Raspberry Pi Imager](https://www.raspberrypi.com/software) for flashing the image file onto the micro SD card of the controller (You need to unscrew the "shell" of the controller to get to the micro SD card)
+7. Flash the image onto the robot following the instructions on the KIPR website. Use a software like [Raspberry Pi Imager](https://www.raspberrypi.com/software) for flashing the image file onto the micro SD card of the controller (You need to unscrew the "shell" of the controller to get to the micro SD card)
 
 8. Once the robot is flashed and ready, insert the USB stick.
 
@@ -194,6 +194,8 @@ Other classes that got an entire user as test purpose:
 - If you are using my library, then you need to calibrate the robot. Check out [./doc/Calibrations.md](./doc/Calibrations.md) for further information
 
 - `driveR` is very dependent on the right placement of the sensors, which you can find in [./Standard_Construction.md](./Standard_Construction.md). Make sure everything is positioned correctly
+
+- I will talk very often about "rubber wheels", what I mean by that are the "Solarbotic" wheels (including the caster ball).
 
 ----
 

@@ -145,7 +145,7 @@ class StopManager:
 
         for s in self.servos: 
             try:
-                s._servo_disabler()
+                s.clear_list()
             except Exception as e:
                 log(f"Error stopping servo: {e}", important=True, in_exception=True)
         self.is_stopped = True

@@ -92,14 +92,14 @@ class ServoScheduler:
             log(str(e), in_exception=True)
 
     def set_position(self, port, pos):
-        if not self._running:
-            self._setup_loop()
-
         try:
             with self._lock:
                 func_id = self._get_ID()
                 if func_id in self._old_funcs:
                     return
+
+                if not self._running:
+                    self._setup_loop()
 
                 key = (port, func_id)
                 now = time.time()
@@ -167,5 +167,6 @@ class ServoScheduler:
                     self._old_funcs.add(old_key[1])
                     break
                 self._commands.clear()
+                self.shutdown()
 
 SERVO_SCHEDULER = ServoScheduler()

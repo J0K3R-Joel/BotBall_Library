@@ -62,7 +62,8 @@ class ServoX:
         else:
             SERVO_SCHEDULER.set_position(self.port, self.new_pos_val)
 
-    # ======================== PUBLIC METHODS ========================
+
+    # ======================== GET METHODS ========================
     def get_max_value(self) -> int:
         '''
         Lets you see the highest value available for the servo
@@ -100,6 +101,8 @@ class ServoX:
         '''
         return k.get_servo_position(self.port)
 
+
+    # ======================== PUBLIC METHODS ========================
     def set_pos(self, value: int) -> None:
         '''
         Sets the position of the servo

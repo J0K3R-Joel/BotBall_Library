@@ -47,3 +47,5 @@ This file will tell you things to consider and important stuff. This is very imp
 - If you use my library and with it the `light_sensor` class, then you will encounter the `bias` variable. This variable is for widening the range of where the light sensor can see black / white. Higher value means it is more forgiving and a lower value means it is less forgiving in detecting the brightness.
 
 - When coding in the KISS IDE, then make sure that you safe / compile the code before switching files inside the KISS IDE, otherwise your new code will be overwritten by the latest saved code and you have to start all over again since the last safe 
+
+- I will talk very often about "rubber wheels", what I mean by that are the "Solarbotic" wheels (including the caster ball).

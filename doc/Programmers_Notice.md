@@ -16,31 +16,31 @@ Maybe you find a way to fix this, but as of now, if you are getting inside a thr
 
 ---
 
-![](.\img\avoid_wrong_usage_motor.png)
+![](./img/avoid_wrong_usage_motor.png)
 
 Reason: When entering the thread there is a small chance that the button is already pressed (time in thread < 500 milliseconds) 
 
 ---
 
-![](.\img\avoid_wrong_usage_motor2.png)
+![](./img/avoid_wrong_usage_motor2.png)
 
 Reason: When entering the thread it will immediately get out of the thread, even though inside of the thread you are telling the `drive_straight` function to be inside of the function for 1000 milliseconds. Threads in python start the function immediately and afterwards it will get into the `drive_straight` of the `driveR_instance` for 5000 milliseconds (in less than 500 milliseconds) -> too short
 
 ---
 
-![](.\img\avoid_wrong_usage_motor3.png)
+![](./img/avoid_wrong_usage_motor3.png)
 
 Reason: Same as the above, even though you tell it to stay in it for 10000 milliseconds inside the thread and even after 450 milliseconds of waiting, there is still a chance of it taking less than 500 milliseconds. This is because the thread immediately exits itself and runs in the background (this is how threads work)
 
 ---
 
-![](.\img\avoid_wrong_usage_motor4.png)
+![](./img/avoid_wrong_usage_motor4.png)
 
 Reason: Creating an entire new function and calling it inside of the thread does not change anything. This is just like the above, you could so to say just write this inside the same line instead of creating a new function. In a nutshell: It get's into the function and exits immediately, even though `turn_degrees` is not even finished. This results in the thread getting switched in less than 500 milliseconds. 
 
 ---
 
-![](.\img\avoid_wrong_usage_motor5.png)
+![](./img/avoid_wrong_usage_motor5.png)
 
 Reason: Even if the function is very long, this never means that it takes long to execute. Also there is a chance that the condition is already met in the same second. This could lead to the thread taking less than 500 milliseconds (even though you specifically say to wait for 300 milliseconds)
 

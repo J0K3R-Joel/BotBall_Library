@@ -64,6 +64,20 @@ class CameraManager:
             log("No valid frame found. Maybe wrong camera index?", important=True, in_exception=True)
             raise RuntimeError("No valid frame found. Maybe wrong camera index?")
 
+
+    # ======================== SETTER ========================
+    def set_warmed_up(self, new_warmed_up: bool) -> None:
+        '''
+        sets the variable _warmed_up
+
+        Args:
+            new_warmed_up (bool): if the camera should warm up (False) or not (True)
+
+        Returns:
+            None
+        '''
+        self._warmed_up = new_warmed_up
+
     def release(self):
         '''
         deletes the instance of this class. After releasing, you need to initialize again

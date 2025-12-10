@@ -14,7 +14,7 @@ except Exception as e:
 
 
 class ServoScheduler:
-    AUTO_STOP_TIMEOUT = 0.2  # 50ms  -> time after which the port will reduce it's speed to 0
+    AUTO_STOP_TIMEOUT = 0.05  # 50ms  -> time after which the port will reduce it's speed to 0
     AUTO_SHUTDOWN_TIMEOUT = 0.2  # 200ms  - > time after which every motor immediately will shut off when no valid ID sent a new request (it will boot up automatically again, when there is a new command)
     TIME_RECOGNIZER = 0.05  # 500ms  -> time where a new tid will be created with the same thread id
 
@@ -64,27 +64,29 @@ class ServoScheduler:
     def _loop(self):
         try:
             while self._running:
-                now = time.time()
                 with self._lock:
+                    now = time.time()
                     for key, data in list(self._commands.items()):
                         port = data['port']
                         fid = key[1]
+                        print(fid)
 
                         if fid in self._old_funcs:
                             continue
 
+                        print(now - data['last_update'] > self.AUTO_STOP_TIMEOUT)
                         if now - data['last_update'] > self.AUTO_STOP_TIMEOUT or not data['enabled']:
+                            print('schod')
                             if data['enabled']:
                                 self.disable_servo(port)
                             continue
 
-                        self.enable_servo(port)
                         k.set_servo_position(port, data['pos'])
-                        print(data['pos'], data['millis'])
                         k.msleep(data['millis'])
 
 
             if time.time() - self.last_activity > self.AUTO_SHUTDOWN_TIMEOUT:
+                print('shissn')
                 self.disable_all()
                 self._running = False
 
@@ -105,13 +107,13 @@ class ServoScheduler:
                 now = time.time()
                 self.last_activity = now
                 millis = (abs(k.get_servo_position(port) - pos) / 10) + 20  # + 20 is just a kind of bias.
-                self.enable_servo(port)
-
                 if key in self._commands:
+                    self.enable_servo(port)
                     self._commands[key].update({
                         'pos': pos,
                         'millis': millis,
-                        'last_update': now
+                        'last_update': now,
+                        'enabled': True
                     })
                     return
 
@@ -121,14 +123,16 @@ class ServoScheduler:
                         self.clear_list()
                         break
 
+                self.enable_servo(port)
                 self._commands[key] = {
                     'port': port,
                     'pos': pos,
                     'millis': millis,
                     'func_id': func_id,
+                    'enabled': True,
                     'last_update': now
                 }
-                print(func_id, pos, k.get_servo_position(port), millis)
+                #print(pos, port, millis, func_id)
         except Exception as e:
             log(str(e), in_exception=True)
 
@@ -136,12 +140,15 @@ class ServoScheduler:
         self._running = False
 
     def enable_servo(self, port):
-        with self._lock:
-            for key, data in list(self._commands.items()):
-                if data['port'] == port:
-                    self._commands[key]['enabled'] = True
-                    k.enable_servo(port)
-                    break
+        try:
+            with self._lock:
+                for key, data in list(self._commands.items()):
+                    if data['port'] == port:
+                        self._commands[key]['enabled'] = True
+                        k.enable_servo(port)
+                        break
+        except Exception as e:
+            log(str(e), in_exception=True)
 
     def disable_servo(self, port):
         with self._lock:

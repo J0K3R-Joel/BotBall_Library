@@ -284,6 +284,29 @@ class CameraObjectDetector:
         median = np.median(filtered, axis=0)
         return median  # (H, S, V)
 
+    def _calc_min_brightness(self, mean_brightness_list: list, avg_diff: float = 0.05) -> float:
+        '''
+        calculates the min_brightness based on the average value from all mean_brightnesses that are equal or similar to the previous mean_brightness
+
+        Args:
+            mean_brightness_list (list): list of the last few mean_brightnesses
+            avg_diff (float, optional): the difference that allows the current mean_brightness to be similar to the previous one (default: 0.05)
+
+        Returns:
+            float: the new min_brightness
+        '''
+        counter = 0
+        sum_mean_brightness = 0
+        previous_mean_brightness = mean_brightness_list[4]
+        for mean_brightness in mean_brightness_list[5:]:
+            if previous_mean_brightness - avg_diff < mean_brightness < previous_mean_brightness + avg_diff:
+                sum_mean_brightness += mean_brightness
+                counter += 1
+            if counter == 7:
+                return (sum_mean_brightness / counter)
+            previous_mean_brightness = mean_brightness
+        return previous_mean_brightness
+
     def _save_result(self, frame, label:str, mode:str="find", status:str="FOUND"):
         '''
         saves the image if something was found or not, so you can later analyse what went wrong / good
@@ -391,35 +414,44 @@ class CameraObjectDetector:
             "white": [(0, 0, 200), (179, 40, 255)],
         }
 
-    def _capture_good_frame(self, min_brightness: int = 100, timeout: float = 5.0):
+    def _capture_good_frame(self, timeout: float = 5.0):
         '''
         creates images as long as the timeout limit is not hit or a good picture with enough brightness is shot
 
         Args:
-            min_brightness (int, optional): the least amount of brightness the image HAS TO get (default: 100)
             timeout (float, optional): the amount of seconds it is allowed to take for a single good frame (default: 5.0)
 
         Returns:
             the last valid frame
         '''
         start_time = time.time()
+        last_frame = None
+        mean_brightness_list = []
+        called_function = False
+        try:
+            self.camera_manager.set_warmed_up(False)
+            while True:
+                frame = self.camera_manager.get_frame()
 
-        while True:
-            frame = self.camera_manager.get_frame()
+                last_frame = frame
+                gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                mean_brightness = np.mean(gray)
+                mean_brightness_list.append(mean_brightness)
 
-            last_frame = frame
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            mean_brightness = np.mean(gray)
+                if time.time() - start_time > 2 and called_function is False:
+                    min_brightness = self._calc_min_brightness(mean_brightness_list)
+                    called_function = True
 
-            if mean_brightness >= min_brightness:
-                break
+                if mean_brightness >= min_brightness and called_function:
+                    break
 
-            if time.time() - start_time > timeout:
-                log("Timout reached - using last picture", important=True)
-                break
+                if time.time() - start_time > timeout:
+                    log("Timout reached - using last picture", important=True)
+                    break
 
-            time.sleep(0.1)
-
+                time.sleep(0.1)
+        except Exception as e:
+            log(str(e), in_exception=True)
         return last_frame
 
     # ======================== PUBLIC METHODS ========================

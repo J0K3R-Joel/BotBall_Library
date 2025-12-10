@@ -289,3 +289,52 @@ The issue IDs have (at least at this moment) no real purpose. The ID is only exi
 
 ---
 
+ ### Issue ID: 012
+
+- **Title:** Servo not working
+
+- **Category:** Hardware
+
+- **Affected Components:** Controller and servo
+
+- **Description:**  
+  Even if the servo is plugged into a port for servos, it will not move or move very slow and not accurate, sometimes even lacking behind the actual changed value
+
+- **Symptoms / Indicators:**
+
+  - When trying to control the servo, the postion of the servo either does not change or change very slowly, inaccurately or you need to "push" the servo into the right direction to make it even move
+
+- **Cause:**  
+
+  - Servo port is not enabled
+  - Servo is plugged in the wrong direction
+  - Servo port is broken (or the servo port next to the port is broken)
+
+- **Solution / Workaround:**  
+
+  - If the Servo port is not enabled:
+
+     1.  visit [./Controller_Guide.md](./Controller_Guide.md#Servos) and get inside of the "Servo" heading
+
+     2.  Click the `Enable` button after selecting the port which you want to move
+
+         i. Another way (if you are programming) is to use the `enable_servo()` function of kipr. Use example: `k.enable_servo({port_number})`
+
+  - If the servo is (possibly) plugged in the wrong direction:
+
+    1. Make sure that the female part of the servo cable is plugged into the male part of the controller like this:
+
+       {@TODO: ADD PICTURE HERE}
+
+  - Servo port is broken (or the port next to the port):
+
+    1. Make sure that the port is actually broken by testing out by plugging the same servo into another port and try to control it again. If the problem still occures, but a little bit less, then try it with another port again. 
+
+       - If the problem is still there, then the servo is broken, change it with a new one
+
+       - If the servo now works intentionally then it would indicate, that one broken port damaged other ones ever so slightly as well (or if you the problem only occured on one port, then only this port is damaged and the other ones work fine)
+
+- **Status:** Resolved
+
+---
+

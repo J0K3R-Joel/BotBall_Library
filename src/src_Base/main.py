@@ -181,6 +181,9 @@ def main(p_event, communication):  # leave it as it is, just write in the try / 
         #for _ in range(5):
         #    do_something()
 
+        
+
+
     except Exception as e:
         log(f'Main Exception: {str(e)}', important=True, in_exception=True)
 

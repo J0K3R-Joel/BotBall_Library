@@ -11,6 +11,8 @@
 | light_sensor.py    | LightSensor    | Helligkeit_V, Helligkeit_H             | `current_value()`, `get_value_*()`, `sees_*()`       | Klasse für den Licht- und Helligkeitssensor  |
 | servo.py           | ServoX         | Servo_Arm, Servo_Hand                  | `set_pos()`, `range_to_pos()`, `range_from_to_pos()` | Klasse für die Servo                         |
 
+---
+
 ```python
 current_value() -> int
 ```
@@ -44,7 +46,7 @@ Bringt den Roboter dazu, sich in einem bestimmten Winkel in eine bestimmte Richt
 ---
 
 ```python
-turn_wheel(direction: str, millis: int, speed: int = None) -> None
+turn_wheel(direction: str, speed: int, millis: int) -> None
 ```
 
 Bringt den Roboter dazu, sich in eine Richtung für eine bestimmte Zeit zu drehen, aber nur mit einem Rad
@@ -61,8 +63,8 @@ Sagt, ab welchem ganzzahligen Wert der Roboter Schwarz oder Weiß sieht
 ---
 
 ```python
-sees_black() -> bool
-sees_white() -> bool
+sees_Black() -> bool
+sees_White() -> bool
 ```
 
 Sagt, ob der Roboter gerade Schwarz oder Weiß sieht

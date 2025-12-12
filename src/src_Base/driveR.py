@@ -1220,12 +1220,12 @@ class Rubber_Wheels_two(base_driver):
         if drive_fw and hit:
             self.drive_straight(200, 500)
 
-    def drive_straight_condition_digital(self, Instance: Digital, condition: str, value: int, millis: int = 9999999, speed: int = None):
+    def drive_straight_condition_digital(self, instance: Digital, condition: str, value: int, millis: int = 9999999, speed: int = None):
         '''
         drive straight until an digital value gets reached for the desired instance
 
         Args:
-            Instance (Digital): just has to be from something digital (buttons)
+            instance (Digital): just has to be from something digital (buttons)
             condition (str): should it match "==" or not "!="
             value (int): The value that the current value gets compared to and has to be reached / not matched
             millis (int, optional): The maximum amount of time (in milliseconds) which can be taken (default: 9999999)
@@ -1245,7 +1245,7 @@ class Rubber_Wheels_two(base_driver):
             adjuster = -adjuster
 
         if condition == "==":
-            while (Instance.current_value() == value) and (k.seconds() - start_time < millis/1000):
+            while (instance.current_value() == value) and (k.seconds() - start_time < millis/1000):
                 if theta < 10 and theta > -10:
                     instances[0].drive(speed)
                     instances[1].drive(speed)
@@ -1258,7 +1258,7 @@ class Rubber_Wheels_two(base_driver):
                 k.msleep(10)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
         elif condition == "!=":
-            while (Instance.current_value() != value) and (k.seconds() - start_time < millis/1000):
+            while (instance.current_value() != value) and (k.seconds() - start_time < millis/1000):
                 if theta < 10 and theta > -10:
                     instances[0].drive(speed)
                     instances[1].drive(speed)
@@ -1274,12 +1274,12 @@ class Rubber_Wheels_two(base_driver):
             log('Only "==" or "!=" is available for the condition!', important=True, in_exception=True)
             raise ValueError('Only "==" or "!=" is available for the condition!')
 
-    def drive_straight_condition_analog(self, Instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
+    def drive_straight_condition_analog(self, instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
         '''
         drive straight until an analog value gets reached for the desired instance
 
         Args:
-            Instance (Analog): just has to be from something analog (since there is (as of time of creation) only light and distance sensors, which are valid for this argument, just those should be used.
+            instance (Analog): just has to be from something analog (since there is (as of time of creation) only light and distance sensors, which are valid for this argument, just those should be used.
             condition (str): ("let" / "<=") or ("get" / ">=") or ("ht" / ">") or ("lt" / "<") are valid. Notice: l -> less | h -> higher | e -> equal | t -> than. (The parentheses should be left out, as well as the slash, only choose one argument Example: ">=")
             value (int): The value that the current value gets compared to and has to be reached
             millis (int, optional): The maximum amount of time (in milliseconds) which can be taken (default: 9999999)
@@ -1300,7 +1300,7 @@ class Rubber_Wheels_two(base_driver):
             adjuster = -adjuster
 
         if condition == 'let' or condition == '<=':  # let -> less or equal than
-            while Instance.current_value() <= value and (not instances[2].is_pressed() and not instances[3].is_pressed()) and k.seconds() - startTime < millis / 1000:
+            while instance.current_value() <= value and (not instances[2].is_pressed() and not instances[3].is_pressed()) and k.seconds() - startTime < millis / 1000:
                 if theta < 10 and theta > -10:
                     instances[0].drive(speed)
                     instances[1].drive(speed)
@@ -1314,7 +1314,7 @@ class Rubber_Wheels_two(base_driver):
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
 
         elif condition == 'het' or condition == '>=':  # het -> higher or equal than
-            while Instance.current_value() >= value and (not instances[2].is_pressed() and not instances[3].is_pressed()) and k.seconds() - startTime < millis / 1000:
+            while instance.current_value() >= value and (not instances[2].is_pressed() and not instances[3].is_pressed()) and k.seconds() - startTime < millis / 1000:
                 if theta < 10 and theta > -10:
                     instances[0].drive(speed)
                     instances[1].drive(speed)
@@ -1328,7 +1328,7 @@ class Rubber_Wheels_two(base_driver):
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
 
         elif condition == 'ht' or condition == '>':  # ht -> higher than
-            while Instance.current_value() > value and (not instances[2].is_pressed() and not instances[3].is_pressed()) and k.seconds() - startTime < millis / 1000:
+            while instance.current_value() > value and (not instances[2].is_pressed() and not instances[3].is_pressed()) and k.seconds() - startTime < millis / 1000:
                 if theta < 10 and theta > -10:
                     instances[0].drive(speed)
                     instances[1].drive(speed)
@@ -1342,7 +1342,7 @@ class Rubber_Wheels_two(base_driver):
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
 
         elif condition == 'lt' or condition == '<':  # lt -> less than
-            while Instance.current_value() < value and (not instances[2].is_pressed() and not instances[3].is_pressed()) and k.seconds() - startTime < millis / 1000:
+            while instance.current_value() < value and (not instances[2].is_pressed() and not instances[3].is_pressed()) and k.seconds() - startTime < millis / 1000:
                 if theta < 10 and theta > -10:
                     instances[0].drive(speed)
                     instances[1].drive(speed)
@@ -2063,8 +2063,22 @@ class Rubber_Wheels_two(base_driver):
                 self.left_wheel.drive(speed)
 
     def turn_wheel_condition_digital(self, direction: str, instance: Digital, condition: str, value: int,
-                                     millis: int = 9999999, speed: int = None):
-        # @TODO
+                                     millis: int = 9999999, speed: int = None) -> None:
+        '''
+        @TODO: test this function out
+        Turning with one wheel to the desired direction until a button gets pressed (or released)
+
+        Args:
+            direction (str): either "left" or "right". This determines in which direction you want to turn the robot to
+            instance (Digital): the instance of a button that has to be looked at, if the values of this exact button gets reached
+            condition (str): either "==" or "!=", indicating if the current value of the button should be equal or unequal to the value given
+            value (int): since this is for buttons, only 1 or 0 is valid. This value has to be reached (or not), depending of the condition
+            millis (int, optional): the longest amount of time it is allowed to wait for the condition (default: 9999999)
+            speed (int, optional): how fast it should turn (default: ds_speed)
+
+        Returns:
+            None
+        '''
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
             raise ValueError('Only "right" or "left" are valid options for the "direction" parameter')
@@ -2094,8 +2108,22 @@ class Rubber_Wheels_two(base_driver):
 
 
     def turn_wheel_condition_analog(self, direction: str, instance: Analog, condition: str, value: int,
-                                    millis: int = 9999999, speed: int = None):
-        # @TODO
+                                    millis: int = 9999999, speed: int = None) -> None:
+        '''
+        @TODO: test this function out
+        Turning with one wheel to the desired direction until a value gets of an analog sensor gets reached
+
+        Args:
+            direction (str): either "left" or "right". This determines in which direction you want to turn the robot to
+            instance (Analog): the instance of a analog sensor that has to be looked at, if the values of this exact sensor gets reached
+            condition (str): either ">=", ">", "<=", "<", "!=" or "==" indicating how the current value of the given analog sensor should corrolates to the "value" - parameter
+            value (int): the value that the function depends on and the current value of an analog sensor needs to reach this value depending on the condition
+            millis (int, optional): the longest amount of time it is allowed to wait for the condition (default: 9999999)
+            speed (int, optional): how fast it should turn (default: ds_speed)
+
+        Returns:
+            None
+        '''
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
             raise ValueError('Only "right" or "left" are valid options for the "direction" parameter')
@@ -2137,9 +2165,23 @@ class Rubber_Wheels_two(base_driver):
 
 
 
-    def turn_spot_condition_digital(self, direction: str, instance: Digital, condition: str, value: int,
-                                    millis: int = 9999999, speed: int = None):
-        # @TODO
+    def turn_degrees_condition_digital(self, direction: str, instance: Digital, condition: str, value: int,
+                                    millis: int = 9999999, speed: int = None) -> int:
+        '''
+        @TODO: test this function out
+        Turning on the stand to the desired direction until a button gets pressed (or released)
+
+        Args:
+            direction (str): either "left" or "right". This determines in which direction you want to turn the robot to
+            instance (Digital): the instance of a button that has to be looked at, if the values of this exact button gets reached
+            condition (str): either "==" or "!=", indicating if the current value of the button should be equal or unequal to the value given
+            value (int): since this is for buttons, only 1 or 0 is valid. This value has to be reached (or not), depending of the condition
+            millis (int, optional): the longest amount of time it is allowed to wait for the condition (default: 9999999)
+            speed (int, optional): how fast it should turn (default: ds_speed)
+
+        Returns:
+            int: The degrees that it took the robot to turn (if it took the robot longer than the time for 180 degrees, then it returns 181, indicating that it was more than 180 degrees)
+        '''
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
             raise ValueError('Only "right" or "left" are valid options for the "direction" parameter')
@@ -2154,6 +2196,7 @@ class Rubber_Wheels_two(base_driver):
             speed = abs(speed)
 
         start_time = k.seconds()
+        found = False
         first_wheel, second_wheel = (self.right_wheel, self.left_wheel) if direction == 'left' else (self.left_wheel, self.right_wheel)
 
 
@@ -2161,38 +2204,101 @@ class Rubber_Wheels_two(base_driver):
             while k.seconds() - start_time < millis / 1000 and instance.current_value() != value:
                 first_wheel.drive(speed)
                 second_wheel.drive(-speed)
+            if instance.current_value() != value:
+                found = True
+
         elif condition == "==":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() == value:
                 first_wheel.drive(speed)
                 second_wheel.drive(-speed)
+            if instance.current_value() == value:
+                found = True
         else:
             log('The "condition" parameter can only be something like "==; !="', in_exception=True)
             raise ValueError('The "condition" parameter can only be something like "==; !="')
 
-    def turn_spot_condition_analog(self, direction: str, instance: Analog, condition: str, value: int,
-                                   millis: int = 9999999, speed: int = None):
-        # @TODO
+        if found and k.seconds() - start_time < self.ONEEIGHTY_DEGREES_SECS:  # if it was found in the right amount of time
+            turning_divisor = self.ONEEIGHTY_DEGREES_SECS / (k.seconds() - start_time)
+            return 180 // turning_divisor  # returns the degrees
+
+        return 181  # if it was not found in the right amount of time, it took the robot more than 180 degrees
+
+
+    def turn_degrees_condition_analog(self, direction: str, instance: Analog, condition: str, value: int,
+                                   millis: int = 9999999, speed: int = None) -> int:
+        '''
+        @TODO: test this function out
+        Turning on the stand to the desired direction until a value gets of an analog sensor gets reached
+
+        Args:
+            direction (str): either "left" or "right". This determines in which direction you want to turn the robot to
+            instance (Analog): the instance of a analog sensor that has to be looked at, if the values of this exact sensor gets reached
+            condition (str): either ">=", ">", "<=", "<", "!=" or "==" indicating how the current value of the given analog sensor should corrolates to the "value" - parameter
+            value (int): the value that the function depends on and the current value of an analog sensor needs to reach this value depending on the condition
+            millis (int, optional): the longest amount of time it is allowed to wait for the condition (default: 9999999)
+            speed (int, optional): how fast it should turn (default: ds_speed)
+
+        Returns:
+            int:  The degrees that it took the robot to turn (if it took the robot longer than the time for 180 degrees, then it returns 181, indicating that it was more than 180 degrees)
+        '''
+
+        if direction != 'right' and direction != 'left':
+            log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
+            raise ValueError('Only "right" or "left" are valid options for the "direction" parameter')
+
+        if not isinstance(instance, Digital):
+            log('The "instance" parameter needs to be a child of a Digital class', in_exception=True)
+            raise ValueError('The "instance" parameter needs to be a child of a Digital class')
+
+        first_wheel, second_wheel = (self.right_wheel, self.left_wheel) if direction == 'left' else (self.left_wheel, self.right_wheel)
+        start_time = k.seconds()
+        found = False
+
         if condition == ">=" or condition == "heq":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() >= value:
-                wheel_to_drive.drive(speed)
+                first_wheel.drive(speed)
+                second_wheel.drive(-speed)
+            if instance.current_value() >= value:
+                found = True
         elif condition == "<=" or condition == "leq":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() <= value:
-                wheel_to_drive.drive(speed)
+                first_wheel.drive(speed)
+                second_wheel.drive(-speed)
+            if instance.current_value() <= value:
+                found = True
         elif condition == "<" or condition == "lt":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() < value:
-                wheel_to_drive.drive(speed)
+                first_wheel.drive(speed)
+                second_wheel.drive(-speed)
+            if instance.current_value() < value:
+                found = True
         elif condition == ">" or condition == "ht":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() > value:
-                wheel_to_drive.drive(speed)
+                first_wheel.drive(speed)
+                second_wheel.drive(-speed)
+            if instance.current_value() > value:
+                found = True
         elif condition == "==" or condition == "eq":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() == value:
-                wheel_to_drive.drive(speed)
+                first_wheel.drive(speed)
+                second_wheel.drive(-speed)
+            if instance.current_value() == value:
+                found = True
         elif condition == "!=" or condition == "neq":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() != value:
-                wheel_to_drive.drive(speed)
+                first_wheel.drive(speed)
+                second_wheel.drive(-speed)
+            if instance.current_value() != value:
+                found = True
         else:
             log('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="', in_exception=True)
             raise ValueError('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="')
+
+        if found and k.seconds() - start_time < self.ONEEIGHTY_DEGREES_SECS:  # if it was found in the right amount of time
+            turning_divisor = self.ONEEIGHTY_DEGREES_SECS / (k.seconds() - start_time)
+            return 180 // turning_divisor
+
+        return 181  # if it was not found in the right amount of time, it took the robot more than 180 degrees
 
 
 class Mechanum_Wheels_four(base_driver):
@@ -3013,6 +3119,270 @@ class Mechanum_Wheels_four(base_driver):
                 self.bl_wheel.drive_mbw()
                 self.br_wheel.drive_mfw()
 
+    def turn_wheel_condition_digital(self, direction: str, instance: Digital, condition: str, value: int,
+                                     millis: int = 9999999, speed: int = None) -> None:
+        '''
+        @TODO: test this function out
+        Turning with one wheel to the desired direction until a button gets pressed (or released)
+
+        Args:
+            direction (str): either "left" or "right". This determines in which direction you want to turn the robot to
+            instance (Digital): the instance of a button that has to be looked at, if the values of this exact button gets reached
+            condition (str): either "==" or "!=", indicating if the current value of the button should be equal or unequal to the value given
+            value (int): since this is for buttons, only 1 or 0 is valid. This value has to be reached (or not), depending of the condition
+            millis (int, optional): the longest amount of time it is allowed to wait for the condition (default: 9999999)
+            speed (int, optional): how fast it should turn (default: ds_speed)
+
+        Returns:
+            None
+        '''
+        if direction != 'right' and direction != 'left':
+            log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
+            raise ValueError('Only "right" or "left" are valid options for the "direction" parameter')
+
+        if not isinstance(instance, Digital):
+            log('The "instance" parameter needs to be a child of a Digital class', in_exception=True)
+            raise ValueError('The "instance" parameter needs to be a child of a Digital class')
+
+
+        if speed is None:
+            speed = self.ds_speed
+        else:
+            speed = abs(speed)
+
+        start_time = k.seconds()
+        wheels_to_drive = (self.fl_wheel, self.bl_wheel) if direction == 'right' else (self.fr_wheel, self.br_wheel)
+
+        if condition == "!=":
+            while k.seconds() - start_time < millis/1000 and instance.current_value() != value:
+                 wheels_to_drive[0].drive(speed)
+                 wheels_to_drive[1].drive(speed)
+        elif condition == "==":
+            while k.seconds() - start_time < millis/1000 and instance.current_value() == value:
+                wheels_to_drive[0].drive(speed)
+                wheels_to_drive[1].drive(speed)
+        else:
+            log('The "condition" parameter can only be something like "==; !="', in_exception=True)
+            raise ValueError('The "condition" parameter can only be something like "==; !="')
+
+
+    def turn_wheel_condition_analog(self, direction: str, instance: Analog, condition: str, value: int,
+                                    millis: int = 9999999, speed: int = None) -> None:
+        '''
+        @TODO: test this function out
+        Turning with one wheel to the desired direction until a value gets of an analog sensor gets reached
+
+        Args:
+            direction (str): either "left" or "right". This determines in which direction you want to turn the robot to
+            instance (Analog): the instance of a analog sensor that has to be looked at, if the values of this exact sensor gets reached
+            condition (str): either ">=", ">", "<=", "<", "!=" or "==" indicating how the current value of the given analog sensor should corrolates to the "value" - parameter
+            value (int): the value that the function depends on and the current value of an analog sensor needs to reach this value depending on the condition
+            millis (int, optional): the longest amount of time it is allowed to wait for the condition (default: 9999999)
+            speed (int, optional): how fast it should turn (default: ds_speed)
+
+        Returns:
+            None
+        '''
+        if direction != 'right' and direction != 'left':
+            log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
+            raise ValueError('Only "right" or "left" are valid options for the "direction" parameter')
+
+        if not isinstance(instance, Analog):
+            log('The "instance" parameter needs to be a child of a Analog class', in_exception=True)
+            raise ValueError('The "instance" parameter needs to be a child of a Analog class')
+
+
+        if speed is None:
+            speed = self.ds_speed
+        else:
+            speed = abs(speed)
+
+        start_time = k.seconds()
+        wheels_to_drive = (self.fl_wheel, self.bl_wheel) if direction == 'right' else (self.fr_wheel, self.br_wheel)
+
+        if condition == ">=" or condition == "heq":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() >= value:
+                wheels_to_drive[0].drive(speed)
+                wheels_to_drive[1].drive(speed)
+        elif condition == "<=" or condition == "leq":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() <= value:
+                wheels_to_drive[0].drive(speed)
+                wheels_to_drive[1].drive(speed)
+        elif condition == "<" or condition == "lt":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() < value:
+                wheels_to_drive[0].drive(speed)
+                wheels_to_drive[1].drive(speed)
+        elif condition == ">" or condition == "ht":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() > value:
+                wheels_to_drive[0].drive(speed)
+                wheels_to_drive[1].drive(speed)
+        elif condition == "==" or condition == "eq":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() == value:
+                wheels_to_drive[0].drive(speed)
+                wheels_to_drive[1].drive(speed)
+        elif condition == "!=" or condition == "neq":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() != value:
+                wheels_to_drive[0].drive(speed)
+                wheels_to_drive[1].drive(speed)
+        else:
+            log('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="', in_exception=True)
+            raise ValueError('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="')
+
+
+
+    def turn_degrees_condition_digital(self, direction: str, instance: Digital, condition: str, value: int,
+                                    millis: int = 9999999, speed: int = None) -> int:
+        '''
+        @TODO: test this function out
+        Turning on the stand to the desired direction until a button gets pressed (or released)
+
+        Args:
+            direction (str): either "left" or "right". This determines in which direction you want to turn the robot to
+            instance (Digital): the instance of a button that has to be looked at, if the values of this exact button gets reached
+            condition (str): either "==" or "!=", indicating if the current value of the button should be equal or unequal to the value given
+            value (int): since this is for buttons, only 1 or 0 is valid. This value has to be reached (or not), depending of the condition
+            millis (int, optional): the longest amount of time it is allowed to wait for the condition (default: 9999999)
+            speed (int, optional): how fast it should turn (default: ds_speed)
+
+        Returns:
+            int: The degrees that it took the robot to turn (if it took the robot longer than the time for 180 degrees, then it returns 181, indicating that it was more than 180 degrees)
+        '''
+        if direction != 'right' and direction != 'left':
+            log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
+            raise ValueError('Only "right" or "left" are valid options for the "direction" parameter')
+
+        if not isinstance(instance, Digital):
+            log('The "instance" parameter needs to be a child of a Digital class', in_exception=True)
+            raise ValueError('The "instance" parameter needs to be a child of a Digital class')
+
+        if speed is None:
+            speed = self.ds_speed
+        else:
+            speed = abs(speed)
+
+        start_time = k.seconds()
+        found = False
+        first_wheel, second_wheel = (self.fr_wheel, self.br_wheel) if direction == 'left' else (self.fl_wheel, self.bl_wheel)
+        third_wheel, fourth_wheel = (self.fl_wheel, self.bl_wheel) if first_wheel == self.fr_wheel else (self.fr_wheel, self.br_wheel)
+
+
+        if condition == "!=":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() != value:
+                first_wheel.drive(speed)
+                second_wheel.drive(speed)
+                third_wheel.drive(-speed)
+                fourth_wheel.drive(-speed)
+            if instance.current_value() != value:
+                found = True
+
+        elif condition == "==":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() == value:
+                first_wheel.drive(speed)
+                second_wheel.drive(speed)
+                third_wheel.drive(-speed)
+                fourth_wheel.drive(-speed)
+            if instance.current_value() == value:
+                found = True
+        else:
+            log('The "condition" parameter can only be something like "==; !="', in_exception=True)
+            raise ValueError('The "condition" parameter can only be something like "==; !="')
+
+        if found and k.seconds() - start_time < self.ONEEIGHTY_DEGREES_SECS:  # if it was found in the right amount of time
+            turning_divisor = self.ONEEIGHTY_DEGREES_SECS / (k.seconds() - start_time)
+            return 180 // turning_divisor  # returns the degrees
+
+        return 181  # if it was not found in the right amount of time, it took the robot more than 180 degrees
+
+
+    def turn_degrees_condition_analog(self, direction: str, instance: Analog, condition: str, value: int,
+                                   millis: int = 9999999, speed: int = None) -> int:
+        '''
+        @TODO: test this function out
+        Turning on the stand to the desired direction until a value gets of an analog sensor gets reached
+
+        Args:
+            direction (str): either "left" or "right". This determines in which direction you want to turn the robot to
+            instance (Analog): the instance of a analog sensor that has to be looked at, if the values of this exact sensor gets reached
+            condition (str): either ">=", ">", "<=", "<", "!=" or "==" indicating how the current value of the given analog sensor should corrolates to the "value" - parameter
+            value (int): the value that the function depends on and the current value of an analog sensor needs to reach this value depending on the condition
+            millis (int, optional): the longest amount of time it is allowed to wait for the condition (default: 9999999)
+            speed (int, optional): how fast it should turn (default: ds_speed)
+
+        Returns:
+            int:  The degrees that it took the robot to turn (if it took the robot longer than the time for 180 degrees, then it returns 181, indicating that it was more than 180 degrees)
+        '''
+
+        if direction != 'right' and direction != 'left':
+            log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
+            raise ValueError('Only "right" or "left" are valid options for the "direction" parameter')
+
+        if not isinstance(instance, Digital):
+            log('The "instance" parameter needs to be a child of a Digital class', in_exception=True)
+            raise ValueError('The "instance" parameter needs to be a child of a Digital class')
+
+        first_wheel, second_wheel = (self.fr_wheel, self.br_wheel) if direction == 'left' else (self.fl_wheel, self.bl_wheel)
+        third_wheel, fourth_wheel = (self.fl_wheel, self.bl_wheel) if first_wheel == self.fr_wheel else (self.fr_wheel, self.br_wheel)
+        start_time = k.seconds()
+        found = False
+
+        if condition == ">=" or condition == "heq":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() >= value:
+                first_wheel.drive(speed)
+                second_wheel.drive(speed)
+                third_wheel.drive(-speed)
+                fourth_wheel.drive(-speed)
+            if instance.current_value() >= value:
+                found = True
+        elif condition == "<=" or condition == "leq":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() <= value:
+                first_wheel.drive(speed)
+                second_wheel.drive(speed)
+                third_wheel.drive(-speed)
+                fourth_wheel.drive(-speed)
+            if instance.current_value() <= value:
+                found = True
+        elif condition == "<" or condition == "lt":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() < value:
+                first_wheel.drive(speed)
+                second_wheel.drive(speed)
+                third_wheel.drive(-speed)
+                fourth_wheel.drive(-speed)
+            if instance.current_value() < value:
+                found = True
+        elif condition == ">" or condition == "ht":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() > value:
+                first_wheel.drive(speed)
+                second_wheel.drive(speed)
+                third_wheel.drive(-speed)
+                fourth_wheel.drive(-speed)
+            if instance.current_value() > value:
+                found = True
+        elif condition == "==" or condition == "eq":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() == value:
+                first_wheel.drive(speed)
+                second_wheel.drive(speed)
+                third_wheel.drive(-speed)
+                fourth_wheel.drive(-speed)
+            if instance.current_value() == value:
+                found = True
+        elif condition == "!=" or condition == "neq":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() != value:
+                first_wheel.drive(speed)
+                second_wheel.drive(speed)
+                third_wheel.drive(-speed)
+                fourth_wheel.drive(-speed)
+            if instance.current_value() != value:
+                found = True
+        else:
+            log('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="', in_exception=True)
+            raise ValueError('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="')
+
+        if found and k.seconds() - start_time < self.ONEEIGHTY_DEGREES_SECS:  # if it was found in the right amount of time
+            turning_divisor = self.ONEEIGHTY_DEGREES_SECS / (k.seconds() - start_time)
+            return 180 // turning_divisor
+
+        return 181  # if it was not found in the right amount of time, it took the robot more than 180 degrees
+
     def drive_side_til_mm_found(self, mm_to_object: int, direction: str, speed: int = None) -> None:
         '''
         turn the amount of degrees given, to take a turn with basically only two, resulting in a turn not on the spot
@@ -3356,13 +3726,13 @@ class Mechanum_Wheels_four(base_driver):
             k.msleep(50)
 
 
-    def drive_straight_condition_digital(self, Instance: Digital, condition: str, value: int, millis: int = 9999999, speed: int = None):
+    def drive_straight_condition_digital(self, instance: Digital, condition: str, value: int, millis: int = 9999999, speed: int = None):
         # @TODO -> test this out
         '''
         drive straight until an digital value gets reached for the desired instance
 
         Args:
-            Instance (Digital): just has to be from something digital (buttons)
+            instance (Digital): just has to be from something digital (buttons)
             condition (str): should it match "==" or not "!="
             value (int): The value that the current value gets compared to and has to be reached / not matched
             millis (int, optional): The maximum amount of time (in milliseconds) which can be taken (default: 9999999)
@@ -3378,7 +3748,7 @@ class Mechanum_Wheels_four(base_driver):
         start_time = k.seconds()
 
         if condition == "==":
-            while (Instance.current_value() == value) and (k.seconds() - start_time < millis/1000):
+            while (instance.current_value() == value) and (k.seconds() - start_time < millis/1000):
                 if 1000 > theta > -1000:
                     self.fl_wheel.drive(speed)
                     self.fr_wheel.drive(speed)
@@ -3397,7 +3767,7 @@ class Mechanum_Wheels_four(base_driver):
                 k.msleep(10)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
         elif condition == "!=":
-            while (Instance.current_value() != value) and (k.seconds() - start_time < millis/1000):
+            while (instance.current_value() != value) and (k.seconds() - start_time < millis/1000):
                 if 1000 > theta > -1000:
                     self.fl_wheel.drive(speed)
                     self.fr_wheel.drive(speed)
@@ -3420,14 +3790,14 @@ class Mechanum_Wheels_four(base_driver):
             raise ValueError('Only "==" or "!=" is available for the condition!')
         print()
 
-    def drive_side_condition_analog(self, direction: str, Instance, condition: str, value: int, millis: int = 9999999,
+    def drive_side_condition_analog(self, direction: str, instance: Analog, condition: str, value: int, millis: int = 9999999,
                                     speed: int = None) -> None:
         '''
         drive sideways until an analog value gets reached for the desired instance
 
         Args:
             direction (str): "left" or "right" - depends on where you want to go
-            Instance: just has to be from something analog (since there is (as of time of creation) only light and distance sensors, which are valid for this argument, just those should be used.
+            instance (Analog): just has to be from something analog (since there is (as of time of creation) only light and distance sensors, which are valid for this argument, just those should be used.
             condition (str): ("let" / "<=") or ("get" / ">=") or ("ht" / ">") or ("lt" / "<") are valid. Notice: l -> less | h -> higher | e -> equal | t -> than. (The parentheses should be left out, as well as the slash, only choose one argument Example: ">=")
             value (int): The value that the current value gets compared to and has to be reached
             millis (int, optional): The maximum amount of time (in milliseconds) which can be taken (default: 9999999)
@@ -3451,7 +3821,7 @@ class Mechanum_Wheels_four(base_driver):
         higher_theta = 3000
         speed = abs(speed)
         if condition == 'let' or condition == '<=':  # let -> less or equal than
-            while (Instance.current_value() <= value) and (k.seconds() - startTime < millis / 1000):
+            while (instance.current_value() <= value) and (k.seconds() - startTime < millis / 1000):
                 if direction == 'right':
                     if lower_theta > theta > -lower_theta:
                         self.fl_wheel.drive(speed)
@@ -3512,7 +3882,7 @@ class Mechanum_Wheels_four(base_driver):
 
 
         elif condition == 'het' or condition == '>=':  # het -> higher or equal than
-            while (Instance.current_value() >= value) and (k.seconds() - startTime < millis / 1000):
+            while (instance.current_value() >= value) and (k.seconds() - startTime < millis / 1000):
                 if direction == 'right':
                     if lower_theta > theta > -lower_theta:
                         self.fl_wheel.drive(speed)
@@ -3573,7 +3943,7 @@ class Mechanum_Wheels_four(base_driver):
                     theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
 
         elif condition == 'ht' or condition == '>':  # ht -> higher than
-            while (Instance.current_value() > value) and (k.seconds() - startTime < millis / 1000):
+            while (instance.current_value() > value) and (k.seconds() - startTime < millis / 1000):
                 if direction == 'right':
                     if lower_theta > theta > -lower_theta:
                         self.fl_wheel.drive(speed)
@@ -3634,7 +4004,7 @@ class Mechanum_Wheels_four(base_driver):
                     theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
 
         elif condition == 'lt' or condition == '<':  # lt -> less than
-            while (Instance.current_value() < value) and (k.seconds() - startTime < millis / 1000):
+            while (instance.current_value() < value) and (k.seconds() - startTime < millis / 1000):
                 if lower_theta > theta > -lower_theta:
                     self.fl_wheel.drive(speed)
                     self.fr_wheel.drive(-speed)
@@ -3694,12 +4064,12 @@ class Mechanum_Wheels_four(base_driver):
                     theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
 
 
-    def drive_straight_condition_analog(self, Instance, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
+    def drive_straight_condition_analog(self, instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
         '''
        drive straight until an analog value gets reached for the desired instance
 
        Args:
-           Instance: just has to be from something analog (since there is (as of time of creation) only light and distance sensors, which are valid for this argument, just those should be used.
+           instance (Analog): just has to be from something analog (since there is (as of time of creation) only light and distance sensors, which are valid for this argument, just those should be used.
            condition (str): ("let" / "<=") or ("get" / ">=") or ("ht" / ">") or ("lt" / "<") are valid. Notice: l -> less | h -> higher | e -> equal | t -> than. (The parentheses should be left out, as well as the slash, only choose one argument Example: ">=")
            value (int): The value that the current value gets compared to and has to be reached
            millis (int, optional): The maximum amount of time (in milliseconds) which can be taken (default: 9999999)
@@ -3719,7 +4089,7 @@ class Mechanum_Wheels_four(base_driver):
             ports = self.button_bl, self.button_br
 
         if condition == 'let' or condition == '<=':  # let -> less or equal than
-            while (Instance.current_value() <= value) and (not ports[0].is_pressed() and not ports[
+            while (instance.current_value() <= value) and (not ports[0].is_pressed() and not ports[
                 1].is_pressed()) and k.seconds() - startTime < millis / 1000:
                 if 1000 > theta > -1000:
                     self.fl_wheel.drive(speed)
@@ -3740,7 +4110,7 @@ class Mechanum_Wheels_four(base_driver):
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
         elif condition == 'het' or condition == '>=':  # het -> higher or equal than
-            while (Instance.current_value() >= value) and (not ports[0].is_pressed() and not ports[
+            while (instance.current_value() >= value) and (not ports[0].is_pressed() and not ports[
                 1].is_pressed()) and k.seconds() - startTime < millis / 1000:
                 if 1000 > theta > -1000:
                     self.fl_wheel.drive(speed)
@@ -3761,7 +4131,7 @@ class Mechanum_Wheels_four(base_driver):
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
         elif condition == 'ht' or condition == '>':  # ht -> higher than
-            while (Instance.current_value() > value) and (not ports[0].is_pressed() and not ports[
+            while (instance.current_value() > value) and (not ports[0].is_pressed() and not ports[
                 1].is_pressed() and k.seconds()) - startTime < millis / 1000:
                 if 1000 > theta > -1000:
                     self.fl_wheel.drive(speed)
@@ -3782,7 +4152,7 @@ class Mechanum_Wheels_four(base_driver):
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
 
         elif condition == 'lt' or condition == '<':  # lt -> less than
-            while (Instance.current_value() < value) and (not ports[0].is_pressed() and not ports[
+            while (instance.current_value() < value) and (not ports[0].is_pressed() and not ports[
                 1].is_pressed()) and k.seconds() - startTime < millis / 1000:
                 if 1000 > theta > -1000:
                     self.fl_wheel.drive(speed)

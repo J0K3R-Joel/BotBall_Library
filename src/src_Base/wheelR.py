@@ -53,6 +53,9 @@ class WheelR:
 
         MOTOR_SCHEDULER.set_speed(self.port, speed)
 
+
+    def _hard_stop(self) -> None:
+        MOTOR_SCHEDULER.clear_list()
     # ======================== GET METHODS ========================
 
     def get_port(self) -> int:

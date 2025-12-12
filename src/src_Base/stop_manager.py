@@ -113,7 +113,7 @@ class StopManager:
         with self._lock:
             self.wheels.append(wheelr)
 
-    def register_servox(self, servox):
+    def register_servox(self, servox) -> None:
         '''
         Let's you register a servox class which has to stop if the emergency_stop() function gets executed
 
@@ -127,7 +127,7 @@ class StopManager:
         with self._lock:
             self.servos.append(servox)
 
-    def emergency_stop(self):
+    def emergency_stop(self) -> None:
         '''
         Stops all driveR and ServoX function from execution, if they are currently running
 
@@ -139,13 +139,13 @@ class StopManager:
         '''
         for w in self.wheels:
             try:
-                w.clear_list()
+                w._hard_stop()
             except Exception as e:
                 log(f"Error stopping motor: {e}", important=True, in_exception=True)
 
         for s in self.servos: 
             try:
-                s.clear_list()
+                s._hard_stop()
             except Exception as e:
                 log(f"Error stopping servo: {e}", important=True, in_exception=True)
         self.is_stopped = True

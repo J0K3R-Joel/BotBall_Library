@@ -104,7 +104,7 @@ For further information head into the [./controller_guide.md](./controller_guide
 
 ![](./img/distance_sensor.png)
 
-The distance sensor returns a value between `200` - `2900`. The value it returns depends on some factors (at least from what I noticed):
+The distance sensor returns a value between `200` - `2950`. The value it returns depends on some factors (at least from what I noticed):
 
 - distance
 
@@ -112,7 +112,7 @@ The distance sensor returns a value between `200` - `2900`. The value it returns
 
 - light
 
-This sensor is unfortunatelly very unreliable, so keep care when using it! It works great on distances between `100` - `800`mm. Everything above 800mm will not be recognised and everything below 100mm is very inconsistent and is very hard to balance.  
+This sensor is unfortunatelly very unreliable, so be careful when using it! It works great on distances between `100` - `800`mm. Everything above 800mm will not be recognised and everything below 100mm is very inconsistent and is very hard to balance.  
 
 ##### 3.1.2 Light Sensor
 

@@ -1096,7 +1096,6 @@ class Rubber_Wheels_two(base_driver):
         log(f"Calibration finished. {len(self.distance_far_mm)} datapoints collected.")
 
     # ======================== PUBLIC METHODS =======================
-
     def align_drive_side(self, speed: int, drive_dir: bool = True, millis: int = 5000) -> None:
         '''
         Drives (forwards or backwards, depending if the speed is positive or negative) until it bumps into something, but it won't readjust with the other wheel, resulting in aligning as far away as possible
@@ -1220,29 +1219,6 @@ class Rubber_Wheels_two(base_driver):
                 self.left_wheel.drive_mbw()
         if drive_fw and hit:
             self.drive_straight(200, 500)
-
-    def turn_wheel(self, direction: str, millis: int, speed: int = None) -> None:
-        '''
-        turning with only one wheel
-
-        Args:
-            direction (str): "left" or "right" - depends on where you want to go
-            millis (int): how long it should perform this task
-            speed (int, optional): how fast (and direction) it should drive (default: ds_speed)
-
-        Returns:
-            None
-        '''
-        if speed is None:
-            speed = self.ds_speed
-
-        start_time = time.time()
-        if direction == 'left':
-            while (time.time() - start_time) < millis / 1000:
-                self.right_wheel.drive(speed)
-        elif direction == 'right':
-            while (time.time() - start_time) < millis / 1000:
-                self.left_wheel.drive(speed)
 
     def drive_straight_condition_digital(self, Instance: Digital, condition: str, value: int, millis: int = 9999999, speed: int = None):
         '''
@@ -2005,12 +1981,12 @@ class Rubber_Wheels_two(base_driver):
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
             raise ValueError(
-                'turn_degrees_far() Exception: Only "right" or "left" are valid options for the "direction" parameter')
+                'Only "right" or "left" are valid options for the "direction" parameter')
 
         if degree > 180 and degree < 0:
             log('Only values from range 0 - 180 are valid for the "degree" parameter', in_exception=True)
             raise ValueError(
-                'turn_degrees_far() Exception: Only values from range 0 - 180 are valid for the "degree" parameter')
+                'Only values from range 0 - 180 are valid for the "degree" parameter')
 
         div = 180 / degree
         value = self.ONEEIGHTY_DEGREES_SECS / div
@@ -2039,12 +2015,12 @@ class Rubber_Wheels_two(base_driver):
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
             raise ValueError(
-                'turn_degrees() Exception: Only "right" or "left" are valid options for the "direction" parameter')
+                'Only "right" or "left" are valid options for the "direction" parameter')
 
         if degree > 180 or degree < 1:
             log('Only values from range 1 - 180 are valid for the "degree" parameter', in_exception=True)
             raise ValueError(
-                'turn_degrees() Exception: Only values from range 1 - 180 are valid for the "degree" parameter')
+                'Only values from range 1 - 180 are valid for the "degree" parameter')
 
         div = 180 / degree
         value = self.ONEEIGHTY_DEGREES_SECS / div
@@ -2062,6 +2038,161 @@ class Rubber_Wheels_two(base_driver):
                 self.left_wheel.drive_dbw()
                 self.right_wheel.drive_dfw()
         k.msleep(200)
+
+    def turn_wheel(self, direction: str, millis: int, speed: int = None) -> None:
+        '''
+        turning with only one wheel
+
+        Args:
+            direction (str): "left" or "right" - depends on where you want to go
+            millis (int): how long it should perform this task
+            speed (int, optional): how fast (and direction) it should drive (default: ds_speed)
+
+        Returns:
+            None
+        '''
+        if speed is None:
+            speed = self.ds_speed
+
+        start_time = time.time()
+        if direction == 'left':
+            while (time.time() - start_time) < millis / 1000:
+                self.right_wheel.drive(speed)
+        elif direction == 'right':
+            while (time.time() - start_time) < millis / 1000:
+                self.left_wheel.drive(speed)
+
+    def turn_wheel_condition_digital(self, direction: str, instance: Digital, condition: str, value: int,
+                                     millis: int = 9999999, speed: int = None):
+        # @TODO
+        if direction != 'right' and direction != 'left':
+            log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
+            raise ValueError('Only "right" or "left" are valid options for the "direction" parameter')
+
+        if not isinstance(instance, Digital):
+            log('The "instance" parameter needs to be a child of a Digital class', in_exception=True)
+            raise ValueError('The "instance" parameter needs to be a child of a Digital class')
+
+
+        if speed is None:
+            speed = self.ds_speed
+        else:
+            speed = abs(speed)
+
+        start_time = k.seconds()
+        wheel_to_drive = self.right_wheel if direction == 'left' else self.left_wheel
+
+        if condition == "!=":
+            while k.seconds() - start_time < millis/1000 and instance.current_value() != value:
+                wheel_to_drive.drive(speed)
+        elif condition == "==":
+            while k.seconds() - start_time < millis/1000 and instance.current_value() == value:
+                wheel_to_drive.drive(speed)
+        else:
+            log('The "condition" parameter can only be something like "==; !="', in_exception=True)
+            raise ValueError('The "condition" parameter can only be something like "==; !="')
+
+
+    def turn_wheel_condition_analog(self, direction: str, instance: Analog, condition: str, value: int,
+                                    millis: int = 9999999, speed: int = None):
+        # @TODO
+        if direction != 'right' and direction != 'left':
+            log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
+            raise ValueError('Only "right" or "left" are valid options for the "direction" parameter')
+
+        if not isinstance(instance, Analog):
+            log('The "instance" parameter needs to be a child of a Analog class', in_exception=True)
+            raise ValueError('The "instance" parameter needs to be a child of a Analog class')
+
+
+        if speed is None:
+            speed = self.ds_speed
+        else:
+            speed = abs(speed)
+
+        start_time = k.seconds()
+        wheel_to_drive = self.right_wheel if direction == 'left' else self.left_wheel
+
+        if condition == ">=" or condition == "heq":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() >= value:
+                wheel_to_drive.drive(speed)
+        elif condition == "<=" or condition == "leq":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() <= value:
+                wheel_to_drive.drive(speed)
+        elif condition == "<" or condition == "lt":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() < value:
+                wheel_to_drive.drive(speed)
+        elif condition == ">" or condition == "ht":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() > value:
+                wheel_to_drive.drive(speed)
+        elif condition == "==" or condition == "eq":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() == value:
+                wheel_to_drive.drive(speed)
+        elif condition == "!=" or condition == "neq":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() != value:
+                wheel_to_drive.drive(speed)
+        else:
+            log('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="', in_exception=True)
+            raise ValueError('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="')
+
+
+
+    def turn_spot_condition_digital(self, direction: str, instance: Digital, condition: str, value: int,
+                                    millis: int = 9999999, speed: int = None):
+        # @TODO
+        if direction != 'right' and direction != 'left':
+            log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
+            raise ValueError('Only "right" or "left" are valid options for the "direction" parameter')
+
+        if not isinstance(instance, Digital):
+            log('The "instance" parameter needs to be a child of a Digital class', in_exception=True)
+            raise ValueError('The "instance" parameter needs to be a child of a Digital class')
+
+        if speed is None:
+            speed = self.ds_speed
+        else:
+            speed = abs(speed)
+
+        start_time = k.seconds()
+        first_wheel, second_wheel = (self.right_wheel, self.left_wheel) if direction == 'left' else (self.left_wheel, self.right_wheel)
+
+
+        if condition == "!=":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() != value:
+                first_wheel.drive(speed)
+                second_wheel.drive(-speed)
+        elif condition == "==":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() == value:
+                first_wheel.drive(speed)
+                second_wheel.drive(-speed)
+        else:
+            log('The "condition" parameter can only be something like "==; !="', in_exception=True)
+            raise ValueError('The "condition" parameter can only be something like "==; !="')
+
+    def turn_spot_condition_analog(self, direction: str, instance: Analog, condition: str, value: int,
+                                   millis: int = 9999999, speed: int = None):
+        # @TODO
+        if condition == ">=" or condition == "heq":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() >= value:
+                wheel_to_drive.drive(speed)
+        elif condition == "<=" or condition == "leq":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() <= value:
+                wheel_to_drive.drive(speed)
+        elif condition == "<" or condition == "lt":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() < value:
+                wheel_to_drive.drive(speed)
+        elif condition == ">" or condition == "ht":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() > value:
+                wheel_to_drive.drive(speed)
+        elif condition == "==" or condition == "eq":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() == value:
+                wheel_to_drive.drive(speed)
+        elif condition == "!=" or condition == "neq":
+            while k.seconds() - start_time < millis / 1000 and instance.current_value() != value:
+                wheel_to_drive.drive(speed)
+        else:
+            log('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="', in_exception=True)
+            raise ValueError('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="')
 
 
 class Mechanum_Wheels_four(base_driver):

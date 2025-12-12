@@ -54,7 +54,11 @@ Reason: Even if the function is very long, this never means that it takes long t
 
 Try to use one of these ways when you want to use threading and there is a chance of leaving the thread early / too early:
 
-{TODO: ADD IMAGES}
+![](./img/avoid_wrong_usage_motor7.png)
+
+
+
+![](./img/avoid_wrong_usage_motor6.png)
 
 
 

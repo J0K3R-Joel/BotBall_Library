@@ -141,6 +141,8 @@ When you are at the BotBall (ECER / GCER) event you HAVE TO execute all your pro
        - **Pointer of movement**: The visualization of the "Value of movement". Turn the pointer to one direction to make the motor go forward. Turn it the other way for going backward
        - **Value of movement**: Shows you where it is going (positive -> forward; negative -> backward)
        - **Position counter**: Values of movement added together 
+       
+       Hint: The motors you use for driving need to drive forward when the position is positive
    
    
    
@@ -155,9 +157,9 @@ When you are at the BotBall (ECER / GCER) event you HAVE TO execute all your pro
        - **Port**: The physical location where the servo is plugged in. You can switch the port on the interface by clicking on it, if you want to access another port.
        - **Pointer of movement**: The visualization of the "Value of movement". Turn the pointer to one direction to make the servo go one way and turn it the other way to change it to the other way.
        - **Value of movement**: Shows you the current value it is set to
-       - **On / Off**: Being able to change the value (Enable) or not being able to change the value (Disable)
+      - **On / Off**: Being able to change the value (Enable) or not being able to change the value (Disable)
    
-  
+   
    3. ###### Sensor Graph: 
    
        Click the `Sensor Graph` button 

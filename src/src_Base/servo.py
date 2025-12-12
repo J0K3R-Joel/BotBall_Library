@@ -63,6 +63,10 @@ class ServoX:
             SERVO_SCHEDULER.set_position(self.port, self.new_pos_val)
 
 
+    def _hard_stop(self) -> None:
+        SERVO_SCHEDULER.clear_list()
+
+
     # ======================== GET METHODS ========================
     def get_max_value(self) -> int:
         '''
@@ -129,6 +133,8 @@ class ServoX:
         new_pos = self.get_pos() + value
         if self._valid_range(new_pos):
             self._set_pos_internal(new_pos)
+        else:
+            self._set_pos_internal(self.new_pos_val)
 
     def range_to_pos(self, value: int, multi: int = 2) -> None:
         '''
@@ -141,19 +147,28 @@ class ServoX:
         Returns:
             None
         '''
+        curr_pos = self.get_pos()
+
+        if not self._valid_range(value):
+            value = self.new_pos_val
+
         if multi < 1:
             multi = 1
-        curr_pos = self.get_pos()
+
+        if abs(multi) > abs(value - curr_pos):
+            multi = abs(value - curr_pos)
 
         if value-curr_pos < 0:
             multi = -multi
+
+
         counter = int(multi)
 
-        if self._valid_range(value):
-            for _ in range(abs(value-curr_pos)//abs(int(multi))):
+        if counter > 0:
+            while self.get_pos() < value:
                 self.add_to_pos(counter)
         else:
-            for _ in range(abs(self.new_pos_val-curr_pos)//abs(int(multi))):
+            while self.get_pos() > value:
                 self.add_to_pos(counter)
 
     def range_from_to_pos(self, interval: list, multi: int = 2) -> None:
@@ -167,24 +182,8 @@ class ServoX:
         Returns:
             None
         '''
-        min_val = min(int(interval[0]), int(interval[1]))
-        max_val = max(int(interval[0]), int(interval[1]))
+        for i in range(len(interval)):
+            interval[i] = int(interval[i]) if self._valid_range(interval[i]) else self.new_pos_val
 
-        if min_val < self.min_value:
-            min_val = self.min_value
-
-        if max_val > self.max_value:
-            max_val = self.max_value
-
-        if multi < 1:
-            multi = 1
-
-        if int(interval[0]) > int(interval[1]):
-            multi = -multi
-
-        counter = int(interval[0])
-        adder = int(multi)
-
-        for _ in range((max_val-min_val)//abs(int(multi))):
-            self._set_pos_internal(counter)
-            counter += adder
+        self.set_pos(interval[0])
+        self.range_to_pos(interval[1], multi)

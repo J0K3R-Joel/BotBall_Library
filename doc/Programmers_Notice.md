@@ -54,13 +54,15 @@ Reason: Even if the function is very long, this never means that it takes long t
 
 Try to use one of these ways when you want to use threading and there is a chance of leaving the thread early / too early:
 
+static waiting time:
+
 ![](./img/avoid_wrong_usage_motor7.png)
 
-
+dynamic waiting time:
 
 ![](./img/avoid_wrong_usage_motor6.png)
 
-
+Notice that in both functions is the `.join()` function. This makes it so it waits until the function is finished. When you are just driving forward for a static amount of time, then there is no need to `.join()` since the program will remember how long you told it to drive. As said, this only works when using function like `drive_straight()` or `turn_degrees()` (file: driveR.py), since they need a static amount of time to drive. When not using the `.join()` function it will immediately leave the function and get to the next function outside of the thread (more on that in https://www.tutorialspoint.com/python/python_joining_threads.htm). 
 
 ##### Why this works
 

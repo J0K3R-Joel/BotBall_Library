@@ -13,11 +13,13 @@ try:
     import cv2
     import threading
     import time
+    import atexit
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 class CameraManager:
     def __init__(self, cam_index, warmup_frames=30, warmup_delay=0.05):
+        atexit.register(self.release)
         self.lock = threading.Lock()
         self.cap = cv2.VideoCapture(cam_index)
         self._warmed_up = False

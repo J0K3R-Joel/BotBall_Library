@@ -9,11 +9,11 @@ This file tells you which classes are thread safe, so classes you can use in a t
 - `Digital`
 - `Analog` 
 - `DistanceSensor`
-- `WheelR` (`MOTOR_SCHEDULER`)
+- `driveR` -> `WheelR` -> `MOTOR_SCHEDULER`
 - `FileR`
 - `LightSensor` 
 - `CameraObjectDetector` 
 - `RobotCommunicator` -> has to be further tested
-- `ServoX`
+- `ServoX` -> `SERVO_SCHEDULER` 
 - `StopManager`
 

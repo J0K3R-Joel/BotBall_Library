@@ -19,11 +19,12 @@ The [advanced](#Adcanced) section is very advanced, so if you got any questions,
 You can look at the [kipr motor function page](https://www.kipr.org/doc/group__motor.html) to see every function kipr provides. My library uses:
 
 ```python
-mav(motor: int, velocity: int)
+k.mav(motor: int, velocity: int)
 ```
 
 ###### where
 
+- `k` is the imported library from kipr
 - `motor` is the port of the motor which has to be moved (like: 0; 3; 1; 2)
 - `velocity` is a integer value from -1500 to 1500
 
@@ -32,11 +33,12 @@ mav(motor: int, velocity: int)
 You can also use the
 
 ```python
-motor(motor: int, percentage: int)
+k.motor(motor: int, percentage: int)
 ```
 
 ###### where
 
+- `k` is the imported library from kipr
 - `motor` is the port of the motor which has to be moved (like: 0; 3; 1; 2)
 - `percentage` is a integer value from -100 to 100
 
@@ -102,9 +104,76 @@ notice that the adjuster reduces / increases the speed to drive more straight
 
 ## The way servos work
 
+Servos work very similarly to motors. Kipr also provides functions [on their website](https://www.kipr.org/doc/group__servo.html), you can go there to see the possibilities of using servos
 
+#### servo-functions
 
+If you want to move a servos, you first need to enable them (you can practice that on the controller by the way) by using
 
+```python
+k.enable_servo(port: int)
+```
+
+###### where
+
+- `k` is the imported library from kipr
+- `enable_servo` is a function provided by kipr
+- `port` is an integer value (e.g. 1; 4; 2; 3) representing the location on the controller where you plugged the servo in
+
+You need to enable them to be able to move them. A disabled servo will not move, not matter which value you set it to. After you enable it, you can move it by using
+
+```python
+k.set_servo_position(port: int, position: int)
+```
+
+###### whered
+
+- `k` is the imported library from kipr
+- `set_servo_position` is a function provided by kipr
+- `port` is an integer value (e.g. 1; 4; 2; 3) representing the location on the controller where you plugged the servo in
+- `position` is a integer value between 1 - 2047. This represents the absolute position of where the servo has to go
+
+To save some battery and to avoid mis-usage of servos, it is smart to disable them after quite some time. You can disable them by using
+
+```python
+k.disable_servo(port: int)
+```
+
+###### where
+
+- `k` is the imported library from kipr
+- `disable_servo` is a function provided by kipr
+- `port` is an integer value (e.g. 1; 4; 2; 3) representing the location on the controller where you plugged the servo in
+
+---
+
+#### servo-sleeps
+
+The servos need - just like the motors - some time to "act". If you give them no / too little time to adjust, then they will either not move at all, or move too less. That is why you will also need one of these functions:
+
+``` python
+k.msleep(time: int)
+```
+
+###### where
+
+- `k` is the imported library from kipr
+- `msleep` is the function provided of kipr
+- `time` is representing **milliseconds** as an integer value
+
+---
+
+Or another way (in python) is using the `time` library:
+
+```python
+time.sleep(seconds: float)
+```
+
+###### where
+
+- `time` is the imported library
+- `sleep` is the function provided by the time module
+- `seconds` is the time in **seconds** you want to wait
 
 
 
@@ -224,5 +293,5 @@ If you are writing your own functions inside of the driveR class, then consider 
 
 ##### Why this occurs
 
-As previously stated, this has something to do with how threads work and how I wrote the `motor_scheduler.py` file. This file basically listens to the last call of driveR instance and then execute what the driveR tells the WheelR and afterwards the WheelR calls the MOTOR_SCHEDULER to basically tell it "I got a new call to drive with the speed of X on the port Y". Then the MOTOR_SCHEDULER looks if it is a new thread or an existing thread and therefor giving it an ID. The newest ID overwrites the last ID, but if there is no call of driving (if a wanted value is already reached), then it will never create a new ID, resulting in the newest ID being the last. By forcing the program to tell it to drive at 0 speed, it will create a new ID (if you are still within the 500 milliseconds) and afterwards overwriting the last ID, even though the value is already reached.
+As previously stated, this has something to do with how threads work and how I wrote the `motor_scheduler.py` file. This file basically listens to the last call of driveR instance and then executes what the driveR tells the WheelR and afterwards the WheelR calls the MOTOR_SCHEDULER to basically tell it "I got a new call to drive with the speed of X on the port Y". Then the MOTOR_SCHEDULER looks if it is a new thread or an existing thread and therefor giving it an ID. The newest ID overwrites the last ID, but if there is no call of driving (if a wanted value is already reached), then it will never create a new ID, resulting in the newest ID being the last. By forcing the program to tell it to drive at 0 speed, it will create a new ID (if you are still within the 500 milliseconds) and afterwards overwriting the last ID, even though the value is already reached.
 

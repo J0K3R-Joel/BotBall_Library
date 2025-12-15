@@ -1111,7 +1111,7 @@ class Rubber_Wheels_two(base_driver):
         '''
         self.check_instances_buttons()
         theta = 0
-        adjuster = 100
+        adjuster = int(speed/15)  # 15 is just a value that worked the best
         hit = False
         instances = self.right_wheel, self.left_wheel, self.button_fl, self.button_fr
         if speed < 0:
@@ -1146,20 +1146,27 @@ class Rubber_Wheels_two(base_driver):
         if drive_dir and hit:
             self.drive_straight(200, -speed)
 
-    def align_drive_front(self, drive_bw: bool = True, millis: int = 2000) -> None:
+    def align_drive_front(self, drive_bw: bool = True, millis: int = 2000, speed: int = None) -> None:
         '''
         aligning front by bumping into something, so both buttons on the front will be pressed. If there's an error by pressing the buttons, a fail save will occur. If at will it also drive backwards a little bit to be able to turn after it bumped into something
 
         Args:
             drive_bw (bool, optional): If you desire to drive backward a little bit (default: True) -> (but sometimes you want to stay aligned at the object)
             millis (int): The maximum amount of time (in milliseconds) it is allowed to try to align itself (default: 2000)
+            speed (int): How fast the robot should drive (gets converted to a positive value) (default: ds_speed)
+
 
         Returns:
             None
         '''
         self.check_instances_buttons_front()
+
+        if speed is None:
+            speed = self.ds_speed
+
+        speed = abs(speed)
         theta = 0
-        adjuster = 100
+        adjuster = int(speed/15)  # 15 is just a value that worked the best
         hit = False
         startTime: float = k.seconds()
         self.right_wheel.drive(0)  # this is to avoid threading-problems
@@ -1177,14 +1184,14 @@ class Rubber_Wheels_two(base_driver):
                 self.right_wheel.backward_max()
             else:
                 if theta < 10 and theta > -10:
-                    self.right_wheel.drive_dfw()
-                    self.left_wheel.drive_dfw()
+                    self.right_wheel.drive(speed)
+                    self.left_wheel.drive(speed)
                 elif theta < 10:
-                    self.right_wheel.drive_dfw(-adjuster*3)
-                    self.left_wheel.drive_dfw(adjuster)
+                    self.right_wheel.drive(speed-adjuster*3)
+                    self.left_wheel.drive(speed+adjuster)
                 else:
-                    self.left_wheel.drive_dfw(-adjuster*3)
-                    self.right_wheel.drive_dfw(adjuster)
+                    self.left_wheel.drive(speed-adjuster*3)
+                    self.right_wheel.drive(speed+adjuster)
                 k.msleep(10)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
         if drive_bw and hit:
@@ -1241,12 +1248,11 @@ class Rubber_Wheels_two(base_driver):
         if speed is None:
             speed = self.ds_speed
         theta = 0
-        adjuster = 100
+        adjuster = int(speed/15)  # 15 is just a value that worked the best
         start_time = k.seconds()
         instances = self.left_wheel, self.right_wheel
         if speed < 0:
             instances = self.right_wheel, self.left_wheel
-            adjuster = -adjuster
 
         self.right_wheel.drive(0)  # this is to avoid threading-problems
         if condition == "==":
@@ -1298,11 +1304,10 @@ class Rubber_Wheels_two(base_driver):
         self.check_instances_buttons()
         theta = 0.0
         startTime = k.seconds()
-        adjuster = 100
+        adjuster = int(speed/15)  # 15 is just a value that worked the best
         instances = self.left_wheel, self.right_wheel, self.button_fl, self.button_fr
         if speed < 0:
             instances = self.right_wheel, self.left_wheel, self.button_bl, self.button_br
-            adjuster = -adjuster
 
         self.right_wheel.drive(0)  # this is to avoid threading-problems
         if condition == 'let' or condition == '<=':  # let -> less or equal than
@@ -1502,7 +1507,6 @@ class Rubber_Wheels_two(base_driver):
                 time.sleep(degree_try_time / nums[0])
             else:
                 time.sleep(degree_try_time)
-            instances[0].stop()
 
         def direction_two(loop_index: int, speed: int):
             instances[1].drive(-speed)
@@ -1513,7 +1517,6 @@ class Rubber_Wheels_two(base_driver):
                     time.sleep(degree_try_time)
             else:
                 time.sleep(degree_try_time)
-            instances[1].stop()
 
         start_time = k.seconds()
         while True:
@@ -1653,11 +1656,10 @@ class Rubber_Wheels_two(base_driver):
             speed = self.ds_speed
         startTime: float = k.seconds()
         theta = 0.0
-        adjuster = 100
+        adjuster = int(speed/15)  # 15 is just a value that worked the best
         instances = self.left_wheel, self.right_wheel
         if speed < 0:
             instances = self.right_wheel, self.left_wheel
-            adjuster = -adjuster
 
         while k.seconds() - startTime < millis / 1000:
             if theta < 10 and theta > -10:
@@ -1671,6 +1673,8 @@ class Rubber_Wheels_two(base_driver):
                 instances[1].drive(speed + adjuster)
             k.msleep(10)
             theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+        instances[0].stop()
+        instances[1].stop()
 
     def next_to_onto_line(self, leaning_side: str = None) -> None:
         '''
@@ -1865,13 +1869,12 @@ class Rubber_Wheels_two(base_driver):
 
         self.isClose = False
         theta = 0.0
-        adjuster = 100
+        adjuster = int(speed/15)  # 15 is just a value that worked the best
         instances = self.left_wheel, self.right_wheel
 
         self.right_wheel.drive(0)  # this is to avoid threading-problems
         if speed < 0:
             instances = self.right_wheel, self.left_wheel
-            adjuster = -adjuster
 
         if self.distance_sensor.current_value() > 1800: # this is because if it is already too close, it will back out a little bit to get the best result
             while self.distance_sensor.current_value() > 1800 and (
@@ -2010,9 +2013,11 @@ class Rubber_Wheels_two(base_driver):
         if direction == 'right':
             while time.time() - start_time < 2 * value:
                 self.left_wheel.drive(speed)
+            self.left_wheel.stop()
         elif direction == 'left':
             while time.time() - start_time < 2 * value:
                 self.right_wheel.drive(speed)
+            self.right_wheel.stop()
 
     def turn_degrees(self, direction: str, degree: int) -> None:
         '''
@@ -2050,7 +2055,8 @@ class Rubber_Wheels_two(base_driver):
             while time.time() - start_time < value:
                 self.left_wheel.drive_dbw()
                 self.right_wheel.drive_dfw()
-        k.msleep(200)
+        self.left_wheel.stop()
+        self.right_wheel.stop()
 
     def turn_wheel(self, direction: str, millis: int, speed: int = None) -> None:
         '''
@@ -2071,14 +2077,15 @@ class Rubber_Wheels_two(base_driver):
         if direction == 'left':
             while (time.time() - start_time) < millis / 1000:
                 self.right_wheel.drive(speed)
+            self.right_wheel.stop()
         elif direction == 'right':
             while (time.time() - start_time) < millis / 1000:
                 self.left_wheel.drive(speed)
+            self.left_wheel.stop()
 
     def turn_wheel_condition_digital(self, direction: str, instance: Digital, condition: str, value: int,
                                      millis: int = 9999999, speed: int = None) -> None:
         '''
-        @TODO: test this function out
         Turning with one wheel to the desired direction until a button gets pressed (or released)
 
         Args:
@@ -2119,7 +2126,7 @@ class Rubber_Wheels_two(base_driver):
         else:
             log('The "condition" parameter can only be something like "==; !="', in_exception=True)
             raise ValueError('The "condition" parameter can only be something like "==; !="')
-
+        wheel_to_drive.stop()
 
     def turn_wheel_condition_analog(self, direction: str, instance: Analog, condition: str, value: int,
                                     millis: int = 9999999, speed: int = None) -> None:
@@ -2177,7 +2184,7 @@ class Rubber_Wheels_two(base_driver):
         else:
             log('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="', in_exception=True)
             raise ValueError('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="')
-
+        wheel_to_drive.stop()
 
 
     def turn_degrees_condition_digital(self, direction: str, instance: Digital, condition: str, value: int,
@@ -2232,6 +2239,9 @@ class Rubber_Wheels_two(base_driver):
             log('The "condition" parameter can only be something like "==; !="', in_exception=True)
             raise ValueError('The "condition" parameter can only be something like "==; !="')
 
+        first_wheel.stop()
+        second_wheel.stop()
+
         if found and k.seconds() - start_time < self.ONEEIGHTY_DEGREES_SECS:  # if it was found in the right amount of time
             turning_divisor = self.ONEEIGHTY_DEGREES_SECS / (k.seconds() - start_time)
             return 180 // turning_divisor  # returns the degrees
@@ -2261,9 +2271,14 @@ class Rubber_Wheels_two(base_driver):
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
             raise ValueError('Only "right" or "left" are valid options for the "direction" parameter')
 
-        if not isinstance(instance, Digital):
-            log('The "instance" parameter needs to be a child of a Digital class', in_exception=True)
-            raise ValueError('The "instance" parameter needs to be a child of a Digital class')
+        if not isinstance(instance, Analog):
+            log('The "instance" parameter needs to be a child of a Analog class', in_exception=True)
+            raise ValueError('The "instance" parameter needs to be a child of a Analog class')
+
+        if speed is None:
+            speed = self.ds_speed
+        else:
+            speed = abs(speed)
 
         first_wheel, second_wheel = (self.right_wheel, self.left_wheel) if direction == 'left' else (self.left_wheel, self.right_wheel)
         self.right_wheel.drive(0)  # this is to avoid threading-problems
@@ -2309,6 +2324,8 @@ class Rubber_Wheels_two(base_driver):
         else:
             log('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="', in_exception=True)
             raise ValueError('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="')
+        first_wheel.stop()
+        second_wheel.stop()
 
         if found and k.seconds() - start_time < self.ONEEIGHTY_DEGREES_SECS:  # if it was found in the right amount of time
             turning_divisor = self.ONEEIGHTY_DEGREES_SECS / (k.seconds() - start_time)
@@ -2858,7 +2875,7 @@ class Mechanum_Wheels_four(base_driver):
         startTime: float = k.seconds()
         theta = 0
         t = 10
-        adjuster = 100
+        adjuster = int(speed/15)  # 15 is just a value that worked the best
         lower_theta = 500
         higher_theta = 3000
         speed = abs(speed)
@@ -2944,7 +2961,7 @@ class Mechanum_Wheels_four(base_driver):
             speed = self.ds_speed
         startTime: float = k.seconds()
         theta = 0
-        adjuster = 100
+        adjuster = int(speed/15)  # 15 is just a value that worked the best
         while k.seconds() - startTime < millis / 1000:
             if 1000 > theta > -1000:
                 self.fl_wheel.drive(speed)
@@ -2999,7 +3016,7 @@ class Mechanum_Wheels_four(base_driver):
 
         startTime: float = k.seconds()
         theta_z = 0
-        adjuster = 100
+        adjuster = int(speed/15)  # 15 is just a value that worked the best
         if side == 'left':
             adjuster = -adjuster
         speed = abs(speed)
@@ -3430,7 +3447,7 @@ class Mechanum_Wheels_four(base_driver):
         self.isClose = False
         theta = 0
         t = 10
-        adjuster = 100
+        adjuster = int(speed/15)  # 15 is just a value that worked the best
         lower_theta = 500
         higher_theta = 3000
         speed = abs(speed)
@@ -3553,7 +3570,7 @@ class Mechanum_Wheels_four(base_driver):
         self.check_instance_distance_sensor()
         self.isClose = False
         theta = 0.0
-        adjuster = 100
+        adjuster = int(speed/15)  # 15 is just a value that worked the best
         if self.distance_sensor.current_value() > 1800:
             while self.distance_sensor.current_value() > 1800 and (
                     not self.button_bl.is_pressed() and not self.button_br.is_pressed()):  # this is because if it is already too close, it will back out a little bit to get the best result
@@ -3768,7 +3785,7 @@ class Mechanum_Wheels_four(base_driver):
         if speed is None:
             speed = self.ds_speed
         theta = 0
-        adjuster = 100
+        adjuster = int(speed/15)  # 15 is just a value that worked the best
         start_time = k.seconds()
         self.fr_wheel.drive(0)  # this is to avoid threading-problems
 
@@ -3841,7 +3858,7 @@ class Mechanum_Wheels_four(base_driver):
         startTime: float = k.seconds()
         theta = 0
         t = 10
-        adjuster = 100
+        adjuster = int(speed/15)  # 15 is just a value that worked the best
         lower_theta = 500
         higher_theta = 3000
         speed = abs(speed)
@@ -4111,7 +4128,7 @@ class Mechanum_Wheels_four(base_driver):
         theta = 0.0
         ports = self.button_fl, self.button_fr
         startTime = k.seconds()
-        adjuster = 100
+        adjuster = int(speed/15)  # 15 is just a value that worked the best
         self.fr_wheel.drive(0)  # this is to avoid threading-problems
         if speed < 0:
             ports = self.button_bl, self.button_br

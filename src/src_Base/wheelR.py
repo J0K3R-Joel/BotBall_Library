@@ -350,3 +350,6 @@ class WheelR:
         start_time = k.seconds()
         while k.seconds() - start_time < millis/1000:
             self.drive(speed)
+
+    def stop(self) -> None:
+        MOTOR_SCHEDULER.stop_motor(self.port)

@@ -20,9 +20,9 @@ This repository provides a set of utility classes and communication tools design
 
 - Sensor interaction (`Digital`, `DistanceSensor`, `LightSensor`)
 
-- Robot driving (`driveR_two`, `driveR_four`)
+- Robot driving (`base_driver`, `Rubber_Wheels_two`, `Mechanum_Wheels_four`, `MOTOR_SCHEDULER`, `WheelR`)
 
-- Servo / micro-servo usage (`ServoX`)
+- Servo / micro-servo usage (`ServoX`, `SERVO_SCHEDULER`)
 
 - Camera detection (`CameraObjectDetector`, `CameraBrightnessDetector`, `CameraManager`)
 
@@ -30,7 +30,7 @@ This repository provides a set of utility classes and communication tools design
 
 - File management and logging (`FileR`, `logger`)
 
-- Simulation utilities (`FakeR`)
+- Simulation utilities (`FakeR`, `PausR`)
 
 - High-level utility functions (`Util`)
 
@@ -48,51 +48,45 @@ The repository is organized as follows:
   
   - `Digital` – Digital buttons
   
+  - `Analog` - Analog sensors 
+  
   - `DistanceSensor` – Analog distance sensor
-  
-  - `LightSensor` – Analog light sensor
 
+  - `LightSensor` – Analog light sensor
 - **Movement Classes:**
-  
-  - `driveR_two` – Two-motor drive system
-  
-  - `driveR_four` – Four-motor drive system
-  
+  - `WheelR` - functionality for wheels
+  - `Rubber_Wheels_two` – Two-motor drive system using rubber wheels
+  - `Mechanum_Wheels_four` – Four-motor drive system
+  - `MOTOR_SCHEDULER` - Schedules which motor function should be executed
   - `ServoX` - Servo / micro-servo controlling
+  - `SERVO_SCHEDULER` -  Schedules which servo function should be executed
 
 - **Camera Classes:**
-  
+
   - `CameraManager` - Threadsafe camera control
-  
+
   - `CameraObjectDetector` - Object / color / shape detection
-  
+
   - `CameraBrightnessDetector` - Segment-based brightness detection
-
 - **Communication Classes:**
-  
+
   - `RobotCommunicator` – TCP/IP messaging
-  
+
   - `WifiConnector` – WiFi-based communication
-
 - **Utilities & Helpers:**
-  
-  - `Util` – High-level utility functions for sensors and waiting behaviors
-  
-  - `FakeR` – Simulation for threaded main execution
-  
-  - `FileR` – File management
-  
-  - `logger` – Custom logging functions
-  
-  - `stop_manager` - Stops certain activity
 
+  - `Util` – High-level utility functions for sensors and waiting behaviors
+  - `FakeR` – Simulation for threaded main execution
+  - `FileR` – File management
+  - `logger` – Custom logging functions
+  - `stop_manager` - Stops certain activity
+  - `PausR` - optional execution of a function when using communication 
 - **Documentation:**
-  
-  - Detailed explanations are included for each class in the `doc/` folder.
+  - Detailed explanations are included for each class in the [./doc/explainer](./doc/explainer)` folder.
 
 ---
 
-## Documentation
+## Documentation - Codes
 
 Detailed explanations of the classes are included in the repository:
 
@@ -102,7 +96,7 @@ Detailed explanations of the classes are included in the repository:
 
 - [distance_sensor.md](./doc/explainer/distance_sensor.md) – Full explanation and usage guide for the `DistanceSensor` class
 
-- [driveR.md](./doc/explainer/driveR.md) – Full explanation and usage guide for the `driveR_two` and `driveR_four` classes
+- [driveR.md](./doc/explainer/driveR.md) – Full explanation and usage guide for the `Rubber_Wheels_two` and `Rubber_Wheels_four` classes
 
 - [fake.md](./doc/explainer/fake.md) – Full explanation and usage guide for the `FakeR` class
 
@@ -126,6 +120,12 @@ Detailed explanations of the classes are included in the repository:
 
 - [stop_manager.md](./doc/explainer/stop_manager.md) - Full explanation and usage guide for the `stop_manager` functions
 
+- [pausR.md](./doc/explainer/pausR.md) - Full explanation and usage guide for the `PausR` class
+
+- [motor_scheduler.md](./doc/explainer/motor_scheduler.md) - Full explanation and usage guide for the `MotorScheduler` class
+
+- [servo_scheduler.md](./doc/explainer/servo_scheduler.md) - Full explanation and usage guide for the `ServoScheduler` class
+
 ---
 
 ## Installation
@@ -145,7 +145,7 @@ git clone https://github.com/J0K3R-Joel/BotBall_Library.git
 
 5. Go to the [KIPR Wombat firmware](https://www.kipr.org/kipr/hardware-software/kipr-wombat-firmware) page
 
-6. Download the latest "KIPR Wombat OS Image" (scroll down).
+6. Download the latest "KIPR Wombat OS Image" (scroll down!).
 
 7. Flash the image onto the robot following the instructions on the KIPR website. Use a software like [Raspberry Pi Imager](https://www.raspberrypi.com/software) for flashing the image file onto the micro SD card of the controller (You need to unscrew the "shell" of the controller to get to the micro SD card)
 
@@ -167,13 +167,15 @@ sudo bash config.sh
 
 Example usage for most classes is provided in the documentation files linked above.
 
-Additionally, an example usage for the `FakeR` class is provided in [./doc/explainer/user_server_client_fake.md](./doc/explainer/user_server_client_fake.md) file, since this will be the best exercise for the beginning, if you do not have experience with this library. This got two new users (one for as a client, the other as the server)
+Additionally, an example usage for the `FakeR` class (most complex class) is provided in [./doc/explainer/user_server_client_fake.md](./doc/explainer/user_server_client_fake.md) file, since this will be the best exercise (for some more experienced use), if you do not have experience with this library. This got two new users (one for as a client, the other as the server)
 
 Other classes that got an entire user as test purpose:
 
 - `Camera` -> `CameraManager`, `CameraObjectDetector`, `CameraBrightnessDetector`
 
 - `WIFI` -> `WifiConnector` 
+
+- `BIAS` -> everything that needs some way of calibration or stuff that calibration needs
 
 - `COMM` -> `RobotCommunicator` 
 
@@ -184,18 +186,14 @@ Other classes that got an entire user as test purpose:
 ## Additional Information
 
 - Go to [./doc/explainer/user_server_client_fake.md](./doc/explainer/user_server_client_fake.md) to get an example usage with the `FakeR` class
-
 - Check out [./doc/Sensors.md](./doc/Sensors.md) for every sensor description
-
 - Check out [./doc/Considerations.md](./doc/Considerations.md) for every (more) detailed information and good-to-knows
-
 - Check out [./doc/Common_Issues.md](./doc/Common_Issues.md) for the solutions of common issues that might occur
-
 - If you are using my library, then you need to calibrate the robot. Check out [./doc/Calibrations.md](./doc/Calibrations.md) for further information
-
 - `driveR` is very dependent on the right placement of the sensors, which you can find in [./Standard_Construction.md](./Standard_Construction.md). Make sure everything is positioned correctly
-
 - I will talk very often about "rubber wheels", what I mean by that are the "Solarbotic" wheels (including the caster ball).
+- Many classes have a `R` in the end of the name, this is solely for fun / so it sounds a little bit better. It does not really have any meaning whatsoever 
+- Read my documentations, this will help you out a lot. I tried to document everything, use it. Other Teams do NOT have this!
 
 ----
 

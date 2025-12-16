@@ -16,6 +16,7 @@ try:
     import threading
     import uuid
     import math
+    from typing import Optional
     from scipy.interpolate import interp1d
     from wheelR import WheelR  # selfmade
     from analog import Analog  # selfmade
@@ -232,7 +233,7 @@ class base_driver:
         '''
         return self.ds_speed
 
-    def get_distances(self, calibrated: bool = False) -> tuple:
+    def get_distances(self, calibrated: bool = False) -> Optional[tuple]:
         '''
         Getting the disances from the distances_arr.txt file
 
@@ -1020,7 +1021,7 @@ class Rubber_Wheels_two(base_driver):
             self.left_wheel.drive_dfw()
             self.right_wheel.drive_dbw()
         endTime = time.time()
-        self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime)# * 0.995
+        self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime)
         self.NINETY_DEGREES_SECS = endTime - startTime
         self.break_all_motors()
         if output:
@@ -1123,7 +1124,16 @@ class Rubber_Wheels_two(base_driver):
         log(f"Calibration finished. The distance sensor should be like {self.distance_far_mm[-1]}mm away of the object.")
 
     # ======================== PUBLIC METHODS =======================
-    def break_all_motors(self):
+    def break_all_motors(self) -> None:
+        '''
+        stops both motors immediately, without letting them roll to an end
+
+        Args:
+            None
+
+        Returns:
+            None
+        '''
         self.left_wheel.stop()
         self.right_wheel.stop()
 
@@ -1173,6 +1183,8 @@ class Rubber_Wheels_two(base_driver):
                     instances[0].drive(speed + adjuster)
                 k.msleep(10)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+        self.break_all_motors()
+
         if drive_dir and hit:
             self.drive_straight(200, -speed)
 
@@ -1224,6 +1236,8 @@ class Rubber_Wheels_two(base_driver):
                     self.right_wheel.drive(speed+adjuster)
                 k.msleep(10)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+        self.break_all_motors()
+
         if drive_bw and hit:
             self.drive_straight(200, -500)
 
@@ -1258,6 +1272,8 @@ class Rubber_Wheels_two(base_driver):
             else:
                 self.right_wheel.drive_mbw()
                 self.left_wheel.drive_mbw()
+        self.break_all_motors()
+
         if drive_fw and hit:
             self.drive_straight(200, 500)
 
@@ -1314,6 +1330,8 @@ class Rubber_Wheels_two(base_driver):
         else:
             log('Only "==" or "!=" is available for the condition!', important=True, in_exception=True)
             raise ValueError('Only "==" or "!=" is available for the condition!')
+        self.break_all_motors()
+
 
     def drive_straight_condition_analog(self, instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
         '''
@@ -1395,6 +1413,7 @@ class Rubber_Wheels_two(base_driver):
                     instances[0].drive(speed - adjuster * 3)
                 k.msleep(10)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+        self.break_all_motors()
 
 
     def turn_to_black_line(self, direction: str, millis: int = 80, speed: int = None) -> None:
@@ -1431,6 +1450,7 @@ class Rubber_Wheels_two(base_driver):
             log('Only "right" and "left" are valid commands for the direction!', in_exception=True)
             raise ValueError(
                 'turn_black_line() Exception: Only "right" and "left" are valid commands for the direction!')
+        self.break_all_motors()
 
     def drive_align_line(self, direction: str, speed: int = None) -> None:
         '''
@@ -1588,6 +1608,7 @@ class Rubber_Wheels_two(base_driver):
 
             speed = -speed
             i += 1
+        self.break_all_motors()
 
 
 
@@ -1642,6 +1663,8 @@ class Rubber_Wheels_two(base_driver):
 
         if counter_drive and adjust_wanted:  #@TODO some kind of drift function here so the rear moves but the front stays still
             self.turn_to_black_line(direction[1], 20, speed=-speed)
+
+        self.break_all_motors()
 
     def black_line(self, millis: int, speed: int = None) -> None:
         '''
@@ -1774,6 +1797,8 @@ class Rubber_Wheels_two(base_driver):
                 while self.light_sensor_back.sees_white():
                     instances[1].drive_mbw()
                     instances[0].drive_mfw()
+        self.break_all_motors()
+
 
     def align_on_black_line(self, direction: str = 'vertical', leaning_side: str = None) -> None:
         '''
@@ -2007,6 +2032,8 @@ class Rubber_Wheels_two(base_driver):
                         instances[0].drive(speed - adjuster * 3)
                     k.msleep(10)
                     theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+        self.break_all_motors()
+
 
 
     def turn_degrees_far(self, direction: str, degree: int, straight: bool = True) -> None:
@@ -2382,7 +2409,7 @@ class Mechanum_Wheels_four(base_driver):
                  Instance_light_sensor_front: LightSensor = None,
                  Instance_light_sensor_back: LightSensor = None,
                  Instance_light_sensor_side: LightSensor = None,
-                 Instance_distance_sensor: DistanceSensor = None,
+                 Instance_distance_sensor: DistanceSensor = None
                  ):
 
         super().__init__(DS_SPEED, controller_standing, Instance_front_right_wheel, Instance_front_left_wheel, Instance_back_left_wheel, Instance_back_right_wheel)
@@ -2812,7 +2839,7 @@ class Mechanum_Wheels_four(base_driver):
             self.bl_wheel.drive(self.fl_wheel.get_default_speed()//2)
             self.br_wheel.drive(-self.fl_wheel.get_default_speed()//2)
         endTime = time.time()
-        self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime) * 0.73
+        self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime)# * 0.73
         self.NINETY_DEGREES_SECS = endTime - startTime
         if output:
             log('DEGREES CALIBRATED')
@@ -2913,6 +2940,22 @@ class Mechanum_Wheels_four(base_driver):
 
 
     # ======================== PUBLIC METHODS =======================
+
+    def break_all_motors(self):
+        '''
+        stops all four motors immediately, without letting them roll to an end
+
+        Args:
+            None
+
+        Returns:
+            None
+        '''
+        self.fr_wheel.stop()
+        self.fl_wheel.stop()
+        self.br_wheel.stop()
+        self.bl_wheel.stop()
+
 
     def drive_side(self, direction: str, millis: int, speed: int = None) -> None:
         '''
@@ -3036,6 +3079,7 @@ class Mechanum_Wheels_four(base_driver):
                 self.br_wheel.drive(speed - adjuster)
             k.msleep(10)
             theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
+        self.break_all_motors()
 
     def drive_diagonal(self, end: str, side: str, millis: int, speed: int = None) -> None:
         # side -> left + right
@@ -3126,6 +3170,7 @@ class Mechanum_Wheels_four(base_driver):
                     instances[1].drive(speed)
                 k.msleep(t)
                 theta_z += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
+        self.break_all_motors()
 
 
     def turn_degrees_far(self, direction: str, degree: int, speed: int = None) -> None:
@@ -3171,6 +3216,7 @@ class Mechanum_Wheels_four(base_driver):
             while time.time() - start_time < 2 * value:
                 self.fr_wheel.drive(speed)
                 self.br_wheel.drive(speed)
+        self.break_all_motors()
 
     def turn_degrees(self, direction: str, degree: int) -> None:
         '''
@@ -3209,6 +3255,7 @@ class Mechanum_Wheels_four(base_driver):
                 self.fr_wheel.drive_mfw()
                 self.bl_wheel.drive_mbw()
                 self.br_wheel.drive_mfw()
+        self.break_all_motors()
 
     def turn_wheel_condition_digital(self, direction: str, instance: Digital, condition: str, value: int,
                                      millis: int = 9999999, speed: int = None) -> None:
@@ -3256,6 +3303,7 @@ class Mechanum_Wheels_four(base_driver):
         else:
             log('The "condition" parameter can only be something like "==; !="', in_exception=True)
             raise ValueError('The "condition" parameter can only be something like "==; !="')
+        self.break_all_motors()
 
 
     def turn_wheel_condition_analog(self, direction: str, instance: Analog, condition: str, value: int,
@@ -3320,6 +3368,7 @@ class Mechanum_Wheels_four(base_driver):
         else:
             log('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="', in_exception=True)
             raise ValueError('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="')
+        self.break_all_motors()
 
 
 
@@ -3358,27 +3407,31 @@ class Mechanum_Wheels_four(base_driver):
         first_wheel, second_wheel = (self.fr_wheel, self.br_wheel) if direction == 'left' else (self.fl_wheel, self.bl_wheel)
         third_wheel, fourth_wheel = (self.fl_wheel, self.bl_wheel) if first_wheel == self.fr_wheel else (self.fr_wheel, self.br_wheel)
         self.fr_wheel.drive(0)  # this is to avoid threading-problems
+        last_value = instance.current_value()
 
         if condition == "!=":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() != value:
+                last_value = instance.current_value()
                 first_wheel.drive(speed)
                 second_wheel.drive(speed)
                 third_wheel.drive(-speed)
                 fourth_wheel.drive(-speed)
-            if instance.current_value() != value:
+            if last_value != value:
                 found = True
 
         elif condition == "==":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() == value:
+                last_value = instance.current_value()
                 first_wheel.drive(speed)
                 second_wheel.drive(speed)
                 third_wheel.drive(-speed)
                 fourth_wheel.drive(-speed)
-            if instance.current_value() == value:
+            if last_value == value:
                 found = True
         else:
             log('The "condition" parameter can only be something like "==; !="', in_exception=True)
             raise ValueError('The "condition" parameter can only be something like "==; !="')
+        self.break_all_motors()
 
         if found and k.seconds() - start_time < self.ONEEIGHTY_DEGREES_SECS:  # if it was found in the right amount of time
             turning_divisor = self.ONEEIGHTY_DEGREES_SECS / (k.seconds() - start_time)
@@ -3418,58 +3471,66 @@ class Mechanum_Wheels_four(base_driver):
         self.fr_wheel.drive(0)  # this is to avoid threading-problems
         start_time = k.seconds()
         found = False
+        last_value = instance.current_value()
 
         if condition == ">=" or condition == "heq":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() >= value:
+                last_value = instance.current_value()
                 first_wheel.drive(speed)
                 second_wheel.drive(speed)
                 third_wheel.drive(-speed)
                 fourth_wheel.drive(-speed)
-            if instance.current_value() >= value:
+            if last_value >= value:
                 found = True
         elif condition == "<=" or condition == "leq":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() <= value:
+                last_value = instance.current_value()
                 first_wheel.drive(speed)
                 second_wheel.drive(speed)
                 third_wheel.drive(-speed)
                 fourth_wheel.drive(-speed)
-            if instance.current_value() <= value:
+            if last_value <= value:
                 found = True
         elif condition == "<" or condition == "lt":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() < value:
+                last_value = instance.current_value()
                 first_wheel.drive(speed)
                 second_wheel.drive(speed)
                 third_wheel.drive(-speed)
                 fourth_wheel.drive(-speed)
-            if instance.current_value() < value:
+            if last_value < value:
                 found = True
         elif condition == ">" or condition == "ht":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() > value:
+                last_value = instance.current_value()
                 first_wheel.drive(speed)
                 second_wheel.drive(speed)
                 third_wheel.drive(-speed)
                 fourth_wheel.drive(-speed)
-            if instance.current_value() > value:
+            if last_value > value:
                 found = True
         elif condition == "==" or condition == "eq":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() == value:
+                last_value = instance.current_value()
                 first_wheel.drive(speed)
                 second_wheel.drive(speed)
                 third_wheel.drive(-speed)
                 fourth_wheel.drive(-speed)
-            if instance.current_value() == value:
+            if last_value == value:
                 found = True
         elif condition == "!=" or condition == "neq":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() != value:
+                last_value = instance.current_value()
                 first_wheel.drive(speed)
                 second_wheel.drive(speed)
                 third_wheel.drive(-speed)
                 fourth_wheel.drive(-speed)
-            if instance.current_value() != value:
+            if last_value != value:
                 found = True
         else:
             log('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="', in_exception=True)
             raise ValueError('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="')
+        self.break_all_motors()
 
         if found and k.seconds() - start_time < self.ONEEIGHTY_DEGREES_SECS:  # if it was found in the right amount of time
             turning_divisor = self.ONEEIGHTY_DEGREES_SECS / (k.seconds() - start_time)
@@ -3598,6 +3659,7 @@ class Mechanum_Wheels_four(base_driver):
 
                 k.msleep(t)
                 theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
+        self.break_all_motors()
 
 
     def drive_til_distance(self, mm_to_object: int, speed: int = None) -> None:
@@ -3653,6 +3715,7 @@ class Mechanum_Wheels_four(base_driver):
                 self.bl_wheel.drive(speed)
                 self.br_wheel.drive(speed)
                 k.msleep(20)
+            self.break_all_motors()
 
 
         combination = dict(zip(self.distance_far_mm, self.distance_far_values))
@@ -3703,6 +3766,7 @@ class Mechanum_Wheels_four(base_driver):
                     self.br_wheel.drive(speed - adjuster)
 
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
+            self.break_all_motors()
 
         if mm_to_object < self.distance_far_mm[0]:
             counter = self.distance_far_mm[0]
@@ -3727,6 +3791,7 @@ class Mechanum_Wheels_four(base_driver):
                     self.br_wheel.drive(speed - adjuster)
                 time.sleep(timer)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
+            self.break_all_motors()
 
 
     def shake_side(self, times: int, millis: int = 90) -> None:
@@ -3778,12 +3843,15 @@ class Mechanum_Wheels_four(base_driver):
                 self.fl_wheel.drive_dfw()
                 self.br_wheel.drive_dfw()
                 self.bl_wheel.drive_dfw()
+        self.break_all_motors()
+
         if drive_bw:
             self.fr_wheel.drive_dbw()
             self.fl_wheel.drive_dbw()
             self.br_wheel.drive_dbw()
             self.bl_wheel.drive_dbw()
             k.msleep(100)
+            self.break_all_motors()
 
     def align_drive_back(self, drive_fw: bool = True, max_millis: int = 9999999) -> None:
         '''
@@ -3815,12 +3883,15 @@ class Mechanum_Wheels_four(base_driver):
                 self.fl_wheel.drive_dbw()
                 self.br_wheel.drive_dbw()
                 self.bl_wheel.drive_dbw()
+        self.break_all_motors()
+
         if drive_fw:
             self.fr_wheel.drive_dfw()
             self.fl_wheel.drive_dfw()
             self.br_wheel.drive_dfw()
             self.bl_wheel.drive_dfw()
             k.msleep(50)
+            self.break_all_motors()
 
 
     def drive_straight_condition_digital(self, instance: Digital, condition: str, value: int, millis: int = 9999999, speed: int = None):
@@ -3886,7 +3957,7 @@ class Mechanum_Wheels_four(base_driver):
         else:
             log('Only "==" or "!=" is available for the condition!', important=True, in_exception=True)
             raise ValueError('Only "==" or "!=" is available for the condition!')
-        print()
+        self.break_all_motors()
 
     def drive_side_condition_analog(self, direction: str, instance: Analog, condition: str, value: int, millis: int = 9999999,
                                     speed: int = None) -> None:
@@ -4162,6 +4233,7 @@ class Mechanum_Wheels_four(base_driver):
                         theta = 0
                     k.msleep(t)
                     theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
+        self.break_all_motors()
 
 
     def drive_straight_condition_analog(self, instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
@@ -4272,6 +4344,7 @@ class Mechanum_Wheels_four(base_driver):
                     self.br_wheel.drive(speed - adjuster)
                 k.msleep(10)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
+        self.break_all_motors()
 
 
     def align_on_black_line(self, crossing: bool, direction: str = 'vertical', leaning_side: str = None,
@@ -4497,7 +4570,10 @@ class Mechanum_Wheels_four(base_driver):
                             instances[2].drive_dbw()
                             instances[3].drive_dfw()
 
+                    self.break_all_motors()
                     self.drive_side(d, 5)
+            self.break_all_motors()
+
         except Exception as e:
             log(str(e), important=True, in_exception=True)
 
@@ -4539,6 +4615,8 @@ class Mechanum_Wheels_four(base_driver):
             log('Only "right" and "left" are valid commands for the direction!', in_exception=True)
             raise ValueError(
                 'turn_black_line() Exception: Only "right" and "left" are valid commands for the direction!')
+
+        self.break_all_motors()
 
     def align_line(self, onLine: bool, direction: str = None, speed: int = None, maxDuration: int = 100) -> None:
         '''
@@ -4604,6 +4682,8 @@ class Mechanum_Wheels_four(base_driver):
                     else:
                         self.align_drive_front()
                     break
+            self.break_all_motors()
+
 
 
     def black_line(self, millis: int, speed: int = None) -> None:

@@ -1020,8 +1020,9 @@ class Rubber_Wheels_two(base_driver):
             self.left_wheel.drive_dfw()
             self.right_wheel.drive_dbw()
         endTime = time.time()
-        self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime) * 0.995
+        self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime)# * 0.995
         self.NINETY_DEGREES_SECS = endTime - startTime
+        self.break_all_motors()
         if output:
             log('DEGREES CALIBRATED')
 
@@ -1046,15 +1047,13 @@ class Rubber_Wheels_two(base_driver):
 
         self.set_TOTAL_mm_per_sec(mm=mm, sec=sec)
 
-
-    def calibrate_distance(self, min_sensor_value: int, start_mm: int, speed: int = None, step: float = 0.1) -> None:
+    def calibrate_distance(self, start_mm: int, speed: int = None, step: float = 0.2) -> None:
         '''
         calibrates the values for the distance sensor. HINT: calibrate the gyro first (if you did not already do that), so it drives straight. Also it calibrates one time, make sure it is as accurate as possible.
         It needs to be 800mm away from an object and both object has to be as parallel to each other as possible.
 
         Args:
             start_mm (int): known starting distance (e.g. 95)
-            min_sensor_value (int): the value until where the robot should drive (the lowest possible)
             speed (int, optional): constant speed (default: ds_speed)
             step (float, optional): time between two measurements (default: 0.1)
 
@@ -1063,18 +1062,41 @@ class Rubber_Wheels_two(base_driver):
             None
         '''
         if speed is None:
-            speed = self.ds_speed
+            speed = -self.ds_speed
+        else:
+            speed = -abs(speed)
 
         self.check_instance_distance_sensor()
 
         if self.mm_per_sec == 0:
-            log('You need to calibrate the mm per sec first. Execute the function calibrate_mm_per_sec first!', important=True, in_exception=True)
-            raise ValueError('You need to calibrate the mm per sec first. Execute the function calibrate_mm_per_sec first!')
+            log('You need to calibrate the mm per sec first. Execute the function calibrate_mm_per_sec first!',
+                important=True, in_exception=True)
+            raise ValueError(
+                'You need to calibrate the mm per sec first. Execute the function calibrate_mm_per_sec first!')
 
         self.distance_far_values = []
         self.distance_far_mm = []
 
-        threading.Thread(target=self.drive_straight, args=(9999999, -speed//2,)).start()
+        prev_value = None
+        prev_prev_value = None
+
+        def check_still_valid(sensor_val: int, prev_prev_value: int, prev_value: int):
+
+            if prev_prev_value is None:
+                prev_prev_value = sensor_val  # this values will always be 2 values behind the actual (sensor_val) value
+                return (True, prev_prev_value, prev_value)
+            elif prev_value is None:
+                prev_value = sensor_val  # this value will always be 1 value behind the actual (sensor_val) value
+                return (True, prev_prev_value, prev_value)
+
+            if prev_prev_value - prev_value < 0 or prev_prev_value - sensor_val < 0 or prev_value - sensor_val < 0:
+                return (False, prev_value, prev_value)
+            else:
+                prev_prev_value = prev_value
+                prev_value = sensor_val
+            return (True, prev_prev_value, prev_value)
+
+        threading.Thread(target=self.drive_straight, args=(9999999, speed // 2,)).start()  # will drive backwards!
 
         start_time = time.time()
 
@@ -1088,15 +1110,23 @@ class Rubber_Wheels_two(base_driver):
             self.distance_far_values.append(sensor_value)
             self.distance_far_mm.append(int(current_mm))
 
-            if sensor_value <= min_sensor_value:
+            checker, prev_prev_value, prev_value = check_still_valid(sensor_value, prev_prev_value, prev_value)
+
+            if not checker:
                 break
 
             time.sleep(step)
+        self.right_wheel._hard_stop()
+        self.right_wheel.drive(0)  # hier stehen geblieben -> austesten warum er noch fährt
         self.get_distances(calibrated=True)
 
-        log(f"Calibration finished. {len(self.distance_far_mm)} datapoints collected.")
+        log(f"Calibration finished. The distance sensor should be like {self.distance_far_mm[-1]}mm away of the object.")
 
     # ======================== PUBLIC METHODS =======================
+    def break_all_motors(self):
+        self.left_wheel.stop()
+        self.right_wheel.stop()
+
     def align_drive_side(self, speed: int, drive_dir: bool = True, millis: int = 5000) -> None:
         '''
         Drives (forwards or backwards, depending if the speed is positive or negative) until it bumps into something, but it won't readjust with the other wheel, resulting in aligning as far away as possible
@@ -1673,8 +1703,7 @@ class Rubber_Wheels_two(base_driver):
                 instances[1].drive(speed + adjuster)
             k.msleep(10)
             theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
-        instances[0].stop()
-        instances[1].stop()
+        self.break_all_motors()
 
     def next_to_onto_line(self, leaning_side: str = None) -> None:
         '''
@@ -2055,8 +2084,7 @@ class Rubber_Wheels_two(base_driver):
             while time.time() - start_time < value:
                 self.left_wheel.drive_dbw()
                 self.right_wheel.drive_dfw()
-        self.left_wheel.stop()
-        self.right_wheel.stop()
+        self.break_all_motors()
 
     def turn_wheel(self, direction: str, millis: int, speed: int = None) -> None:
         '''
@@ -2131,7 +2159,6 @@ class Rubber_Wheels_two(base_driver):
     def turn_wheel_condition_analog(self, direction: str, instance: Analog, condition: str, value: int,
                                     millis: int = 9999999, speed: int = None) -> None:
         '''
-        @TODO: test this function out
         Turning with one wheel to the desired direction until a value gets of an analog sensor gets reached
 
         Args:
@@ -2190,7 +2217,6 @@ class Rubber_Wheels_two(base_driver):
     def turn_degrees_condition_digital(self, direction: str, instance: Digital, condition: str, value: int,
                                     millis: int = 9999999, speed: int = None) -> int:
         '''
-        @TODO: test this function out
         Turning on the stand to the desired direction until a button gets pressed (or released)
 
         Args:
@@ -2221,26 +2247,28 @@ class Rubber_Wheels_two(base_driver):
         found = False
         first_wheel, second_wheel = (self.right_wheel, self.left_wheel) if direction == 'left' else (self.left_wheel, self.right_wheel)
         self.right_wheel.drive(0)  # this is to avoid threading-problems
+        last_value = instance.current_value()
 
         if condition == "!=":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() != value:
+                last_value = instance.current_value()
                 first_wheel.drive(speed)
                 second_wheel.drive(-speed)
-            if instance.current_value() != value:
+            if last_value != value:
                 found = True
 
         elif condition == "==":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() == value:
+                last_value = instance.current_value()
                 first_wheel.drive(speed)
                 second_wheel.drive(-speed)
-            if instance.current_value() == value:
+            if last_value == value:
                 found = True
         else:
             log('The "condition" parameter can only be something like "==; !="', in_exception=True)
             raise ValueError('The "condition" parameter can only be something like "==; !="')
 
-        first_wheel.stop()
-        second_wheel.stop()
+        self.break_all_motors()
 
         if found and k.seconds() - start_time < self.ONEEIGHTY_DEGREES_SECS:  # if it was found in the right amount of time
             turning_divisor = self.ONEEIGHTY_DEGREES_SECS / (k.seconds() - start_time)
@@ -2252,7 +2280,6 @@ class Rubber_Wheels_two(base_driver):
     def turn_degrees_condition_analog(self, direction: str, instance: Analog, condition: str, value: int,
                                    millis: int = 9999999, speed: int = None) -> int:
         '''
-        @TODO: test this function out
         Turning on the stand to the desired direction until a value gets of an analog sensor gets reached
 
         Args:
@@ -2284,48 +2311,54 @@ class Rubber_Wheels_two(base_driver):
         self.right_wheel.drive(0)  # this is to avoid threading-problems
         start_time = k.seconds()
         found = False
+        last_value = instance.current_value()
 
         if condition == ">=" or condition == "heq":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() >= value:
+                last_value = instance.current_value()
                 first_wheel.drive(speed)
                 second_wheel.drive(-speed)
-            if instance.current_value() >= value:
+            if last_value >= value:
                 found = True
         elif condition == "<=" or condition == "leq":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() <= value:
+                last_value = instance.current_value()
                 first_wheel.drive(speed)
                 second_wheel.drive(-speed)
-            if instance.current_value() <= value:
+            if last_value <= value:
                 found = True
         elif condition == "<" or condition == "lt":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() < value:
+                last_value = instance.current_value()
                 first_wheel.drive(speed)
                 second_wheel.drive(-speed)
-            if instance.current_value() < value:
+            if last_value < value:
                 found = True
         elif condition == ">" or condition == "ht":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() > value:
+                last_value = instance.current_value()
                 first_wheel.drive(speed)
                 second_wheel.drive(-speed)
-            if instance.current_value() > value:
+            if last_value > value:
                 found = True
         elif condition == "==" or condition == "eq":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() == value:
+                last_value = instance.current_value()
                 first_wheel.drive(speed)
                 second_wheel.drive(-speed)
-            if instance.current_value() == value:
+            if last_value == value:
                 found = True
         elif condition == "!=" or condition == "neq":
             while k.seconds() - start_time < millis / 1000 and instance.current_value() != value:
+                last_value = instance.current_value()
                 first_wheel.drive(speed)
                 second_wheel.drive(-speed)
-            if instance.current_value() != value:
+            if last_value != value:
                 found = True
         else:
             log('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="', in_exception=True)
             raise ValueError('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="')
-        first_wheel.stop()
-        second_wheel.stop()
+        self.break_all_motors()
 
         if found and k.seconds() - start_time < self.ONEEIGHTY_DEGREES_SECS:  # if it was found in the right amount of time
             turning_divisor = self.ONEEIGHTY_DEGREES_SECS / (k.seconds() - start_time)
@@ -2805,14 +2838,13 @@ class Mechanum_Wheels_four(base_driver):
 
         self.set_TOTAL_mm_per_sec(mm=mm, sec=sec)
 
-    def calibrate_distance(self, start_mm: int, min_sensor_value: int, speed: int = None, step: float = 0.1) -> None:
+    def calibrate_distance(self, start_mm: int, speed: int = None, step: float = 0.1) -> None:
         '''
         calibrates the values for the distance sensor. HINT: calibrate the gyro first (if you did not already do that), so it drives straight. Also it calibrates one time, make sure it is as accurate as possible.
         It needs to be 800mm away from an object and both object has to be as parallel to each other as possible.
 
         Args:
             start_mm (int): known starting distance (e.g. 95)
-            max_sensor_value (int): the value until where the robot should drive (the lower the value,
             speed (int, optional): constant speed (default: ds_speed)
             step (float, optional): time between two measurements (default: 0.1)
 
@@ -2821,7 +2853,9 @@ class Mechanum_Wheels_four(base_driver):
             None
         '''
         if speed is None:
-            speed = self.ds_speed
+            speed = -self.ds_speed
+        else:
+            speed = -abs(speed)
 
         self.check_instance_distance_sensor()
 
@@ -2833,7 +2867,29 @@ class Mechanum_Wheels_four(base_driver):
         self.distance_far_values = []
         self.distance_far_mm = []
 
-        threading.Thread(target=self.drive_straight, args=(9999999, -speed//2,)).start()
+        prev_value = None
+        prev_prev_value = None
+
+        def check_still_valid(sensor_val: int):
+            global prev_value, prev_prev_value
+
+            if prev_prev_value is None:
+                prev_prev_value = sensor_val  # this values will always be 2 values behind the actual (sensor_val) value
+                return True
+            elif prev_value is None:
+                prev_value = sensor_val  # this value will always be 1 value behind the actual (sensor_val) value
+                return True
+
+
+
+            if prev_prev_value - prev_value < 0 or prev_prev_value - sensor_val < 0 or prev_value - sensor_val < 0:
+                return False
+            else:
+                prev_prev_value = prev_value
+                prev_value = sensor_val
+            return True
+
+        threading.Thread(target=self.drive_straight, args=(9999999, speed//2,)).start()  # will drive backwards!
 
         start_time = time.time()
 
@@ -2847,7 +2903,7 @@ class Mechanum_Wheels_four(base_driver):
             self.distance_far_values.append(sensor_value)
             self.distance_far_mm.append(int(current_mm))
 
-            if sensor_value <= min_sensor_value:
+            if not check_still_valid(sensor_value):
                 break
 
             time.sleep(step)

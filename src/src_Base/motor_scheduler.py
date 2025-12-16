@@ -182,11 +182,12 @@ class MotorScheduler:
             None
         '''
         with self._lock:
-            for key, data in list(self._commands.items()):
-                if data['port'] == port:
-                    self._commands[key]['speed'] = 0
-                    k.freeze(port)
-                    break
+            if threading.current_thread().ident == self._last_valid_tid:
+                for key, data in list(self._commands.items()):
+                    if data['port'] == port:
+                        self._commands[key]['speed'] = 0
+                        k.freeze(port)
+                        break
 
     def stop_all(self) -> None:
         '''
@@ -200,9 +201,10 @@ class MotorScheduler:
         '''
         try:
             with self._lock:
-                for key, data in list(self._commands.items()):
-                    self._commands[key]['speed'] = 0
-                    k.freeze(data['port'])
+                if threading.current_thread().ident == self._last_valid_tid:
+                    for key, data in list(self._commands.items()):
+                        self._commands[key]['speed'] = 0
+                        k.freeze(data['port'])
         except Exception as e:
             log(str(e), in_exception=True)
 
@@ -234,7 +236,6 @@ class MotorScheduler:
             if len(self._commands) != 0:
                 for old_key, data in list(self._commands.items()):
                     self._old_funcs.add(old_key[1])
-                    break
                 self._commands.clear()
                 self.shutdown()
 

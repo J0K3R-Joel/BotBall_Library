@@ -1,4 +1,4 @@
-    #!/usr/bin/python3
+#!/usr/bin/python3
 import os, sys
 sys.path.append("/usr/lib")
 
@@ -11,16 +11,18 @@ from logger import *  # selfmade
 
 try:
     from typing import Optional
+    import math
     import _kipr as k
     from fileR import FileR  # selfmade
-    from analog import Analog
+    from analog import Analog  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 
 class LightSensor(Analog):
-    def __init__(self, position: str, Port:int, value_white : int =None, value_black : int=None, bias : int=500):  # position is the placement, where it got positioned -> this is for the text average calculation
-        super().__init__(Port)
+    def __init__(self, position: str, port: int, value_white : int = None, value_black: int = None, bias : int = None):  # position is the placement, where it got positioned -> this is for the text average calculation
+        # bias explanation: the amount of error that you allow from the light sensor. Higher value means it is more forgiving. Integer value is required. eg: 150; 500; 300
+        super().__init__(port)
         self.position = position
         self.val_white = value_white
         self.val_black = value_black
@@ -34,6 +36,8 @@ class LightSensor(Analog):
             self.val_white = self._white_load_from_file()
         if self.val_black is None:
             self.val_black = self._black_load_from_file()
+        if self.bias is None:
+            self.bias = self._calibrate_bias()
 
     # ======================== Helper =======================
     def _black_load_from_file(self) -> Optional[int]:
@@ -49,7 +53,7 @@ class LightSensor(Analog):
         file_path = os.path.join(self.BIAS_FOLDER, self.std_black_file_name + self.position + '.txt')
         if os.path.exists(file_path):
             return int(self.file_manager.reader(file_path))
-        return None
+        return None  # You can not raise an Exception here, since if you did not calibrate in the beginning, then you will always receive an exception
 
     def _white_load_from_file(self) -> Optional[int]:
         '''
@@ -64,8 +68,21 @@ class LightSensor(Analog):
         file_path = os.path.join(self.BIAS_FOLDER, self.std_white_file_name + self.position + '.txt')
         if os.path.exists(file_path):
             return int(self.file_manager.reader(file_path))
-        return None
+        return None  # You can not raise an Exception here, since if you did not calibrate in the beginning, then you will always receive an exception
 
+    def _calibrate_bias(self) -> Optional[int]:
+        if self.val_white is None or self.val_black is None:
+            return None  # You can not raise an Exception here, since if you did not calibrate in the beginning, then you will always receive an exception
+
+        diff = self.val_black - self.val_white
+        if diff < 0:
+            log('Black value needs to be higher than the white value. Since this is not the case, this means that you did something wrong in setting the light values!', in_exception=True)
+            raise ValueError('Black value needs to be higher than the white value. Since this is not the case, this means that you did something wrong in setting the light values!')
+        elif diff < 400:
+            log('The difference between the value of the black- and white light sensor is too small. Please consider either dropping the sensors lower (more near to the floor) or replacing your sensors!', in_exception=True)
+            raise ValueError('The difference between the value of the black- and white light sensor is too small. Please consider either dropping the sensors lower (more near to the floor) or replacing your sensors!')
+
+        return int(155.5 * math.log(diff) - 782)  # value between ~150 and ~500
 
     # ======================== Save-Methods =======================
 

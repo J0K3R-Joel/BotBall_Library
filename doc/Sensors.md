@@ -128,7 +128,7 @@ This sensor is reliable. It is works best for light emitting sources, like a lam
 
 ![](./img/large_tophat.png) ![](./img/small_tophat.png)
 
-The Tophat sensors (small and large) return a value from `200` - `3700`. The value they return depends on one factor:
+The Tophat sensors (small and large) return a value from `200` - `4050`. The value they return depends on one factor:
 
 - Greyscale of the ground where the sensor faces
 
@@ -195,5 +195,6 @@ The servo is great for using it as an arm or claw. It can move 180 degrees. It i
 The micro servo is not that consistent. It is very important to consider the following:
 
 - Even though you are able to set the value very high, you should not do this, since otherwise it will break. Since it is still a servo, it can move 180 degrees.
+- The micro servo can not withstand much weight. Be careful about how much the micro servo needs to move, they can break on too much weight or too much force what they need to lift / move.
 
 You are able to receive and set the value, just as the normal servo, since it uses the same functions. **HINT**: If you are using my library, you can just set the min and max value and from there on you are not able to exceed the numbers.

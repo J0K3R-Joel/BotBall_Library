@@ -68,12 +68,11 @@ def log(message: str, with_print: bool = True, important: bool = False, in_excep
             filename = caller_frame.f_code.co_filename
             location = func_name if func_name != "<module>" else os.path.basename(filename)
 
-    if important:
-        message = '=' * 10 + message + '=' * 10
-
     if in_exception:
-        log_entry = f"{'=' * 50} \n {now} [{location}] - [{label}] \n {message}\n{'=' * 50}\n"
+        log_entry = f"{'=' * 50} \n{'=' * 10} \n{now} [{location}] - [{label}] \n {message}{'=' * 10}\n{'=' * 50}\n"
     else:
+        if important:
+            message = '=' * 10 + message + '=' * 10
         log_entry = f"{now} [{location}] - [{label}] {message}\n"
 
     with open(LOG_FILE, 'a') as fwriter:

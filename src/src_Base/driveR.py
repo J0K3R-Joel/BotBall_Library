@@ -1048,15 +1048,15 @@ class Rubber_Wheels_two(base_driver):
 
         self.set_TOTAL_mm_per_sec(mm=mm, sec=sec)
 
-    def calibrate_distance(self, start_mm: int, speed: int = None, step: float = 0.2) -> None:
+    def calibrate_distance(self, start_mm: int, speed: int = None, step: float = 0.5) -> None:
         '''
         calibrates the values for the distance sensor. HINT: calibrate the gyro first (if you did not already do that), so it drives straight. Also it calibrates one time, make sure it is as accurate as possible.
         It needs to be 800mm away from an object and both object has to be as parallel to each other as possible.
 
         Args:
-            start_mm (int): known starting distance (e.g. 95)
+            start_mm (int): known starting distance (e.g. 95 -> distance sensor has a distance of 95mm from the flat object)
             speed (int, optional): constant speed (default: ds_speed)
-            step (float, optional): time between two measurements (default: 0.1)
+            step (float, optional): time between two measurements (default: 0.5)
 
 
         Returns:
@@ -1117,11 +1117,11 @@ class Rubber_Wheels_two(base_driver):
                 break
 
             time.sleep(step)
-        self.right_wheel._hard_stop()
-        self.right_wheel.drive(0)  # hier stehen geblieben -> austesten warum er noch fährt
+
+        self.break_all_motors()
         self.get_distances(calibrated=True)
 
-        log(f"Calibration finished. The distance sensor should be like {self.distance_far_mm[-1]}mm away of the object.")
+        log(f"Calibration finished. The distance sensor should be like {self.distance_far_mm[-1]}mm away of the object.\n================= You can now STOP the program, if nothing else should happen than calibrate_distance() =================")
 
     # ======================== PUBLIC METHODS =======================
     def break_all_motors(self) -> None:
@@ -1134,8 +1134,7 @@ class Rubber_Wheels_two(base_driver):
         Returns:
             None
         '''
-        self.left_wheel.stop()
-        self.right_wheel.stop()
+        self.left_wheel.stop_all()
 
     def align_drive_side(self, speed: int, drive_dir: bool = True, millis: int = 5000) -> None:
         '''
@@ -1895,7 +1894,7 @@ class Rubber_Wheels_two(base_driver):
         except Exception as e:
             log(str(e), important=True, in_exception=True)
 
-    def drive_til_distance(self, mm_to_object: int, speed: int = None) -> None:
+    def drive_til_distance(self, mm_to_object: int, speed: int = None) -> None:  # hier stehen geblieben -> schauen, warum er schief fährt am ende
         '''
         drive straight as long as the object in front of the distance sensor (in mm) is not in reach
 
@@ -2865,15 +2864,15 @@ class Mechanum_Wheels_four(base_driver):
 
         self.set_TOTAL_mm_per_sec(mm=mm, sec=sec)
 
-    def calibrate_distance(self, start_mm: int, speed: int = None, step: float = 0.1) -> None:
+    def calibrate_distance(self, start_mm: int, speed: int = None, step: float = 0.5) -> None:
         '''
         calibrates the values for the distance sensor. HINT: calibrate the gyro first (if you did not already do that), so it drives straight. Also it calibrates one time, make sure it is as accurate as possible.
         It needs to be 800mm away from an object and both object has to be as parallel to each other as possible.
 
         Args:
-            start_mm (int): known starting distance (e.g. 95)
+            start_mm (int): known starting distance (e.g. 95 -> distance sensor has a distance of 95mm from the flat object)
             speed (int, optional): constant speed (default: ds_speed)
-            step (float, optional): time between two measurements (default: 0.1)
+            step (float, optional): time between two measurements (default: 0.5)
 
 
         Returns:
@@ -2887,7 +2886,8 @@ class Mechanum_Wheels_four(base_driver):
         self.check_instance_distance_sensor()
 
         if self.mm_per_sec == 0:
-            log('You need to calibrate the mm per sec first. Execute the function calibrate_mm_per_sec first!', important=True, in_exception=True)
+            log('You need to calibrate the mm per sec first. Execute the function calibrate_mm_per_sec first!',
+                important=True, in_exception=True)
             raise ValueError(
                 'You need to calibrate the mm per sec first. Execute the function calibrate_mm_per_sec first!')
 
@@ -2897,26 +2897,23 @@ class Mechanum_Wheels_four(base_driver):
         prev_value = None
         prev_prev_value = None
 
-        def check_still_valid(sensor_val: int):
-            global prev_value, prev_prev_value
+        def check_still_valid(sensor_val: int, prev_prev_value: int, prev_value: int):
 
             if prev_prev_value is None:
                 prev_prev_value = sensor_val  # this values will always be 2 values behind the actual (sensor_val) value
-                return True
+                return (True, prev_prev_value, prev_value)
             elif prev_value is None:
                 prev_value = sensor_val  # this value will always be 1 value behind the actual (sensor_val) value
-                return True
-
-
+                return (True, prev_prev_value, prev_value)
 
             if prev_prev_value - prev_value < 0 or prev_prev_value - sensor_val < 0 or prev_value - sensor_val < 0:
-                return False
+                return (False, prev_value, prev_value)
             else:
                 prev_prev_value = prev_value
                 prev_value = sensor_val
-            return True
+            return (True, prev_prev_value, prev_value)
 
-        threading.Thread(target=self.drive_straight, args=(9999999, speed//2,)).start()  # will drive backwards!
+        threading.Thread(target=self.drive_straight, args=(9999999, speed // 2,)).start()  # will drive backwards!
 
         start_time = time.time()
 
@@ -2930,14 +2927,17 @@ class Mechanum_Wheels_four(base_driver):
             self.distance_far_values.append(sensor_value)
             self.distance_far_mm.append(int(current_mm))
 
-            if not check_still_valid(sensor_value):
+            checker, prev_prev_value, prev_value = check_still_valid(sensor_value, prev_prev_value, prev_value)
+
+            if not checker:
                 break
 
             time.sleep(step)
+
+        self.break_all_motors()
         self.get_distances(calibrated=True)
 
-        log(f"Calibration finished. {len(self.distance_far_mm)} datapoints collected.")
-
+        log(f"Calibration finished. The distance sensor should be like {self.distance_far_mm[-1]}mm away of the object.\n================= You can now STOP the program, if nothing else should happen than calibrate_distance() =================")
 
     # ======================== PUBLIC METHODS =======================
 

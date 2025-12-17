@@ -13,18 +13,11 @@ from logger import *
 try:
     import _kipr as k
     import time
-    import threading
-    import inspect
-    import hashlib
-    import random
-    from collections import defaultdict
     from fileR import FileR  # selfmade
     from motor_scheduler import MOTOR_SCHEDULER  # selfmade
     from stop_manager import stop_manager  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
-
-_GLOBAL_MAIN_ID = None
 
 class WheelR:
 
@@ -353,3 +346,6 @@ class WheelR:
 
     def stop(self) -> None:
         MOTOR_SCHEDULER.stop_motor(self.port)
+
+    def stop_all(self) -> None:
+        MOTOR_SCHEDULER.stop_all()

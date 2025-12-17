@@ -116,9 +116,9 @@ class MotorScheduler:
 
                 k.msleep(1)
 
-            if time.time() - self.last_activity > self.AUTO_SHUTDOWN_TIMEOUT:
-                self.stop_all()
-                self._running = False
+                if self.last_activity and time.time() - self.last_activity > self.AUTO_SHUTDOWN_TIMEOUT:
+                    self.shutdown()
+
 
         except Exception as e:
             log(str(e), in_exception=True)
@@ -182,10 +182,10 @@ class MotorScheduler:
             None
         '''
         with self._lock:
-            if threading.current_thread().ident == self._last_valid_tid:
+            if threading.current_thread().ident not in self.id_set:
                 for key, data in list(self._commands.items()):
                     if data['port'] == port:
-                        self._commands[key]['speed'] = 0
+                        self.set_speed(data['port'], 0)
                         k.freeze(port)
                         break
 
@@ -201,9 +201,9 @@ class MotorScheduler:
         '''
         try:
             with self._lock:
-                if threading.current_thread().ident == self._last_valid_tid:
+                if threading.current_thread().ident not in self.id_set:
                     for key, data in list(self._commands.items()):
-                        self._commands[key]['speed'] = 0
+                        self.set_speed(data['port'], 0)
                         k.freeze(data['port'])
         except Exception as e:
             log(str(e), in_exception=True)
@@ -235,7 +235,8 @@ class MotorScheduler:
         with self._lock:
             if len(self._commands) != 0:
                 for old_key, data in list(self._commands.items()):
-                    self._old_funcs.add(old_key[1])
+                    self._old_funcs.add(data['func_id'])
+                    #self.set_speed(data['port'], 0)
                 self._commands.clear()
                 self.shutdown()
 

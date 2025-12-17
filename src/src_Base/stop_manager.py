@@ -139,7 +139,7 @@ class StopManager:
         '''
         for w in self.wheels:
             try:
-                w._hard_stop()
+                w.stop()
             except Exception as e:
                 log(f"Error stopping motor: {e}", important=True, in_exception=True)
 

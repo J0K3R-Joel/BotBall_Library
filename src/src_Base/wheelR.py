@@ -44,7 +44,10 @@ class WheelR:
         elif speed > self.max_speed:
             speed = self.max_speed
 
-        MOTOR_SCHEDULER.set_speed(self.port, speed)
+        try:
+            MOTOR_SCHEDULER.set_speed(self.port, speed)
+        except Exception as e:
+            log(str(e), in_exception=True)
 
 
     def _hard_stop(self) -> None:
@@ -154,6 +157,7 @@ class WheelR:
         if speed < 0:
             speed = -speed
 
+        speed = int(speed)
         self._base_speed_func(speed)
     def forward(self, speed: int) -> None:
         '''
@@ -204,6 +208,8 @@ class WheelR:
         '''
         if speed > 0:
             speed = -speed
+
+        speed = int(speed)
         self._base_speed_func(speed)
     def backward(self, speed: int) -> None:
         '''
@@ -252,6 +258,7 @@ class WheelR:
         Returns:
             None
         '''
+        speed = int(speed)
         self._base_speed_func(speed)
 
     def drive_dfw(self, adjuster: int = None) -> None:
@@ -345,7 +352,13 @@ class WheelR:
             self.drive(speed)
 
     def stop(self) -> None:
-        MOTOR_SCHEDULER.stop_motor(self.port)
+        try:
+            MOTOR_SCHEDULER.stop_motor(self.port)
+        except Exception as e:
+            log(str(e), in_exception=True)
 
     def stop_all(self) -> None:
-        MOTOR_SCHEDULER.stop_all()
+        try:
+            MOTOR_SCHEDULER.stop_all()
+        except Exception as e:
+            log(str(e), in_exception=True)

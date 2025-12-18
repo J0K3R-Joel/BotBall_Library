@@ -1146,8 +1146,8 @@ class Rubber_Wheels_two(base_driver):
         Returns:
             None
         '''
-        self.left_wheel.stop()
         self.right_wheel.stop()
+        self.left_wheel.stop()
 
     def align_drive_side(self, speed: int, drive_dir: bool = True, millis: int = 5000) -> None:
         '''

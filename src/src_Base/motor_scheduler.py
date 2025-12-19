@@ -185,8 +185,8 @@ class MotorScheduler:
                 if threading.current_thread().ident not in self.id_set:
                     for key, data in list(self._commands.items()):
                         if data['port'] == port:
-                            self.set_speed(data['port'], 0)  # delete this (?)
-                            # self._commands[key]['speed'] = 0
+                            #self.set_speed(data['port'], 0)  # delete this (?)
+                            self._commands[key]['speed'] = 0
                             k.freeze(port)
                             break
         except Exception as e:
@@ -206,8 +206,8 @@ class MotorScheduler:
             with self._lock:
                 if threading.current_thread().ident not in self.id_set:
                     for key, data in list(self._commands.items()):
-                        self.set_speed(data['port'], 0)  # delete this (?) -> hard stop?
-                        # self._commands[key]['speed'] = 0
+                        #self.set_speed(data['port'], 0)  # delete this (?) -> hard stop?
+                        self._commands[key]['speed'] = 0
                         k.freeze(data['port'])
         except Exception as e:
             log(str(e), in_exception=True)

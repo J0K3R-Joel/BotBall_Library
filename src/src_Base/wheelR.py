@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import os, sys
+import threading
 
 sys.path.append("/usr/lib")
 
@@ -44,10 +45,8 @@ class WheelR:
         elif speed > self.max_speed:
             speed = self.max_speed
 
-        try:
-            MOTOR_SCHEDULER.set_speed(self.port, speed)
-        except Exception as e:
-            log(str(e), in_exception=True)
+
+        MOTOR_SCHEDULER.set_speed(self.port, speed)
 
 
     def _hard_stop(self) -> None:
@@ -352,13 +351,7 @@ class WheelR:
             self.drive(speed)
 
     def stop(self) -> None:
-        try:
-            MOTOR_SCHEDULER.stop_motor(self.port)
-        except Exception as e:
-            log(str(e), in_exception=True)
+        MOTOR_SCHEDULER.stop_motor(self.port)
 
     def stop_all(self) -> None:
-        try:
-            MOTOR_SCHEDULER.stop_all()
-        except Exception as e:
-            log(str(e), in_exception=True)
+        MOTOR_SCHEDULER.stop_all()

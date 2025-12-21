@@ -6,14 +6,14 @@
 
 # ==== Configuration ====
 DEST_BASE="/usr/lib"
-BIAS_FOLDER_NAME="bias"
+BIAS_ORIGINAL_FOLDER_NAME="bias"
 
 # ==== Skript-Verzeichnis bestimmen ====
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC_DIR="$(realpath "$SCRIPT_DIR/..")"
 
 # ==== Find the bias folder relative to script ====
-USB_BIAS_PATH="$SRC_DIR/$BIAS_FOLDER_NAME"
+USB_BIAS_PATH="$SRC_DIR/$BIAS_ORIGINAL_FOLDER_NAME"
 
 if [ ! -d "$USB_BIAS_PATH" ]; then
     echo "==========bias folder not found relative to script!=========="
@@ -21,8 +21,16 @@ if [ ! -d "$USB_BIAS_PATH" ]; then
 fi
 
 # ==== Copy all the bias files from the USB-Stick to the destination ====
-mkdir -p "$DEST_BASE/bias_files"
-cp -r "$USB_BIAS_PATH"/* "$DEST_BASE/bias_files"
+DEST_DIR="$DEST_BASE/bias_files"
+
+if [ -d "$DEST_DIR" ]; then
+    echo "Destination folder already exists: $DEST_DIR"
+    echo "Nothing copied."
+    exit 0
+fi
+
+mkdir -p "$DEST_DIR"
+cp -r "$USB_BIAS_PATH"/* "$DEST_DIR"
 
 sleep 2
 

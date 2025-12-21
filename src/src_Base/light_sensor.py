@@ -20,8 +20,18 @@ except Exception as e:
 
 
 class LightSensor(Analog):
-    def __init__(self, position: str, port: int, value_white : int = None, value_black: int = None, bias : int = None):  # position is the placement, where it got positioned -> this is for the text average calculation
-        # bias explanation: the amount of error that you allow from the light sensor. Higher value means it is more forgiving. Integer value is required. eg: 150; 500; 300
+    def __init__(self, position: str, port: int, value_white: int = None, value_black: int = None, bias: int = None):
+        '''
+        Class for the analog light and brightness sensor. Both work similar, so they get the same class.
+
+        Args:
+            position (str): where it is located. This is for the file creation, so you can use the same values across different users and files. Keep the name the same for the same position of the sensor
+            port (int): the integer value from where it is plugged in (the hardware) e.g.: 1; 3; 4; 2.
+            value_white (int, optional): the value at which the sensor should detect that it is seeing white (exclusive bias) (default: calibrated value)
+            value_black (int, optional): the value at which the sensor should detect that it is seeing black (exclusive bias) (default: calibrated value)
+            bias (int, optional): the amount of error that you allow from the light sensor. Higher value means it is more forgiving. Integer value is required. e.g.: 150; 500; 300
+        '''
+
         super().__init__(port)
         self.position = position
         self.val_white = value_white
@@ -71,10 +81,19 @@ class LightSensor(Analog):
         return None  # You can not raise an Exception here, since if you did not calibrate in the beginning, then you will always receive an exception
 
     def _calibrate_bias(self) -> Optional[int]:
+        '''
+        automatic calibration of the bias for the light sensor. It will calculate a value from 150 - 500. The bias calculates itself between the light and black value. The higher the difference between those values, the higher the bias.
+
+        Args:
+            None
+
+        Returns:
+            int: actual calibrated bias
+        '''
         if self.val_white is None or self.val_black is None:
             return None  # You can not raise an Exception here, since if you did not calibrate in the beginning, then you will always receive an exception
 
-        diff = self.val_black - self.val_white
+        diff = self.get_value_black() - self.get_value_white()
         if diff < 0:
             log('Black value needs to be higher than the white value. Since this is not the case, this means that you did something wrong in setting the light values!', in_exception=True)
             raise ValueError('Black value needs to be higher than the white value. Since this is not the case, this means that you did something wrong in setting the light values!')
@@ -107,7 +126,7 @@ class LightSensor(Analog):
             self.file_manager.writer(file_name, 'w', int(measured_value))
             self.val_black = int(measured_value)
         except Exception as e:
-            log(str(e), important=True, in_exception=True)
+            log(str(e), in_exception=True)
 
     def save_value_white(self, measured_value: int = None) -> None:
         '''
@@ -130,20 +149,20 @@ class LightSensor(Analog):
             self.file_manager.writer(file_name, 'w', int(measured_value))
             self.val_white = int(measured_value)
         except Exception as e:
-            log(str(e), important=True, in_exception=True)
+            log(str(e), in_exception=True)
 
     # ======================== Getter =======================
 
     def get_value_black(self) -> int:
         '''
-       get the value of the light sensor when it should tell you that it sees black
+         get the value of the light sensor when it should tell you that it sees black
 
-       Args:
-           None
+         Args:
+             None
 
-      Returns:
-           value where it should recognise the white color (int)
-       '''
+        Returns:
+             int: value for the sensor to see black (exclusive bias)
+        '''
         if isinstance(self.val_black, int):
             return self.val_black
         file_name = os.path.join(self.BIAS_FOLDER, f'light_sensor_black_{self.position}.txt')
@@ -152,7 +171,7 @@ class LightSensor(Analog):
             self.val_black = val
             return val
         except Exception as e:
-            log(str(e), important=True, in_exception=True)
+            log(str(e), in_exception=True)
 
     def get_value_white(self) -> int:
         '''
@@ -162,7 +181,7 @@ class LightSensor(Analog):
              None
 
         Returns:
-             value where it should recognise the black color (int)
+             int: value for the sensor to see white (exclusive bias)
         '''
         if isinstance(self.val_white, int):
             return self.val_white
@@ -172,7 +191,48 @@ class LightSensor(Analog):
             self.val_white = val
             return val
         except Exception as e:
-            log(str(e), important=True, in_exception=True)
+            log(str(e), in_exception=True)
+
+    def get_value_black_bias(self) -> int:
+        '''
+       get the value of the light sensor when it should tell you that it sees black with the bias subtracted to it
+
+       Args:
+           None
+
+       Returns:
+           int: value for the sensor to see black (inclusive bias)
+       '''
+        if isinstance(self.val_black, int):
+            return self.val_black
+        file_name = os.path.join(self.BIAS_FOLDER, f'light_sensor_black_{self.position}.txt')
+        try:
+            val = int(self.file_manager.reader(file_name))
+            self.val_black = val
+            return val - self.bias
+        except Exception as e:
+            log(str(e), in_exception=True)
+
+    def get_value_white_bias(self) -> int:
+        '''
+         get the value of the light sensor when it should tell you that it sees white with the bias added to it
+
+         Args:
+             None
+
+        Returns:
+             int: value for the sensor to see white (inclusive bias)
+        '''
+        if isinstance(self.val_white, int):
+            return self.val_white
+        file_name = os.path.join(self.BIAS_FOLDER, f'light_sensor_white_{self.position}.txt')
+        try:
+            val = int(self.file_manager.reader(file_name))
+            self.val_white = val
+            return val + self.bias
+        except Exception as e:
+            log(str(e), in_exception=True)
+
 
     def get_bias(self) -> int:
         '''

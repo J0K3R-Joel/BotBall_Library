@@ -45,7 +45,8 @@ class base_driver:
         self._motor_stoppers = {}
         self._next_motor_id = 0
         self.mm_per_sec_file = BIAS_FOLDER + '/mm_per_sec.txt'
-        self.distance_far_values, self.distance_far_mm = self.get_distances()
+        self.pseudo_distanceR = DistanceSensor(99999999999)  # just an imaginary port, which will never exist
+        self.distance_far_values, self.distance_far_mm = self.pseudo_distanceR.get_distances(raises_exception=False)
         self.check_wheelr_instance(motors)
 
 
@@ -233,50 +234,6 @@ class base_driver:
         '''
         return self.ds_speed
 
-    def get_distances(self, calibrated: bool = False) -> Optional[tuple]:
-        '''
-        Getting the disances from the distances_arr.txt file
-
-        Args:
-            calibrated (bool, optional): Writing to the file distances_arr.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
-
-
-        Returns:
-            tuple[list[int], list[int]] | None:
-                If calibrated=False: (values, mm)
-                If calibrated=True: None
-        '''
-        file_name = os.path.join(BIAS_FOLDER, 'distances_arr.txt')
-
-        try:
-            if calibrated:
-                with open(file_name, "w") as f:
-                    f.write("value=" + ",".join(map(str, self.distance_far_values)) + "\n")
-                    f.write("mm=" + ",".join(map(str, self.distance_far_mm)) + "\n")
-                log(f"Distances saved to {file_name}")
-
-            else:
-                if not os.path.exists(file_name):
-                    raise FileNotFoundError(f"{file_name} not found. Run calibration first.")
-
-                with open(file_name, "r") as f:
-                    lines = f.readlines()
-
-                values = []
-                mm = []
-
-                for line in lines:
-                    if line.startswith("value="):
-                        values = list(map(int, line.strip().split("=")[1].split(",")))
-                    elif line.startswith("mm="):
-                        mm = list(map(int, line.strip().split("=")[1].split(",")))
-
-                return values, mm
-
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
-            return None
-
     def get_mm_per_sec(self, only_mm: bool = False,
                        only_sec: bool = False) -> None:  # @TODO schauen, wie man float ODER int (ODER list) zurückgeben kann als typ
         '''
@@ -373,6 +330,29 @@ class base_driver:
         self.bias_accel_y = bias
         self._handle_standard_bias()
 
+    def set_distances(self, values: list = None, mm: list = None) -> None:
+        '''
+        Setting the distances for the distances file
+
+        Args:
+            values (list[int], optional): every distance sensor value (default: class variable)
+            mm (list[int], optional): every calculated millimeter for every distance value (default: class variable)
+
+        Returns:
+            None
+        '''
+        v = values if isinstance(values, list) else self.distance_far_values
+        m = values if isinstance(mm, list) else self.distance_far_mm
+
+        try:
+            with open(self.pseudo_distanceR.get_file_path(), "w") as f:
+                f.write("value=" + ",".join(map(str, v)) + "\n")
+                f.write("mm=" + ",".join(map(str, m)) + "\n")
+            log(f"Distances saved to {self.pseudo_distanceR.get_file_path()}")
+
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
+
     def set_TOTAL_mm_per_sec(self, mm: int = None, sec: float = None) -> None:
         '''
         Sets the millimeters and / or seconds for driving mm per seconds
@@ -434,7 +414,7 @@ class base_driver:
         self.set_TOTAL_mm_per_sec(sec=sec)
 
 
-    # ===================== CALIBRATE BIAS =====================
+    # ===================== Check instances =====================
     def check_wheelr_instance(self, *motors) -> bool:
         for motor in motors[0]:
             if not isinstance(motor, WheelR):
@@ -1023,21 +1003,38 @@ class Rubber_Wheels_two(base_driver):
         Args:
             None
 
-       Returns:
+        Returns:
             None (but sets a class variable)
         '''
         self.check_instance_light_sensors_middle()
         startTime = time.time()
         self.right_wheel.drive(0)  # this is to avoid threading-problems
+
+        def sensor_checker():
+            def white_front_valid():
+                while self.light_sensor_front.sees_white():
+                    continue
+
+            def white_back_valid():
+                while self.light_sensor_back.sees_white():
+                    continue
+
+
+            t_front = threading.Thread(target=white_front_valid, daemon=True)
+            t_rear = threading.Thread(target=white_back_valid, daemon=True)
+            t_front.start()
+            t_rear.start()
+
+            while t_front.is_alive() or t_rear.is_alive():
+                self.left_wheel.drive_dfw()
+                self.right_wheel.drive_dbw()
+
+
         while k.seconds() - startTime < (1200) / 1000:
             self.left_wheel.drive_dfw()
             self.right_wheel.drive_dbw()
-        while not self.light_sensor_front.sees_black():
-            self.left_wheel.drive_dfw()
-            self.right_wheel.drive_dbw()
-        while not self.light_sensor_back.sees_black():
-            self.left_wheel.drive_dfw()
-            self.right_wheel.drive_dbw()
+        sensor_checker()  # @TODO test this out
+
         endTime = time.time()
         self.ONEEIGHTY_DEGREES_SECS = endTime - startTime
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
@@ -1131,7 +1128,7 @@ class Rubber_Wheels_two(base_driver):
             time.sleep(step)
 
         self.break_all_motors()
-        self.get_distances(calibrated=True)
+        self.set_distances(values=self.distance_far_values, mm=self.distance_far_mm)
 
         log(f"Calibration finished. The distance sensor should be like {self.distance_far_mm[-1]}mm away of the object.\n================= You can now STOP the program, if nothing else should happen than calibrate_distance() =================")
 
@@ -1921,16 +1918,15 @@ class Rubber_Wheels_two(base_driver):
         if speed is None:
             speed = self.ds_speed
         if mm_to_object > self.distance_far_mm[-1] or mm_to_object < 10:
-            log(f'You can only put a value in range of 10 - {self.distance_far_mm[-1]} for the distance parameter!',
-                in_exception=True)
+            log(f'You can only put a value in range of 10 - {self.distance_far_mm[-1]} for the distance parameter!', in_exception=True)
             raise ValueError(
-                f'drive_til_distance() Exception: You can only put a value in range of 10 - {self.distance_far_mm[-1]} for the distance parameter!')
+                f'Exception: You can only put a value in range of 10 - {self.distance_far_mm[-1]} for the distance parameter!')
 
         self.check_instances_buttons_back()
         self.check_instance_distance_sensor()
 
         if self.distance_far_values == 0 and self.distance_far_mm == 0:
-            log('You need to calibrate the distance using the calibrate_distance function first!', important=True, in_exception=True)
+            log('You need to calibrate the distance using the calibrate_distance function first!', in_exception=True)
             raise ValueError('You need to calibrate the distance using the calibrate_distance function first!')
 
         self.isClose = False
@@ -2402,7 +2398,7 @@ class Rubber_Wheels_two(base_driver):
         return 181  # if it was not found in the right amount of time, it took the robot more than 180 degrees
 
 
-class Mecanum_Wheels_four(base_driver):
+class Mechanum_Wheels_four(base_driver):
     def __init__(self,
                  Instance_front_right_wheel: WheelR,
                  Instance_front_left_wheel: WheelR,
@@ -2824,11 +2820,33 @@ class Mecanum_Wheels_four(base_driver):
             on_line (bool): If it is already perfectly aligned in the middle of a black line (True) or if it still has to align itself (False, default)
             output (bool): If it should make an output, that it is done calibrating (True, default) or not (False)
 
-       Returns:
+        Returns:
             None (but sets a class variable)
         '''
         self.check_instance_light_sensors_middle()
         self.fr_wheel.drive(0)  # this is to avoid threading-problems
+
+        def sensor_checker():
+            def white_front_valid():
+                while self.light_sensor_front.sees_white():
+                    continue
+
+            def white_back_valid():
+                while self.light_sensor_back.sees_white():
+                    continue
+
+
+            t_front = threading.Thread(target=white_front_valid, daemon=True)
+            t_rear = threading.Thread(target=white_back_valid, daemon=True)
+            t_front.start()
+            t_rear.start()
+
+            while t_front.is_alive() or t_rear.is_alive():
+                self.fl_wheel.drive_dfw()
+                self.fr_wheel.drive_dbw()
+                self.bl_wheel.drive_dfw()
+                self.br_wheel.drive_dbw()
+
 
         startTime = time.time()
         while k.seconds() - startTime < 1200 / 1000:
@@ -2836,16 +2854,8 @@ class Mecanum_Wheels_four(base_driver):
             self.fr_wheel.drive_dbw()
             self.bl_wheel.drive_dfw()
             self.br_wheel.drive_dbw()
-        while self.light_sensor_front.sees_white():
-            self.fl_wheel.drive_dfw()
-            self.fr_wheel.drive_dbw()
-            self.bl_wheel.drive_dfw()
-            self.br_wheel.drive_dbw()
-        while self.light_sensor_back.sees_white():
-            self.fl_wheel.drive_dfw()
-            self.fr_wheel.drive_dbw()
-            self.bl_wheel.drive_dfw()
-            self.br_wheel.drive_dbw()
+        sensor_checker()  # @TODO test this out
+
         endTime = time.time()
         self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime)
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
@@ -2939,7 +2949,7 @@ class Mecanum_Wheels_four(base_driver):
             time.sleep(step)
 
         self.break_all_motors()
-        self.get_distances(calibrated=True)
+        self.set_distances(values=self.distance_far_values, mm=self.distance_far_mm)
 
         log(f"Calibration finished. The distance sensor should be like {self.distance_far_mm[-1]}mm away of the object.\n================= You can now STOP the program, if nothing else should happen than calibrate_distance() =================")
 
@@ -3683,9 +3693,9 @@ class Mecanum_Wheels_four(base_driver):
         if mm_to_object > self.distance_far_mm[-1] or mm_to_object < 10:
             log(f'You can only put a value in range of 10 - {self.distance_far_mm[-1]} for the distance parameter!', in_exception=True)
             raise ValueError(
-                f'drive_til_distance() Exception: You can only put a value in range of 10 - {self.distance_far_mm[-1]} for the distance parameter!')
+                f'You can only put a value in range of 10 - {self.distance_far_mm[-1]} for the distance parameter!')
         if self.distance_far_values == 0 and self.distance_far_mm == 0:
-            log('You need to calibrate the distance using the calibrate_distance function first!', important=True, in_exception=True)
+            log('You need to calibrate the distance using the calibrate_distance function first!', in_exception=True)
             raise ValueError('You need to calibrate the distance using the calibrate_distance function first!')
 
         self.check_instances_buttons_back()

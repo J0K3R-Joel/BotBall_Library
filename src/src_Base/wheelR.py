@@ -337,7 +337,7 @@ class WheelR:
 
     def drive_time(self, speed: int, millis: int) -> None:
         '''
-        Default Function for driving in any direction for a time
+        Default Function for driving in any direction for a certain amount of time (hint: it will not drive straight, if you use it for driving!)
 
         Args:
             speed (int): velocity to drive
@@ -351,7 +351,25 @@ class WheelR:
             self.drive(speed)
 
     def stop(self) -> None:
+        '''
+        Stopping this singular motor immediately
+
+        Args:
+            None
+
+        Returns:
+            None, but stops the motor immediately
+        '''
         MOTOR_SCHEDULER.stop_motor(self.port)
 
     def stop_all(self) -> None:
+        '''
+        Stopping every motor immediately
+
+        Args:
+            None
+
+        Returns:
+            None, but stops the motors immediately
+        '''
         MOTOR_SCHEDULER.stop_all()

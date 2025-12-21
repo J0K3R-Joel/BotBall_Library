@@ -124,6 +124,8 @@ The light sensor returns a value from `1000` - `3100`. The value it returns depe
 
 This sensor is reliable. It is works best for light emitting sources, like a lamp. This is great for the start of the game. Theoretically it could be used as a brightness sensor, but with less bias between the top and low threshold. 
 
+**HINT**: The higher the value, the darker it is. E.g. white: 1200; black: 2750 
+
 ##### 3.1.3 Brightness Sensor (Tophat)
 
 ![](./img/large_tophat.png) ![](./img/small_tophat.png)
@@ -133,6 +135,8 @@ The Tophat sensors (small and large) return a value from `200` - `4050`. The val
 - Greyscale of the ground where the sensor faces
 
 There is not really a difference between the small and large Tophat sensors. From what I noticed the only difference is the area which gets scanned. 
+
+**HINT**: The higher the value, the darker it is. E.g. white: 290; black: 3700 OR white: 3500; black: 3900 
 
 ##### 3.1.4 Linear Slide
 
@@ -197,4 +201,6 @@ The micro servo is not that consistent. It is very important to consider the fol
 - Even though you are able to set the value very high, you should not do this, since otherwise it will break. Since it is still a servo, it can move 180 degrees.
 - The micro servo can not withstand much weight. Be careful about how much the micro servo needs to move, they can break on too much weight or too much force what they need to lift / move.
 
-You are able to receive and set the value, just as the normal servo, since it uses the same functions. **HINT**: If you are using my library, you can just set the min and max value and from there on you are not able to exceed the numbers.
+You are able to receive and set the value, just as the normal servo, since it uses the same functions. 
+
+**HINT**: If you are using my library, you can just set the min and max value and from there on you are not able to exceed the numbers.

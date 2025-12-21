@@ -11,11 +11,174 @@ from logger import *
 
 try:
     import time
+    from scipy.interpolate import interp1d
     from analog import Analog  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 
+BIAS_FOLDER = '/usr/lib/bias_files'
+os.makedirs(BIAS_FOLDER, exist_ok=True)
+
 class DistanceSensor(Analog):
-    def __init__(self, Port):
+    def __init__(self, Port: int):
+        '''
+        Class for the distance sensor. The distance sensor can only see distances from at least 100mm to at most 800mm. Calibrate the distances inside of the driveR!
+
+        Args:
+            Port (int): the port in which the distance sensor is plugged in. E.g.: 5; 2; 0; 4; 1; 3
+        '''
         super().__init__(Port)
+        self.dist_arr_file_name = BIAS_FOLDER + '/distances_arr.txt'
+        self._run_lookup()
+
+    # ===================== PRIVATE METHODS =====================
+    def _run_lookup(self) -> None:
+        '''
+        Method for checking if there is already the distance calibrated. If so, then create the lookup for all values
+
+        Args:
+            None
+
+        Returns:
+            None
+        '''
+        if not os.path.exists(self.dist_arr_file_name):
+            log('If you want to use the distance sensor, then calibrate it inside of the driveR!', important=True)
+            return None
+
+        values, mm = self.get_distances()
+        self.lookup = interp1d(values, mm, kind='linear', fill_value="extrapolate")
+
+
+    # ===================== GET METHODS =====================
+    def get_file_path(self) -> str:
+        '''
+        Tells you, where the distances are saved at
+
+        Args:
+            None
+
+        Returns:
+            str: string object of the absolute file path
+        '''
+        return self.dist_arr_file_name
+
+    def get_distances(self, raises_exception: bool = True) -> tuple:
+        '''
+        Getting the distances from the distances_arr.txt file
+
+        Args:
+            raises_exception (bool, optional): If it should raise an exception, if the file does not exist yet (True) or not (False)
+
+        Returns:
+            tuple[list[int], list[int]]:
+                (values: list, mm: list)
+        '''
+        try:
+            if not os.path.exists(self.dist_arr_file_name):
+                if raises_exception:
+                    log(f'{self.dist_arr_file_name} not found. Run calibration first.', in_exception=True)
+                    raise FileNotFoundError(f'{self.dist_arr_file_name} not found. Run calibration first.')
+                return
+
+            with open(self.dist_arr_file_name, "r") as f:
+                lines = f.readlines()
+
+            values = []
+            mm = []
+
+            for line in lines:
+                if line.startswith("value="):
+                    values = list(map(int, line.strip().split("=")[1].split(",")))
+                elif line.startswith("mm="):
+                    mm = list(map(int, line.strip().split("=")[1].split(",")))
+
+            return values, mm
+        except Exception as e:
+            log(str(e), in_exception=True)
+
+    def get_estimated_mm(self) -> int:
+        '''
+        Tells you the current estimated distance (in millimeters) from the nearest object in front of the distance sensor. HINT: If you are very very close (<100mm) to the object, then the values become inconsistent. The values reach from at least 100mm to at most (!) 800mm
+
+        Args:
+            None
+
+        Returns:
+            int: estimated distance in millimeters
+        '''
+        try:
+            return int(self.lookup(self.current_value()))
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
+
+
+    # ===================== PUBLIC METHODS =====================
+    def higher_lower_distance(self, distance_to_check: int) -> str:
+        '''
+        Is telling you, if the current (estimated) distance is lower, higher or point on to the parameter you tell this function
+
+        Args:
+            distance_to_check (int): the distance (in millimeters) you want to check for farness of the nearest object in front of the sensor
+
+        Returns:
+            str:
+                1. 'lower' if your distance to check is higher than the (estimated) actual value
+                2. 'higher' if your distance to check is lower than the (estimated) actual value
+                3. 'point on' if your distance to check matches up with the (estimated) actual value
+        '''
+        dist = self.get_estimated_mm()
+
+        if dist < distance_to_check:
+            return 'lower'
+        elif dist > distance_to_check:
+            return 'higher'
+        return 'point on'
+
+    def distance_in_reach(self, distance_to_check: int, tolerance_percentage: float) -> bool:
+        '''
+        Tells you, if the current (estimated) distance is in between your desired distance including your tolerance
+
+        Args:
+            distance_to_check (int): the distance (in millimeters) you want to check for farness of the nearest object in front of the sensor
+            tolerance_percentage (float): value between 0 and 1. It will calculate the higher percentage on its own. (e.g.: 0.9 -> 90%; 0.95 -> 95%)
+
+        Returns:
+            bool: If the current (estimated) distance from the nearest object in front of the sensor is inside of the desired value (inclusive tolerance) (True) or not (False)
+        '''
+        dist = self.get_estimated_mm()
+
+        if tolerance_percentage > 1 or tolerance_percentage <= 0:
+            log('tolerance_percentage parameter can only be a value between 0 and 1 (exclusive 0)!', in_exception=True)
+            raise ValueError('tolerance_percentage parameter can only be a value between 0 and 1 (exclusive 0)!')
+
+        if distance_to_check * tolerance_percentage < dist < distance_to_check * (tolerance_percentage + (1 - tolerance_percentage) * 2):
+            return True
+        return False
+
+    def distance_in_reach_one_side(self, distance_to_check: int, tolerance_percentage: float, higher_lower: str) -> bool:
+        '''
+        Tells you, if the current (estimated) distance is in your desired distance including your tolerance. It will only check one side (if the current estimated distance is higher or lower than the desired value inclusive tolerance)
+
+        Args:
+            distance_to_check (int): the distance (in millimeters) you want to check for farness of the nearest object in front of the sensor
+            tolerance_percentage (float): value between 0 and 1. It will calculate the higher percentage on its own. (e.g.: 0.9 -> 90%; 0.95 -> 95%)
+            higher_lower (str): either "lower" or "higher", meaning that if the current estimated distance is lower (or higher) than your desired distance inclusive tolerance
+
+        Returns:
+            bool: If the current estimated value is lower (or higher) than your desired distance inclusive tolerance (True), but only checked on one side (the higher or lower side)
+        '''
+        dist = self.get_estimated_mm()
+
+        if tolerance_percentage > 1 or tolerance_percentage <= 0:
+            log('tolerance_percentage parameter can only be a value between 0 and 1 (exclusive 0)!', in_exception=True)
+            raise ValueError('tolerance_percentage parameter can only be a value between 0 and 1 (exclusive 0)!')
+
+        if higher_lower.lower() == 'lower':
+            return dist < distance_to_check * (tolerance_percentage + (1 - tolerance_percentage) * 2)
+        elif higher_lower.lower() == 'higher':
+            return distance_to_check * tolerance_percentage < dist
+        else:
+            log('higher_lower parameter can only be "higher" or "lower"!', in_exception=True)
+            raise ValueError('higher_lower parameter can only be "higher" or "lower"!')

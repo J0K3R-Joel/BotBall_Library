@@ -157,9 +157,9 @@ class MotorScheduler:
                     })
                     return
                 for old_key, data in list(self._commands.items()):
-                    if data['port'] == port:
+                    if data['port'] == port and (data['speed'] != 0 or speed != 0):
                         print('cleared')
-                        self.clear_list()
+                        self.clear_list_internal()
                         break
 
                 self._commands[key] = {
@@ -204,13 +204,33 @@ class MotorScheduler:
         '''
         try:
             with self._lock:
-                for key, data in list(self._commands.items()):
-                    if data['port'] == port:
-                        self.set_speed(data['port'], 0)
-                        k.freeze(port)
-                        break
+                commands_copy = self._commands.copy()
+
+            for key, data in list(commands_copy.items()):
+                if data['port'] == port:
+                    self.set_speed(data['port'], 0)
+                    k.freeze(port)
+                    break
         except Exception as e:
             log(str(e))
+
+    def _stop_all_internal(self) -> None:
+        '''
+        Sets the speed to 0 of every registered port and stops it immediately, so they will not move until the next call
+
+        Args:
+            None
+
+        Returns:
+            None
+        '''
+        try:
+            with self._lock:
+                for key, data in list(self._commands.items()):
+                    self._commands[key]['speed'] = 0
+                    k.freeze(data['port'])
+        except Exception as e:
+            log(str(e), in_exception=True)
 
     def stop_all(self) -> None:
         '''
@@ -241,6 +261,26 @@ class MotorScheduler:
             None
         '''
         self._running = False
+
+    def clear_list_internal(self) -> None:
+        '''
+        Let's you wipe out everything. Everything stops and you need to call everything again. This acts as a kind of emergency break.
+
+        Args:
+            None
+
+        Returns:
+            None
+        '''
+        try:
+            with self._lock:
+                if len(self._commands) != 0:
+                    for old_key, data in list(self._commands.items()):
+                        self._old_funcs.add(data['func_id'])
+
+                    self._stop_all_internal()
+        except Exception as e:
+            log(str(e), in_exception=True)
 
     def clear_list(self) -> None:
         '''

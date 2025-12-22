@@ -109,16 +109,14 @@ class MotorScheduler:
 
                     if now - data['last_update'] > self.AUTO_STOP_TIMEOUT or data['speed'] == 0:
                         if now - data['last_update'] > self.AUTO_STOP_TIMEOUT and data['speed'] != 0:
-                            print('too long: ', now - data['last_update'])
-                        if data['speed'] != 0:
-                            self._stop_motor_internal(port)
+                            if data['speed'] != 0:
+                                self._stop_motor_internal(port)
                         continue
 
                     k.mav(port, data['speed'])
                 k.msleep(1)
 
                 if self.last_activity and time.time() - self.last_activity > self.AUTO_SHUTDOWN_TIMEOUT:
-                    print('dead')
                     self.shutdown()
 
         except Exception as e:

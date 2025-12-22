@@ -43,11 +43,12 @@ class DistanceSensor(Analog):
         Returns:
             None
         '''
-        if not os.path.exists(self.dist_arr_file_name):
+        values, mm = self.get_distances()
+
+        if not values:
             log('If you want to use the distance sensor, then calibrate it inside of the driveR!', important=True)
             return None
 
-        values, mm = self.get_distances()
         self.lookup = interp1d(values, mm, kind='linear', fill_value="extrapolate")
 
 

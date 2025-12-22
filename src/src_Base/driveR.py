@@ -449,7 +449,7 @@ class base_driver:
 
     def calibrate(self, output: bool = True) -> None:
         '''
-        Calibrates all necessairy bias
+        Calibrates all necessary bias
 
         Args:
             on_line (bool): If it is already perfectly aligned in the middle of a black line (True) or if it still has to align itself (False, default)
@@ -497,7 +497,7 @@ class base_driver:
 
         Args:
             counter (int, default): the number where it is at the moment (default: None)
-            max (int, default): how many caLibrations there are (to show it on the screen and for debugging usage) (default: None)
+            max (int, default): how many calibrations there are (to show it on the screen and for debugging usage) (default: None)
             times (int, optional): how many calibrations should be done (default: 8000)
 
         Returns:
@@ -519,7 +519,7 @@ class base_driver:
 
         Args:
             counter (int, optional): the number where it is at the moment (default: None)
-            max (int, optional): how many caLibrations there are (to show it on the screen and for debugging usage) (default: None)
+            max (int, optional): how many calibrations there are (to show it on the screen and for debugging usage) (default: None)
             times (int, optional): how many calibrations should be done (default: 8000)
 
         Returns:
@@ -541,7 +541,7 @@ class base_driver:
 
         Args:
             counter (int, optional): the number where it is at the moment (default: None)
-            max (int, optional): how many caLibrations there are (to show it on the screen and for debugging usage) (default: None)
+            max (int, optional): how many calibrations there are (to show it on the screen and for debugging usage) (default: None)
             times (int, optional): how many calibrations should be done (default: 8000)
 
         Returns:
@@ -579,7 +579,7 @@ class base_driver:
 
         for arg in args:
             if arg == 'gyro_z' or arg == 'gz':
-                t1 = threading.Thread(target=self.calibrate_gyro_z, kwargs=arguments, name='gyro_z')  # @TODO test kwargs aus
+                t1 = threading.Thread(target=self.calibrate_gyro_z, kwargs=arguments, name='gyro_z')
                 calibrations.append(t1)
             elif arg == 'gyro_y' or arg == 'gy':
                 t1 = threading.Thread(target=self.calibrate_gyro_y, kwargs=arguments, name='gyro_y')
@@ -1083,12 +1083,12 @@ class Rubber_Wheels_two(base_driver):
         while k.seconds() - startTime < (1200) / 1000:
             self.left_wheel.drive_dfw()
             self.right_wheel.drive_dbw()
-        sensor_checker()  # @TODO test this out
 
+        sensor_checker()
+        self.break_all_motors()
         endTime = time.time()
         self.ONEEIGHTY_DEGREES_SECS = endTime - startTime
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
-        self.break_all_motors()
         if output:
             log('DEGREES CALIBRATED')
 

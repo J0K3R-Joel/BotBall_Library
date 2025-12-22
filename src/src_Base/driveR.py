@@ -458,10 +458,7 @@ class base_driver:
         Returns:
             None. Writes bias into files
         '''
-        self.calibrate_gyro_y(counter=1, max=4)
-        self.calibrate_accel_z(counter=2, max=4)
-        self.calibrate_gyro_z(counter=3, max=4)
-        self.calibrate_accel_y(counter=4, max=4)
+        self.calibrate_hardware('gyro_z', 'gyro_y', 'accel_z', 'accel_y', output=False)
         self.bias_gyro_y = self.get_bias_gyro_y(True)
         self.bias_accel_z = self.get_bias_accel_y(True)
         self.bias_gyro_z = self.get_bias_gyro_z(True)
@@ -478,7 +475,7 @@ class base_driver:
 
         Args:
             counter (int): the number where it is at the moment
-            max (int): how many caLibrations there are (to show it on the screen and for debugging usage)
+            max (int): how many calibrations there are (to show it on the screen and for debugging usage)
             times (int, optional): how many calibrations should be done (default: 8000)
 
         Returns:
@@ -559,6 +556,59 @@ class base_driver:
         self.bias_accel_y = avg / times
         if counter is not None and max is not None:
             log(f'{counter}/{max} - ACCEL Y CALIBRATED')
+
+    def calibrate_hardware(self, *args: str, millis: int = None, output: bool = True) -> None:
+        '''
+        Gives you access to thread based calibration, so you do not need to wait for every function individually.
+
+        Args:
+            *args: either one or more of the following options:
+
+            millis: the time
+
+        Returns:
+            None
+        '''
+        if millis is None:
+            millis = 8000
+
+        calibrations = list()
+        arguments = {'times': millis}
+        if output:
+            log('beginning with hardware calibration...')
+
+        for arg in args:
+            if arg == 'gyro_z' or arg == 'gz':
+                t1 = threading.Thread(target=self.calibrate_gyro_z, kwargs=arguments, name='gyro_z')  # @TODO test kwargs aus
+                calibrations.append(t1)
+            elif arg == 'gyro_y' or arg == 'gy':
+                t1 = threading.Thread(target=self.calibrate_gyro_y, kwargs=arguments, name='gyro_y')
+                calibrations.append(t1)
+            elif arg == 'accel_z' or arg == 'az':
+                t1 = threading.Thread(target=self.calibrate_accel_z, kwargs=arguments, name='accel_z')
+                calibrations.append(t1)
+            elif arg == 'accel_y' or arg == 'ay':
+                t1 = threading.Thread(target=self.calibrate_accel_y, kwargs=arguments, name='accel_y')
+                calibrations.append(t1)
+            else:
+                log(f'You can only calibrate "gyro_z", "gyro_y", "accel_z" or "accel_y" and not "{arg}"', in_exception=True)
+                raise ValueError(f'You can only calibrate "gyro_z", "gyro_y", "accel_z" or "accel_y" and not "{arg}"')
+
+        for calibration in calibrations:
+            calibration.start()
+
+
+        while len(calibrations) > 0:
+            for calibration in calibrations:
+                if calibration.is_alive():
+                    continue
+                else:
+                    calibrations.remove(calibration)
+
+        if output:
+            log('Every hardware calibration finished.')
+
+
 
     # ======================== PUBLIC METHODS =======================
 

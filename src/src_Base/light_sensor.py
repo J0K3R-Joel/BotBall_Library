@@ -62,7 +62,7 @@ class LightSensor(Analog):
         '''
         file_path = os.path.join(self.BIAS_FOLDER, self.std_black_file_name + self.position + '.txt')
         if os.path.exists(file_path):
-            return int(self.file_manager.reader(file_path))
+            return self.file_manager.reader(file_path, 'int')
         return None  # You can not raise an Exception here, since if you did not calibrate in the beginning, then you will always receive an exception
 
     def _white_load_from_file(self) -> Optional[int]:
@@ -77,7 +77,7 @@ class LightSensor(Analog):
         '''
         file_path = os.path.join(self.BIAS_FOLDER, self.std_white_file_name + self.position + '.txt')
         if os.path.exists(file_path):
-            return int(self.file_manager.reader(file_path))
+            return int(self.file_manager.reader(file_path, 'int'))
         return None  # You can not raise an Exception here, since if you did not calibrate in the beginning, then you will always receive an exception
 
     def _calibrate_bias(self) -> Optional[int]:
@@ -204,7 +204,7 @@ class LightSensor(Analog):
            int: value for the sensor to see black (inclusive bias)
        '''
         if isinstance(self.val_black, int):
-            return self.val_black
+            return self.val_black - self.bias
         file_name = os.path.join(self.BIAS_FOLDER, f'light_sensor_black_{self.position}.txt')
         try:
             val = int(self.file_manager.reader(file_name))
@@ -224,7 +224,7 @@ class LightSensor(Analog):
              int: value for the sensor to see white (inclusive bias)
         '''
         if isinstance(self.val_white, int):
-            return self.val_white
+            return self.val_white + self.bias
         file_name = os.path.join(self.BIAS_FOLDER, f'light_sensor_white_{self.position}.txt')
         try:
             val = int(self.file_manager.reader(file_name))

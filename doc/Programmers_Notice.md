@@ -279,7 +279,7 @@ Then there is a chance that the button you want to reach a certain value is alre
 
    this makes it so t will force the program to overwrite the last command, even without actual driving (speed 0 means stand still). Therefor the last function i showed you now looks like this:
 
-   ![image-20251214140622420](C:\Joel_K\Schule\BotBall\BotBall_Library\doc\img\avoid_wrong_usage_command4.png)
+   ![](./img/avoid_wrong_usage_command4.png)
 
 ​	Notice that before it could happen that the values are already reached, then it was still overwritten by the 0 speed command
 

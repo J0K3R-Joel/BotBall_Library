@@ -19,8 +19,8 @@ except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 class MotorScheduler:
-    AUTO_STOP_TIMEOUT = 0.1  # 100ms  -> time after which the port will reduce it's speed to 0
-    AUTO_SHUTDOWN_TIMEOUT = 0.2  # 200ms  - > time after which every motor immediately will shut off when no valid ID sent a new request (it will boot up automatically again, when there is a new command)
+    AUTO_STOP_TIMEOUT = 0.3  # 100ms  -> time after which the port will reduce its speed to 0
+    AUTO_SHUTDOWN_TIMEOUT = 0.4  # 200ms  - > time after which every motor immediately will shut off when no valid ID sent a new request (it will boot up automatically again, when there is a new command)
     TIME_RECOGNIZER = 0.5  # 500ms  -> time where a new tid will be created with the same thread id
 
     def __init__(self):

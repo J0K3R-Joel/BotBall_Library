@@ -22,9 +22,9 @@ front, back and side:
 
 ##### driveR
 
-- ```python
-  driveR_two.auto_calibration()
-  ```
+```python
+driveR_two.auto_calibration()
+```
   or 
 ```python
   driveR_four.auto_calibration()
@@ -49,12 +49,12 @@ On the other hand, there are some functions where manual execution is required, 
 
 **Code:**
 
-- ```python
-  driveR_two.calibrate_mm_per_sec()
-  ```
+```python
+driveR_two.calibrate_mm_per_sec()
+```
   or 
 ```python
-  driveR_four.calibrate_mm_per_sec()
+driveR_four.calibrate_mm_per_sec()
 ```
 
 **Explanation:**
@@ -68,14 +68,14 @@ This needs to be calculated so the `calibrate_distance()` function works properl
 **Code:**
 
 
-- ```python
-  driveR_two.calibrate_distance(XX, XXX)
-  ```
+```python
+driveR_two.calibrate_distance(XX)
+```
 
 or 
 
 ```python
-driveR_four.calibrate_distance(XX, XXX)
+driveR_four.calibrate_distance(XX)
 ```
 
 **Explanation:**

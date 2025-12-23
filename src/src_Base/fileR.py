@@ -15,7 +15,7 @@ class FileR:
 	def __init__(self):
 		self._writer_lock = threading.Lock()
 
-	def reader(self, file_name: str, type_name: str = 'str') -> str:
+	def reader(self, file_name: str, type_name: str = 'str'):
 		'''
 		read the content of a file
 

@@ -20,7 +20,14 @@ except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 class CameraObjectDetector:
-    def __init__(self, camera_manager: CameraManager=None, test_mode=False):
+    def __init__(self, camera_manager: CameraManager = None, test_mode: bool = False):
+        '''
+        Class for using the camera for object detection.
+
+        Args:
+            camera_manager (CameraManager): The camera manager which gives you frames from the camera
+            test_mode (bool, optional): Use this ONLY on your pc and not the robot, since nothing will happen except using a lot of power and ressources. Will create a window which makes you able to see what the camera sees (default: False)
+        '''
         base_path = "/usr/lib/bias_files/object_detector"
         os.makedirs(base_path, exist_ok=True)
 

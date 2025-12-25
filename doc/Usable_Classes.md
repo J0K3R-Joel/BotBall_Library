@@ -12,7 +12,7 @@ Non-advanced users should only use the following files:
 - `commU.py` - WifiConnector
 - `digital.py` - Digital
 - `distance_sensor.py` - DistanceSensor
-- `driveR.py` - Rubber_Wheels_two, Mechanum_Wheels_four, base_driver
+- `driveR.py` - Rubber_Wheels_two, Mecanum_Wheels_four, base_driver
 - `fileR.py` - FileR
 - `light_sensor.py` - LightSensor
 - `logger.py`
@@ -32,4 +32,4 @@ Only the advanced user should use the following files and should be allowed to e
 - `servo_scheduler.py` - ServoScheduler / SERVO_SCHEDULER
 - `stop_manager.py` - stop_manager
 - `fake.py` - FakeR
-- `pausR.py` - PausR
+- `pausR.py` - PausR

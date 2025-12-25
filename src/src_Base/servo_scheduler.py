@@ -20,6 +20,12 @@ class ServoScheduler:
     TIME_RECOGNIZER = 0.5  # 500ms  -> time where a new tid will be created with the same thread id
 
     def __init__(self):
+        '''
+        Not for basic users! Schedules every servo which makes them threadsafe. Blocks old activities so only the newest calls can use the servo
+
+        Args:
+            None
+        '''
         self._lock = threading.RLock()
         self._running = True
         self.last_activity = None

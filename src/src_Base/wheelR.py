@@ -22,14 +22,23 @@ except Exception as e:
 
 class WheelR:
 
-    def __init__(self, Port: int, max_speed: int = 1500, default_speed: int = 1400, servo_like: bool = False):  # @TODO -> servo like motor
-        self.port = Port
+    def __init__(self, port: int, default_speed: int = 1400, max_speed: int = 1500, servo_like: bool = False):  # @TODO -> servo like motor
+        '''
+        Class for motors. Uses the kipr method mav (move_at_velocity).
+
+        Args:
+            port (int): The integer value from where it is plugged in (the hardware) e.g.: 1; 3; 4; 2.
+            default_speed (int, optional): how fast the wheel should turn if no speed is specified (default: 1400)
+            max_speed (int, optional): The maximum speed which the robot can drive (since this robot uses move_at_velocity, the max_speed is capped at 1500 and can not exceed this speed whatsoever) (default:1500)
+            servo_like (bool, optional): == NO LOGIC YET == Changes the motor functionality completely to a servo. (default: False)
+        '''
+        self.port = port
         self.max_speed = max_speed
         self.d_speed = default_speed
         stop_manager.register_wheelr(self)
 
-    # ======================== PRIVATE METHODS ========================
 
+    # ======================== PRIVATE METHODS ========================
     def _base_speed_func(self, speed: int) -> None:
         '''
         Function where you can tell the robot the base function of how to drive / with which function and functionality it should drive
@@ -48,11 +57,20 @@ class WheelR:
 
         MOTOR_SCHEDULER.set_speed(self.port, speed)
 
-
     def _hard_stop(self) -> None:
-        MOTOR_SCHEDULER.clear_list()
-    # ======================== GET METHODS ========================
+        '''
+        Immediately deletes all activity and future activity from the same thread for some time
 
+        Args:
+            None
+
+        Returns:
+            None
+        '''
+        MOTOR_SCHEDULER.clear_list()
+
+
+    # ======================== GET METHODS ========================
     def get_port(self) -> int:
         '''
         Lets you see the port which this instance is assigned to
@@ -88,6 +106,7 @@ class WheelR:
             int: default speed you are able to drive
         '''
         return self.get_default_speed()
+
 
     # ======================== SET METHODS ========================
     def set_port(self, port_number: int) -> None:
@@ -142,7 +161,6 @@ class WheelR:
 
         print(f'Success! Motor {self.port} plugged in.', flush=True)
 
-
     def fw(self, speed: int) -> None:
         '''
         Function for driving forward (expects that the motor will move forwards when the value gets positive)
@@ -158,6 +176,7 @@ class WheelR:
 
         speed = int(speed)
         self._base_speed_func(speed)
+
     def forward(self, speed: int) -> None:
         '''
         Function for driving forward (expects that the motor will move forwards when the value gets positive)
@@ -194,7 +213,6 @@ class WheelR:
         '''
         self.fw(self.max_speed)
 
-
     def bw(self, speed: int) -> None:
         '''
         Function for driving backwards (expects that the motor will move backwards when the value gets negative)
@@ -210,6 +228,7 @@ class WheelR:
 
         speed = int(speed)
         self._base_speed_func(speed)
+
     def backward(self, speed: int) -> None:
         '''
         Function for driving backwards (expects that the motor will move backwards when the value gets negative)
@@ -245,7 +264,6 @@ class WheelR:
             None
         '''
         self.bw(-self.max_speed)
-
 
     def drive(self, speed:int):
         '''
@@ -333,7 +351,6 @@ class WheelR:
             adjuster = -adjuster
 
         self.drive(-self.max_speed + adjuster)
-
 
     def drive_time(self, speed: int, millis: int) -> None:
         '''

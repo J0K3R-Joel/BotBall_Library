@@ -38,6 +38,14 @@ os.makedirs(BIAS_FOLDER, exist_ok=True)
 
 class base_driver:
     def __init__(self, default_speed: int, standing: bool, *motors: WheelR):
+        '''
+        Class for every single robot. Every robot will get those functions and variables, since they all have in some way or another the same base of hardware
+
+        Args:
+            default_speed (int): The speed of which the robot is driving normally when no speed is specified
+            standing (bool): If the controller is standing on top of the metal chassis the robot is based on (True), or if it is laying down flat on the metal chassis (False)
+            *motors (WheelR): The WheelR instances which the robot needs to get to another point
+        '''
         self.ds_speed = default_speed
         self.standing = standing
         self.motors = motors
@@ -48,6 +56,7 @@ class base_driver:
         self.pseudo_distanceR = DistanceSensor(99999999999)  # just an imaginary port, which will never exist
         self.distance_far_values, self.distance_far_mm = self.pseudo_distanceR.get_distances(raises_exception=False)
         self.check_wheelr_instance(motors)
+
 
 
     # ======================== PRIVATE METHODS =======================
@@ -647,21 +656,21 @@ class Rubber_Wheels_two(base_driver):
                  Instance_light_sensor_side: LightSensor = None,
                  Instance_distance_sensor: DistanceSensor = None):
         '''
-        Rubber_Wheels_two represents a robot with two solarbotics wheels and a caster ball. This class is for driving this kind of robot only!
+        Rubber_Wheels_two represents a robot with two solarbotics wheels and a caster ball. This class is for driving this kind of wheels only!
 
         Args:
-            Instance_right_wheel (WheelR): Wheel of the right side from the robot. Front is where both wheels are moving straight when using positive values
-            Instance_left_wheel (WheelR): Wheel of the side side from the robot. Front is where both wheels are moving straight when using positive values
+            Instance_right_wheel (WheelR): Wheel of the right side from the robot. The front is where both wheels are moving straight when using positive values
+            Instance_left_wheel (WheelR): Wheel of the side side from the robot. The front is where both wheels are moving straight when using positive values
             controller_standing (bool): If the controller is standing on top of the metal chassis the robot is based on (True), or if it is laying down flat on the metal chassis (False)
-            DS_SPEED (int, optional): The default speed the robot should drive, when no speed is set
-            Instance_button_front_right (Digital, optional):
-            Instance_button_front_left (Digital, optional):
-            Instance_button_back_right (Digital, optional):
-            Instance_button_back_left (Digital, optional):
-            Instance_light_sensor_front (LightSensor, optional):
-            Instance_light_sensor_back (LightSensor, optional):
-            Instance_light_sensor_side (LightSensor, optional):
-            Instance_distance_sensor (DistanceSensor, optional):
+            DS_SPEED (int, optional): The default speed the robot should drive, when no speed is set (default: 1400)
+            Instance_button_front_right (Digital, optional): The button instance where the button is mounted on the front right of the robot (default: None)
+            Instance_button_front_left (Digital, optional): The button instance where the button is mounted on the front left of the robot (default: None)
+            Instance_button_back_right (Digital, optional): The button instance where the button is mounted on the rear right of the robot (default: None)
+            Instance_button_back_left (Digital, optional): The button instance where the button is mounted on the rear left of the robot (default: None)
+            Instance_light_sensor_front (LightSensor, optional): The light- or brightness sensor instance where the button is mounted on the front of the robot (default: None)
+            Instance_light_sensor_back (LightSensor, optional): The light- or brightness sensor instance where the button is mounted on the rear of the robot (default: None)
+            Instance_light_sensor_side (LightSensor, optional): The light- or brightness sensor instance where the button is mounted on the side (between the wheels) of the robot (default: None)
+            Instance_distance_sensor (DistanceSensor, optional): The distance sensor instance where the button is mounted on of the robot (default: None)
 
         '''
 
@@ -1137,7 +1146,7 @@ class Rubber_Wheels_two(base_driver):
         Both object have to be as parallel to each other as possible.
 
         Args:
-            start_mm (int): known starting distance (e.g. 95 -> distance sensor has a distance of 95mm from the flat object)
+            start_mm (int): measured starting distance (distance sensor needs to just reach the highest value) (e.g. 95 -> distance sensor has a distance of 95mm from the flat object)
             speed (int, optional): constant speed (default: ds_speed)
             step (float, optional): time between two measurements (default: 0.15)
 
@@ -1982,15 +1991,15 @@ class Rubber_Wheels_two(base_driver):
         '''
         if speed is None:
             speed = self.ds_speed
-        if mm_to_object > self.distance_far_mm[-1] or mm_to_object < 10:
-            log(f'You can only put a value in range of 10 - {self.distance_far_mm[-1]} for the distance parameter!', in_exception=True)
+        if mm_to_object > self.distance_sensor.get_mm()[-1] or mm_to_object < 10:
+            log(f'You can only put a value in range of 10 - {self.distance_sensor.get_mm()[-1]} for the distance parameter!', in_exception=True)
             raise ValueError(
-                f'Exception: You can only put a value in range of 10 - {self.distance_far_mm[-1]} for the distance parameter!')
+                f'Exception: You can only put a value in range of 10 - {self.distance_sensor.get_mm()[-1]} for the distance parameter!')
 
         self.check_instances_buttons_back()
         self.check_instance_distance_sensor()
 
-        if self.distance_far_values == 0 and self.distance_far_mm == 0:
+        if self.distance_sensor.get_values() == 0 and self.distance_sensor.get_mm() == 0:
             log('You need to calibrate the distance using the calibrate_distance function first!', in_exception=True)
             raise ValueError('You need to calibrate the distance using the calibrate_distance function first!')
 
@@ -2021,27 +2030,15 @@ class Rubber_Wheels_two(base_driver):
                 self.right_wheel.drive(speed)
                 k.msleep(20)
 
-
-        combination = dict(zip(self.distance_far_mm, self.distance_far_values))
-        next_step = min(combination, key=lambda x: abs(x - mm_to_object))
-        next_value = combination[next_step]
+        next_value = self.distance_sensor.get_estimated_mm_value(mm_to_object)
 
         def distance_stopper(positive):
             tolerance = 0.9
-            try:
-                lookup = interp1d(self.distance_far_values, self.distance_far_mm, kind='linear',
-                                  fill_value="extrapolate")
-            except Exception as e:
-                log(str(e), important=True, in_exception=True)
-
-            def get_distance_from_sensor(sensor_value):
-                return float(lookup(sensor_value))
 
             def is_target_distance_reached():
-                value = self.distance_sensor.current_value()
-                dist = get_distance_from_sensor(value)
+                dist = self.distance_sensor.get_estimated_mm()
 
-                if str(dist) == 'inf' or dist <= self.distance_far_mm[0]:
+                if str(dist) == 'inf' or dist <= self.distance_sensor.get_mm()[0]:
                     return True
                 if positive:
                     return dist <= mm_to_object * (tolerance + (1 - tolerance) * 2)
@@ -2072,8 +2069,8 @@ class Rubber_Wheels_two(base_driver):
                     theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
                 self.break_all_motors()
 
-            if mm_to_object < self.distance_far_mm[0]:
-                counter = self.distance_far_mm[0]
+            if mm_to_object < self.distance_sensor.get_mm()[0]:
+                counter = self.distance_sensor.get_mm()[0]
                 mult = speed / self.ds_speed
                 while counter > mm_to_object:
                     counter -= (2 * mult)
@@ -2475,6 +2472,26 @@ class Mechanum_Wheels_four(base_driver):
                  Instance_light_sensor_side: LightSensor = None,
                  Instance_distance_sensor: DistanceSensor = None
                  ):
+        '''
+                Mecanum_Wheels_four represents a robot with four mecanum wheels. This class is for driving this kind of wheels only!
+
+                Args:
+                    Instance_front_right_wheel (WheelR): Wheel of the front right of the robot. The front is where all four wheels are moving straight when using positive values
+                    Instance_front_left_wheel (WheelR): Wheel of the front left of the robot. The front is where all four wheels are moving straight when using positive values
+                    Instance_back_left_wheel (WheelR): Wheel of the rear left of the robot. The front is where all four wheels are moving straight when using positive values
+                    Instance_back_right_wheel (WheelR): Wheel of the rear right of the robot. The front is where all four wheels are moving straight when using positive values
+                    controller_standing (bool): If the controller is standing on top of the metal chassis the robot is based on (True), or if it is laying down flat on the metal chassis (False)
+                    DS_SPEED (int, optional): The default speed the robot should drive, when no speed is set (default: 1400)
+                    Instance_button_front_right (Digital, optional): The button instance where the button is mounted on the front right of the robot (default: None)
+                    Instance_button_front_left (Digital, optional): The button instance where the button is mounted on the front left of the robot (default: None)
+                    Instance_button_back_right (Digital, optional): The button instance where the button is mounted on the rear right of the robot (default: None)
+                    Instance_button_back_left (Digital, optional): The button instance where the button is mounted on the rear left of the robot (default: None)
+                    Instance_light_sensor_front (LightSensor, optional): The light- or brightness sensor instance where the button is mounted on the front of the robot (default: None)
+                    Instance_light_sensor_back (LightSensor, optional): The light- or brightness sensor instance where the button is mounted on the rear of the robot (default: None)
+                    Instance_light_sensor_side (LightSensor, optional): The light- or brightness sensor instance where the button is mounted on the side (between the wheels) of the robot (default: None)
+                    Instance_distance_sensor (DistanceSensor, optional): The distance sensor instance where the button is mounted on of the robot (default: None)
+
+        '''
 
         super().__init__(DS_SPEED, controller_standing, Instance_front_right_wheel, Instance_front_left_wheel, Instance_back_left_wheel, Instance_back_right_wheel)
 
@@ -2949,7 +2966,7 @@ class Mechanum_Wheels_four(base_driver):
         Both object have to be as parallel to each other as possible.
 
         Args:
-            start_mm (int): known starting distance (e.g. 95 -> distance sensor has a distance of 95mm from the flat object)
+            start_mm (int): measured starting distance (distance sensor needs to just reach the highest value) (e.g. 95 -> distance sensor has a distance of 95mm from the flat object)
             speed (int, optional): constant speed (default: ds_speed)
             step (float, optional): time between two measurements (default: 0.15)
 
@@ -3745,11 +3762,11 @@ class Mechanum_Wheels_four(base_driver):
         '''
         if speed is None:
             speed = self.ds_speed
-        if mm_to_object > self.distance_far_mm[-1] or mm_to_object < 10:
-            log(f'You can only put a value in range of 10 - {self.distance_far_mm[-1]} for the distance parameter!', in_exception=True)
+        if mm_to_object > self.distance_sensor.get_mm()[-1] or mm_to_object < 10:
+            log(f'You can only put a value in range of 10 - {self.distance_sensor.get_mm()[-1]} for the distance parameter!', in_exception=True)
             raise ValueError(
-                f'You can only put a value in range of 10 - {self.distance_far_mm[-1]} for the distance parameter!')
-        if self.distance_far_values == 0 and self.distance_far_mm == 0:
+                f'You can only put a value in range of 10 - {self.distance_sensor.get_mm()[-1]} for the distance parameter!')
+        if self.distance_sensor.get_values() == 0 and self.distance_sensor.get_mm() == 0:
             log('You need to calibrate the distance using the calibrate_distance function first!', in_exception=True)
             raise ValueError('You need to calibrate the distance using the calibrate_distance function first!')
 
@@ -3786,27 +3803,15 @@ class Mechanum_Wheels_four(base_driver):
                 k.msleep(20)
             self.break_all_motors()
 
-
-        combination = dict(zip(self.distance_far_mm, self.distance_far_values))
-        next_step = min(combination, key=lambda x: abs(x - mm_to_object))
-        next_value = combination[next_step]
+        next_value = self.distance_sensor.get_estimated_mm_value(mm_to_object)
 
         def distance_stopper(positive):
             tolerance = 0.9
-            try:
-                lookup = interp1d(self.distance_far_values, self.distance_far_mm, kind='linear',
-                                  fill_value="extrapolate")
-            except Exception as e:
-                log(str(e), important=True, in_exception=True)
-
-            def get_distance_from_sensor(sensor_value):
-                return float(lookup(sensor_value))
 
             def is_target_distance_reached():
-                value = self.distance_sensor.current_value()
-                dist = get_distance_from_sensor(value)
+                dist = self.distance_sensor.get_estimated_mm()
 
-                if str(dist) == 'inf' or dist <= self.distance_far_mm[0]:
+                if str(dist) == 'inf' or dist <= self.distance_sensor.get_mm()[0]:
                     return True
                 if positive:
                     return dist <= mm_to_object * (tolerance + (1 - tolerance) * 2)
@@ -3842,8 +3847,8 @@ class Mechanum_Wheels_four(base_driver):
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
             self.break_all_motors()
 
-        if mm_to_object < self.distance_far_mm[0]:
-            counter = self.distance_far_mm[0]
+        if mm_to_object < self.distance_sensor.get_mm()[0]:
+            counter = self.distance_sensor.get_mm()[0]
             mult = speed / self.ds_speed
             while counter > mm_to_object:
                 counter -= (2 * mult)

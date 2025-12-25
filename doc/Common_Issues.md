@@ -58,7 +58,7 @@ The issue IDs have (at least at this moment) no real purpose. The ID is only exi
 
 ### Issue ID: 003
 
-- **Title:** `Cannot assign adress` Error
+- **Title:** `Cannot assign adress` - Error
 
 - **Category:** Software
 
@@ -83,7 +83,7 @@ The issue IDs have (at least at this moment) no real purpose. The ID is only exi
 
 ### Issue ID: 004
 
-- **Title:** `Adress already in use` Error
+- **Title:** `Adress already in use` - Error
 
 - **Category:** Software
 

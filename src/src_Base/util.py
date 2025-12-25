@@ -28,7 +28,14 @@ class Util:
                  Instance_button_front_right: Digital = None,
                  Instance_light_sensor_start: LightSensor = None,
                  Instance_distance_sensor: DistanceSensor = None):
+        '''
+        Class for some extra functionality which does not fit into any class
 
+        Args:
+            Instance_button_front_right (Digital, optional): The button instance where the button is mounted on the front right of the robot (default: None)
+            Instance_light_sensor_start (LightSensor, optional): The light sensor instance which is responsible for starting the program when the light turn on (at the competition during "hands-off") (default: None)
+            Instance_distance_sensor (DistanceSensor, optional): The distance sensor instance where the button is mounted on of the robot (default: None)
+        '''
         self.button_fr = Instance_button_front_right
         self.light_sensor_start = Instance_light_sensor_start
         self.distance_sensor = Instance_distance_sensor
@@ -38,7 +45,6 @@ class Util:
 
 
     # ======================== SET INSTANCES ========================
-
     def set_instance_distance_sensor(self, Instance_distance_sensor: DistanceSensor) -> None:
         '''
         create or overwrite the existance of the distance sensor
@@ -75,8 +81,8 @@ class Util:
         '''
         self.button_fr = Instance_button_front_right
 
-    # ======================== CHECK INSTANCES ========================
 
+    # ======================== CHECK INSTANCES ========================
     def check_instance_distance_sensor(self) -> bool:
         '''
         inspect the existance of the distance sensor
@@ -122,8 +128,7 @@ class Util:
             raise TypeError('Button front right is not initialized!')
         return True
 
-    # ======================== Normal methods =======================
-
+    # ======================== PUBLIC METHODS =======================
     def stop_runner(self) -> None:
         '''
         stops every wait function if needed (even though they are in a thread)

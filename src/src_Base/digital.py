@@ -19,8 +19,14 @@ except Exception as e:
 
 
 class Digital:
-    def __init__(self, Port : int):
-        self.port = Port
+    def __init__(self, port: int):
+        '''
+        Class for every digital sensor available
+
+        Args:
+            port (int): the integer value from where it is plugged in (the hardware) e.g.: 1; 3; 4; 2.
+        '''
+        self.port = port
         self.last_state = 0  # initialized while the button is not pressed
         self.pressed_at = 0  # to know when the button was first pressed
         self.state_timer = 0  # initialized while the button is not pressed

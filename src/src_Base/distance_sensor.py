@@ -21,14 +21,14 @@ BIAS_FOLDER = '/usr/lib/bias_files'
 os.makedirs(BIAS_FOLDER, exist_ok=True)
 
 class DistanceSensor(Analog):
-    def __init__(self, Port: int):
+    def __init__(self, port: int):
         '''
         Class for the distance sensor. The distance sensor can only see distances from at least 100mm to at most 800mm. Calibrate the distances inside of the driveR!
 
         Args:
-            Port (int): the port in which the distance sensor is plugged in. E.g.: 5; 2; 0; 4; 1; 3
+            port (int): the integer value from where it is plugged in (the hardware). E.g.: 5; 2; 0; 4; 1; 3
         '''
-        super().__init__(Port)
+        super().__init__(port)
         self.dist_arr_file_name = BIAS_FOLDER + '/distances_arr.txt'
         self._run_lookup()
 
@@ -43,13 +43,13 @@ class DistanceSensor(Analog):
         Returns:
             None
         '''
-        values, mm = self.get_distances()
+        self.values, self.mm = self.get_distances()
 
-        if not values:
+        if not self.values:
             log('If you want to use the distance sensor, then calibrate it inside of the driveR!', important=True)
             return None
 
-        self.lookup = interp1d(values, mm, kind='linear', fill_value="extrapolate")
+        self.lookup = interp1d(self.values, self.mm, kind='linear', fill_value="extrapolate")
 
 
     # ===================== GET METHODS =====================
@@ -81,7 +81,6 @@ class DistanceSensor(Analog):
                 if raises_exception:
                     log(f'{self.dist_arr_file_name} not found. Run calibration first.', in_exception=True)
                     raise FileNotFoundError(f'{self.dist_arr_file_name} not found. Run calibration first.')
-                return
 
             with open(self.dist_arr_file_name, "r") as f:
                 lines = f.readlines()
@@ -99,6 +98,38 @@ class DistanceSensor(Analog):
         except Exception as e:
             log(str(e), in_exception=True)
 
+    def get_values(self) -> list:
+        '''
+        Receive all values which got saved in a file
+
+        Args:
+            None
+
+        Returns:
+            list[int]: all values which got saved into a file
+        '''
+        if isinstance(self.values, list):
+            return self.values
+
+        self.values, self.mm = self.get_distances()
+        return self.values
+
+    def get_mm(self) -> list:
+        '''
+        Receive all millimeters which got saved in a file
+
+        Args:
+            None
+
+        Returns:
+            list[int]: every millimeter which got saved into a file
+        '''
+        if isinstance(self.mm, list):
+            return self.mm
+
+        self.values, self.mm = self.get_distances()
+        return self.mm
+
     def get_estimated_mm(self) -> int:
         '''
         Tells you the current estimated distance (in millimeters) from the nearest object in front of the distance sensor. HINT: If you are very very close (<100mm) to the object, then the values become inconsistent. The values reach from at least 100mm to at most (!) 800mm
@@ -114,14 +145,32 @@ class DistanceSensor(Analog):
         except Exception as e:
             log(str(e), important=True, in_exception=True)
 
+    def get_estimated_mm_value(self, millimeters: int) -> int:  # @TODO test this out
+        '''
+        Receive the estimated value that corresponds to the millimeters
+
+        Args:
+            millimeters (int): The millimeters which you want to receive the once remembered value
+
+        Returns:
+            int: closest value to the millimeters which got saved
+        '''
+        if millimeters < self.mm[0] or millimeters > self.mm[-1]:
+            log(f'You can only get millimeters between {self.mm[0]} and {self.mm[-1]}!', in_exception=True)
+            raise ValueError(f'You can only get millimeters between {self.mm[0]} and {self.mm[-1]}!')
+
+        combination = dict(zip(self.get_mm(), self.get_values()))
+        next_step = min(combination, key=lambda x: abs(x - millimeters))
+        return combination[next_step]
+
 
     # ===================== PUBLIC METHODS =====================
-    def higher_lower_distance(self, distance_to_check: int) -> str:
+    def higher_lower_distance(self, mm_to_check: int) -> str:
         '''
         Is telling you, if the current (estimated) distance is lower, higher or point on to the parameter you tell this function
 
         Args:
-            distance_to_check (int): the distance (in millimeters) you want to check for farness of the nearest object in front of the sensor
+            mm_to_check (int): the distance (in millimeters) you want to check for farness of the nearest object in front of the sensor
 
         Returns:
             str:
@@ -131,18 +180,18 @@ class DistanceSensor(Analog):
         '''
         dist = self.get_estimated_mm()
 
-        if dist < distance_to_check:
+        if dist < mm_to_check:
             return 'lower'
-        elif dist > distance_to_check:
+        elif dist > mm_to_check:
             return 'higher'
         return 'point on'
 
-    def distance_in_reach(self, distance_to_check: int, tolerance_percentage: float) -> bool:
+    def distance_in_reach(self, mm_to_check: int, tolerance_percentage: float) -> bool:
         '''
         Tells you, if the current (estimated) distance is in between your desired distance including your tolerance
 
         Args:
-            distance_to_check (int): the distance (in millimeters) you want to check for farness of the nearest object in front of the sensor
+            mm_to_check (int): the distance (in millimeters) you want to check for farness of the nearest object in front of the sensor
             tolerance_percentage (float): value between 0 and 1. It will calculate the higher percentage on its own. (e.g.: 0.9 -> 90%; 0.95 -> 95%)
 
         Returns:
@@ -154,16 +203,16 @@ class DistanceSensor(Analog):
             log('tolerance_percentage parameter can only be a value between 0 and 1 (exclusive 0)!', in_exception=True)
             raise ValueError('tolerance_percentage parameter can only be a value between 0 and 1 (exclusive 0)!')
 
-        if distance_to_check * tolerance_percentage < dist < distance_to_check * (tolerance_percentage + (1 - tolerance_percentage) * 2):
+        if mm_to_check * tolerance_percentage < dist < mm_to_check * (tolerance_percentage + (1 - tolerance_percentage) * 2):
             return True
         return False
 
-    def distance_in_reach_one_side(self, distance_to_check: int, tolerance_percentage: float, higher_lower: str) -> bool:
+    def distance_in_reach_one_side(self, mm_to_check: int, tolerance_percentage: float, higher_lower: str) -> bool:
         '''
         Tells you, if the current (estimated) distance is in your desired distance including your tolerance. It will only check one side (if the current estimated distance is higher or lower than the desired value inclusive tolerance)
 
         Args:
-            distance_to_check (int): the distance (in millimeters) you want to check for farness of the nearest object in front of the sensor
+            mm_to_check (int): the distance (in millimeters) you want to check for farness of the nearest object in front of the sensor
             tolerance_percentage (float): value between 0 and 1. It will calculate the higher percentage on its own. (e.g.: 0.9 -> 90%; 0.95 -> 95%)
             higher_lower (str): either "lower" or "higher", meaning that if the current estimated distance is lower (or higher) than your desired distance inclusive tolerance
 
@@ -177,9 +226,9 @@ class DistanceSensor(Analog):
             raise ValueError('tolerance_percentage parameter can only be a value between 0 and 1 (exclusive 0)!')
 
         if higher_lower.lower() == 'lower':
-            return dist < distance_to_check * (tolerance_percentage + (1 - tolerance_percentage) * 2)
+            return dist < mm_to_check * (tolerance_percentage + (1 - tolerance_percentage) * 2)
         elif higher_lower.lower() == 'higher':
-            return distance_to_check * tolerance_percentage < dist
+            return mm_to_check * tolerance_percentage < dist
         else:
             log('higher_lower parameter can only be "higher" or "lower"!', in_exception=True)
             raise ValueError('higher_lower parameter can only be "higher" or "lower"!')

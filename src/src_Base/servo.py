@@ -20,8 +20,16 @@ except Exception as e:
     log(f'Import Exception in WifiConnector: {str(e)}', important=True, in_exception=True)
 
 class ServoX:
-    def __init__(self, Port: int, maxValue: int = 2047, minValue:int = 0):
-        self.port = Port
+    def __init__(self, port: int, maxValue: int = 2047, minValue: int = 0):
+        '''
+        Class for using the servos. HINT: You can use this class for micro servos as well, just set the min and max values to fit the micro servo
+
+        Args:
+            port (int): The integer value from where it is plugged in (the hardware) (e.g.: 1; 3; 4; 2).
+            maxValue (int, optional): The highest value which the servo can go to (default: 2047)
+            minValue (int, optional): The lowest value which the servo can go to (default: 0)
+        '''
+        self.port = port
         self.max_value = maxValue
         self.min_value = minValue
         self._servo_lock = threading.Lock()
@@ -29,8 +37,8 @@ class ServoX:
         self.new_pos_val = 0
         stop_manager.register_servox(self)
 
-    # ======================== PRIVATE METHODS ========================
 
+    # ======================== PRIVATE METHODS ========================
     def _valid_range(self, value:int) -> bool:
         '''
         Verifies, if the value is inside the min and max value of the servo
@@ -61,7 +69,6 @@ class ServoX:
             SERVO_SCHEDULER.set_position(self.port, int(value))
         else:
             SERVO_SCHEDULER.set_position(self.port, self.new_pos_val)
-
 
     def _hard_stop(self) -> None:
         SERVO_SCHEDULER.clear_list()

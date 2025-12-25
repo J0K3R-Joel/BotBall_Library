@@ -23,11 +23,11 @@ front, back and side:
 ##### driveR
 
 ```python
-driveR_two.auto_calibration()
+Rubber_Wheels_two.auto_calibration()
 ```
   or 
 ```python
-  driveR_four.auto_calibration()
+Mecanum_Wheels_four.auto_calibration()
 ```
 
   which includes calibration of:
@@ -69,13 +69,13 @@ This needs to be calculated so the `calibrate_distance()` function works properl
 
 
 ```python
-driveR_two.calibrate_distance(XX)
+Rubber_Wheels_two.calibrate_distance(XX)
 ```
 
 or 
 
 ```python
-driveR_four.calibrate_distance(XX)
+Mecanum_Wheels_four.calibrate_distance(XX)
 ```
 
 **Explanation:**
@@ -116,18 +116,16 @@ If you do not need some parts to calibrate, you can just leave them out
 - You need an object which is flat and long on a side (e.g. a box). This is due to slight error while driving back
 - You can mount the ET Sensor everywhere, since the distance has to be measured from the ET Sensor to the object which you want to use for calibration 
 - Try it out if the values are correct. If they are not, just re-run this function and the values will get overwritten (on the other hand, if the calibrated values match the values in real life, then re-running this function might lead to worse values)
-- Make sure to keep track of the actual lowest value to the object while this function executes the first time (while the robot is standing still, the measured lowest distance does not match the driving lowest distance). Afterwards re-run the function
+- When calibrating, make sure that the robot is as close as possible to the object as possible, but only until the value of the distance sensor is at the highest and not further. Go until the value reaches the first time the highest value.
 
 ###### How to calibrate:
 
 1. Place an flat and long object on the surface
-2. Go away from the object with the robot and look for the lowest value facing the object parallel (**HINT**: the more you make it parallel, the more you will notice that the value changes from maybe ~800 to ~200 while maintaining the same distance to the object. This value becomes a little bit more consistent while driving, so make sure that while trying your first lowest value to keep track of the "actual" lowest value. Your first run of this function will so to say just be a test run. The actual lowest value will probably be around ~600. You can just make a low number up, so the robot will drive endlessly so you can be more focused on the "actual" lowest value.)
-3. Look for the distance where the ET Sensor is having the highest value (go slow and steady, every mm counts!)
+3. Look for the distance where the ET Sensor is having the highest value (get slow and steady to the object, every mm counts!)
 4. Make sure the robot is parallel to the object
 5. Measure the distance from the front of the ET Sensor to the flat and long object (distance in mm)
-6. Tell the function your two measurements: 
-   1. the mm where the distance is the highest
-   2. actual lowest value of the ET Sensor 
+6. Tell the function your measurement: 
+   - the mm where the distance value is the highest
 7. Run the program
 
 ---
@@ -188,6 +186,20 @@ If you do not need some parts to calibrate, you can just leave them out
 ###### Considerations:
 
 - While it calibrates, do NOT touch the robot
+
+###### How to calibrate
+
+- Run the program
+
+---
+
+#### hardware_calibration()
+
+###### Considerations:
+
+- While it calibrates, do NOT touch the robot
+- It will calibrate every hardware component like `gyro_z`, `gyro_y`, `accel_z`, `accel_y`, since they got hardware on the controller
+- It is faster than calibrating every hardware calibrate method specifically, since in the background it will use those calibration methods in threads parallel to each other. 
 
 ###### How to calibrate
 

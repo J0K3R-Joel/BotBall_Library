@@ -31,7 +31,6 @@ class LightSensor(Analog):
             value_black (int, optional): the value at which the sensor should detect that it is seeing black (exclusive bias) (default: calibrated value)
             bias (int, optional): the amount of error that you allow from the light sensor. Higher value means it is more forgiving. Integer value is required. e.g.: 150; 500; 300
         '''
-
         super().__init__(port)
         self.position = position
         self.val_white = value_white

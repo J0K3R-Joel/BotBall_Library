@@ -13,6 +13,12 @@ import builtins
 
 class FileR:
 	def __init__(self):
+		'''
+		Class for threadsafe file management (reading, writing, cleaning)
+
+		Args:
+			None
+		'''
 		self._writer_lock = threading.Lock()
 
 	def reader(self, file_name: str, type_name: str = 'str'):

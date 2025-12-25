@@ -24,6 +24,12 @@ class MotorScheduler:
     TIME_RECOGNIZER = 0.5  # 500ms  -> time where a new tid will be created with the same thread id
 
     def __init__(self):
+        '''
+        Not for basic users! Schedules every motor which makes them threadsafe. Blocks old activities so only the newest calls can use the motor
+
+        Args:
+            None
+        '''
         self._lock = threading.RLock()
         self._commands = {}
         self._old_funcs = set()

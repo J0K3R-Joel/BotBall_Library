@@ -15,13 +15,18 @@ except Exception as e:
 
 class StopManager:
     def __init__(self):
+        '''
+        Not for the basic user! Class for immediate stopping of motors and servos in every thread
+
+        Args:
+            None
+        '''
         self.wheels = []
         self.servos = []
         self._lock = threading.Lock()
         self.is_stopped = False
         self.wheel_classes = []
         self.servo_classes = []
-
         
         try:
             result = subprocess.run(["pwd"], capture_output=True, text=True, check=True)
@@ -58,8 +63,8 @@ class StopManager:
         from servo import ServoX
         self.servo_classes = [ServoX]
 
-    # ======================== CHECK INSTANCES ========================
 
+    # ======================== CHECK INSTANCES ========================
     def check_motor_instance(self, wheelr) -> None:
         '''
         Checks, if the wanted driver is a member of the driveR class
@@ -77,7 +82,6 @@ class StopManager:
             valid = [cls.__name__ for cls in self.wheel_classes]
             log(f"{wheelr} is not a valid driveR-class. Valid: {valid}", important=True, in_exception=True)
             raise TypeError(f"{wheelr} is not a valid driveR-class. Valid: {valid}")
-
 
     def check_servo_instance(self, servox) -> None:
         '''

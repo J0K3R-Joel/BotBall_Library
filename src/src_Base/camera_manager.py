@@ -18,7 +18,15 @@ except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 class CameraManager:
-    def __init__(self, cam_index, warmup_frames=30, warmup_delay=0.05):
+    def __init__(self, cam_index: int, warmup_frames: int = 30, warmup_delay: float = 0.05):
+        '''
+        Class for using the camera and fetching pictures from the camera.
+
+        Args:
+            cam_index (int): USB port in which the camera is plugged in (e.g. 0; 1; 4; 3). Just test the values out if you are unsure.
+            warmup_frames (int, optional): The amount of frames which have to get skipped (first few frames are too black and therefor nur useful for anything) (default: 30)
+            warmup_delay (float, optional): Seconds between two warmup frames (higher means longer waiting time) (default: 0.05)
+        '''
         atexit.register(self.release)
         self.lock = threading.Lock()
         self.cap = cv2.VideoCapture(cam_index)

@@ -27,6 +27,13 @@ except Exception as e:
 
 class FakeR():
     def __init__(self, thread_instance: Event = None, comm_instance: RobotCommunicator = None):
+        '''
+        Not for the basic user! Class for high or new main priority (RoboComm - RobotCommunicator - Communication).
+
+        Args (work in progress):
+            thread_instance (Event, optional): Instance of a pause event
+            comm_instance (RobotCommunicator, optional): Instance of the communicator
+        '''
         self.file_Manager = FileR()
 
         try:
@@ -56,10 +63,10 @@ class FakeR():
 
     def set_instance_thread(self, Instance_thread: Event) -> None:
         '''
-        Create or overwrite the existance of the thread instance
+        Create or overwrite the existence of the thread instance
 
         Args:
-            Instance_thread (Thread): the instance of the thread
+            Instance_thread (Event): the instance of the thread
 
        Returns:
             None
@@ -68,10 +75,10 @@ class FakeR():
 
     def set_instance_comm(self, communication_instance: RobotCommunicator) -> None:
         '''
-        Create or overwrite the existance of the Communicator instance
+        Create or overwrite the existence of the Communicator instance
 
         Args:
-            Instance_thread (Thread): the instance of the Communicator
+            communication_instance (RobotCommunicator): the instance of the Communicator
 
        Returns:
             None
@@ -83,13 +90,13 @@ class FakeR():
 
     def check_instance_thread(self) -> bool:
         '''
-        Inspect the existance of the thread instance
+        Inspect the existence of the thread instance
 
         Args:
             None
 
        Returns:
-            if there is an instance of the thread sensor in existance
+            if there is an instance of the thread sensor in existence
         '''
         if not isinstance(self.thread_instance, Event):
             log('The thread instance is not initialized!', in_exception=True)
@@ -98,13 +105,13 @@ class FakeR():
 
     def check_instance_comm(self) -> bool:
         '''
-        Inspect the existance of the communication instance
+        Inspect the existence of the communication instance
 
         Args:
             None
 
         Returns:
-            if there is an instance of the thread sensor in existance (True) or not (False)
+            if there is an instance of the thread sensor in existence (True) or not (False)
         '''
         if not isinstance(self.comm_instance, RobotCommunicator):
             log('The Communicator instance is not initialized!', in_exception=True)
@@ -114,7 +121,7 @@ class FakeR():
 
     # ======================== PRIVATE METHODS ========================
 
-    def __late_import(self, original:bool = True) -> None:
+    def _late_import(self, original:bool = True) -> None:
         '''
         All the imports that have to be done after initializing of the class
 
@@ -132,13 +139,13 @@ class FakeR():
         sys.path.append(f"{wanted_dir}")
         try:
             print(wanted_dir + '/main.py', flush=True)
-            main_module = self.__import_main_from_path(wanted_dir + '/main.py')
+            main_module = self._import_main_from_path(wanted_dir + '/main.py')
             self.fake_main = main_module.main
         except Exception as e:
             log(str(e), important=True, in_exception=True)
             self.fake_main = None
 
-    def __extract_on_new_main_functions(self, code: str) -> list:
+    def _extract_on_new_main_functions(self, code: str) -> list:
         '''
         Extracts function names from all '.on_new_main(...)' calls in the given code.
 
@@ -157,9 +164,9 @@ class FakeR():
 
         return list(seen)
 
-    def __insert_valid_markers_in_file(self, file_path: str) -> None:
+    def _insert_valid_markers_in_file(self, file_path: str) -> None:
         '''
-        Inserts important markers inside of the code
+        Inserts important markers inside the code
 
         Args:
             file_path (str): The file to modify.
@@ -229,7 +236,7 @@ class FakeR():
         except Exception as e:
             log(str(e), important=True, in_exception=True)
 
-    def __merge_functions_back_into_text(self, entire_text: str) -> str:
+    def _merge_functions_back_into_text(self, entire_text: str) -> str:
         '''
         Reads each function file saved in self.another_main_file_names and replaces the original function definition in entire_text with the (possibly modified) function code from the file.
 
@@ -298,7 +305,7 @@ class FakeR():
 
         return '\n'.join(lines)
 
-    def __insert_beginning_in_code(self, code_str: str, is_new_main: bool = False) -> str:
+    def _insert_beginning_in_code(self, code_str: str, is_new_main: bool = False) -> str:
         '''
         Insert pre-defined code at the beginning of a code snippet.
 
@@ -334,7 +341,7 @@ class FakeR():
                 insert_lines = []
                 new_main_params = []
                 if is_new_main:
-                    new_main_params = self.__get_param_names_from_text(code_str)
+                    new_main_params = self._get_param_names_from_text(code_str)
 
                 if is_new_main:
                     insert_lines.append(indent + 'stop_manager.change_stopped(False)')
@@ -352,9 +359,9 @@ class FakeR():
 
         return code_str
 
-    def __import_main_from_path(self, path_to_main_py : str) -> ModuleType:
+    def _import_main_from_path(self, path_to_main_py : str) -> ModuleType:
         '''
-        Let's you import a main from another python file in another directory
+        Lets you import a main from another python file in another directory
 
         Args:
             path_to_main_py (str): the directory of the python file that has to be imported
@@ -375,9 +382,9 @@ class FakeR():
         except Exception as e:
             log(str(e), important=True, in_exception=True)
 
-    def __extract_params_and_assign(self, method) -> list:
+    def _extract_params_and_assign(self, method) -> list:
         '''
-        Let's you see all the params of a method from another file
+        Lets you see all the params of a method from another file
 
         Args:
             method: the function from which you want to see the params
@@ -393,9 +400,9 @@ class FakeR():
 
         return param_names
 
-    def __get_param_names_from_text(self, code_str:str) -> list:
+    def _get_param_names_from_text(self, code_str: str) -> list:
         '''
-        Let's you get all parameter names of a text (preferably one function only)
+        Lets you get all parameter names of a text (preferably one function only)
 
         Args:
             code_str (str): the function you want to get the params from
@@ -408,7 +415,7 @@ class FakeR():
         params = [arg.arg for arg in func_def.args.args]
         return params
 
-    def __replace_first_valid_event_assignment(self, code: str) -> str:
+    def _replace_first_valid_event_assignment(self, code: str) -> str:
         '''
         Replaces a pre-defined line with another pre-defined line
 
@@ -433,7 +440,7 @@ class FakeR():
             log("[INFO] No threading.Event() assignment found with a variable name containing 'pause' or 'event'.", important=True)
             return code
 
-    def __save_functions_to_files(self, code: str, target_dir: str) -> None:
+    def _save_functions_to_files(self, code: str, target_dir: str) -> None:
         '''
         Saves each function from self.another_main_function_names as a separate file.
 
@@ -462,7 +469,7 @@ class FakeR():
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(func_code)
 
-    def __resolve_import_alias(self, module_name: str, class_name: str, code: str) -> List[Optional[str]]:
+    def _resolve_import_alias(self, module_name: str, class_name: str, code: str) -> List[Optional[str]]:
         '''
         Returns the alias of an import or the exact import path
 
@@ -547,8 +554,8 @@ class FakeR():
                 old_entire_text = self.file_Manager.reader(main_py_path)
 
                 # Late import of old main
-                self.__late_import(True)
-                params = self.__extract_params_and_assign(self.fake_main)
+                self._late_import(True)
+                params = self._extract_params_and_assign(self.fake_main)
 
                 # Determine communication usage
                 if len(params) == 0:
@@ -563,23 +570,23 @@ class FakeR():
                     self.communicator_instance_name = params[1]
 
                 # Replace pause_event assignments
-                old_entire_text = self.__replace_first_valid_event_assignment(old_entire_text)
+                old_entire_text = self._replace_first_valid_event_assignment(old_entire_text)
 
                 # Extract additional new main functions
-                self.another_main_function_names = self.__extract_on_new_main_functions(old_entire_text)
+                self.another_main_function_names = self._extract_on_new_main_functions(old_entire_text)
 
                 # Save new main functions to separate files
-                self.__save_functions_to_files(old_entire_text, target_src_dir)
+                self._save_functions_to_files(old_entire_text, target_src_dir)
 
                 # Insert valid markers in all new main function files first
                 for file_path in self.another_main_file_names:
-                    self.__insert_valid_markers_in_file(file_path)
+                    self._insert_valid_markers_in_file(file_path)
                     code = self.file_Manager.reader(file_path)
-                    edited_code = self.__insert_beginning_in_code(code_str=code, is_new_main=True)
+                    edited_code = self._insert_beginning_in_code(code_str=code, is_new_main=True)
                     self.file_Manager.writer(file_path, "w", edited_code)
 
                 # Merge updated new main functions back into entire text
-                entire_text = self.__merge_functions_back_into_text(old_entire_text)
+                entire_text = self._merge_functions_back_into_text(old_entire_text)
 
                 # Now handle main() function
                 tree = ast.parse(entire_text)
@@ -604,14 +611,14 @@ class FakeR():
                     f.write(main_code)
 
                 # Insert markers in temp main file
-                self.__insert_valid_markers_in_file(temp_main_path)
+                self._insert_valid_markers_in_file(temp_main_path)
 
                 # Read back main with markers
                 with open(temp_main_path, 'r', encoding='utf-8') as f:
                     main_code_with_markers = f.read()
 
                 # Insert beginning code in main
-                main_code_with_markers = self.__insert_beginning_in_code(main_code_with_markers)
+                main_code_with_markers = self._insert_beginning_in_code(main_code_with_markers)
 
                 # Merge modified main back into entire text
                 lines = entire_text.splitlines()
@@ -664,7 +671,7 @@ class FakeR():
         try:
             self.check_instance_thread()
             self.check_instance_comm()
-            self.__late_import(False)
+            self._late_import(False)
             if self.fake_main is None:
                 log("main could not be found", important=True)
                 return

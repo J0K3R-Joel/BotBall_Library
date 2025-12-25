@@ -56,7 +56,7 @@ The repository is organized as follows:
 - **Movement Classes:**
   - `WheelR` - functionality for wheels
   - `Rubber_Wheels_two` – Two-motor drive system using rubber wheels
-  - `Mechanum_Wheels_four` – Four-motor drive system
+  - `Mecanum_Wheels_four` – Four-motor drive system
   - `MOTOR_SCHEDULER` - Schedules which motor function should be executed
   - `ServoX` - Servo / micro-servo controlling
   - `SERVO_SCHEDULER` -  Schedules which servo function should be executed

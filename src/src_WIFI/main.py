@@ -10,7 +10,7 @@ from logger import *  # selfmade
 # Date of creation: 2025-07-29
 
 try:
-    from commU import WifiConnector  # selfmade
+    from wifi import WifiConnector  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 

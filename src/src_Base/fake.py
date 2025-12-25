@@ -20,18 +20,19 @@ try:
     from threading import Thread, Event
     from RoboComm import RobotCommunicator  # selfmade
     from fileR import FileR  # selfmade
+    from pausR import PausR  # selfmade
     from stop_manager import stop_manager  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}',  important=True, in_exception=True)
 
 
 class FakeR():
-    def __init__(self, thread_instance: Event = None, comm_instance: RobotCommunicator = None):
+    def __init__(self, pausR_instance: PausR = None, comm_instance: RobotCommunicator = None):
         '''
         Not for the basic user! Class for high or new main priority (RoboComm - RobotCommunicator - Communication).
 
         Args (work in progress):
-            thread_instance (Event, optional): Instance of a pause event
+            pausR_instance (PausR, optional): Instance of a pause event
             comm_instance (RobotCommunicator, optional): Instance of the communicator
         '''
         self.file_Manager = FileR()
@@ -51,8 +52,9 @@ class FakeR():
         self.communicator_instance_name = ''
         self.another_main_function_names = list()
         self.another_main_file_names = list()
-        self.thread_instance = thread_instance
+        self.thread_instance = pausR_instance
         self.comm_instance = comm_instance
+        self.main_params = dict()
         self.comm_wanted = True
         self.fake_main = None
         self.kipr_module_name = ''
@@ -142,7 +144,7 @@ class FakeR():
             main_module = self._import_main_from_path(wanted_dir + '/main.py')
             self.fake_main = main_module.main
         except Exception as e:
-            log(str(e), important=True, in_exception=True)
+            log(str(e), in_exception=True)
             self.fake_main = None
 
     def _extract_on_new_main_functions(self, code: str) -> list:
@@ -415,31 +417,6 @@ class FakeR():
         params = [arg.arg for arg in func_def.args.args]
         return params
 
-    def _replace_first_valid_event_assignment(self, code: str) -> str:
-        '''
-        Replaces a pre-defined line with another pre-defined line
-
-        Args:
-            code (str): the code that has to be looked at
-
-        Returns:
-           the new code on which the replacement took place
-        '''
-        pattern = r'^(\s*)(\w*pause\w*|\w*event\w*)\s*=\s*threading\.Event\(\)(?:\.set\(\))?'
-        matches = list(re.finditer(pattern, code, flags=re.MULTILINE))
-
-        if matches:
-            first_match = matches[0]
-            indent = first_match.group(1)
-            variable_name = first_match.group(2)
-
-            start, end = first_match.span()
-            new_code = code[:start] + f"{indent}{variable_name} = None" + code[end:]
-            return new_code
-        else:
-            log("[INFO] No threading.Event() assignment found with a variable name containing 'pause' or 'event'.", important=True)
-            return code
-
     def _save_functions_to_files(self, code: str, target_dir: str) -> None:
         '''
         Saves each function from self.another_main_function_names as a separate file.
@@ -564,13 +541,20 @@ class FakeR():
                 elif len(params) == 1:
                     self.comm_wanted = False
                     log('Only one parameter found in main(), if you use communication you will need 2! Starting the main not in a thread...')
-                elif len(params) >= 2:
-                    self.comm_wanted = True
-                    self.inserted_line = params[0] + self.inserted_method
-                    self.communicator_instance_name = params[1]
+                elif len(params) >= 2:  # hier stehen geblieben. -> man bekommt die names, aber eigentlich nicht die types -> isinstance wird nicht funktionieren -> vllt hardcode immer zwei parameter reinklatschen? (communicator, pausR)
+                    counter = dict()
+                    for param in params:
+                        self.main_params[str(param)] = param
+                        if isinstance(param, RobotCommunicator):
+                            self.communicator_instance_name = param
+                            counter[param] = "used"
+                        elif isinstance(param, PausR):
+                            self.inserted_line = str(param) + self.inserted_method
+                            counter[param] = "used"
+                        else:
+                            log(f'{param} is neither a RobotCommunicator instance, nor a PausR instance!', important=True)
 
-                # Replace pause_event assignments
-                old_entire_text = self._replace_first_valid_event_assignment(old_entire_text)
+                    self.comm_wanted = True if len(counter) == 2 else False
 
                 # Extract additional new main functions
                 self.another_main_function_names = self._extract_on_new_main_functions(old_entire_text)
@@ -676,6 +660,7 @@ class FakeR():
                 log("main could not be found", important=True)
                 return
             if self.comm_wanted:
+                arguments = {'times': millis}
                 t = Thread(target=self.fake_main, args=(self.thread_instance, self.comm_instance,))
                 t.start()
                 t.join()

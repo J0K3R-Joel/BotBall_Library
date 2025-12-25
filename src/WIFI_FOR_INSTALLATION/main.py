@@ -3,7 +3,7 @@ import os, sys
 
 sys.path.append("/usr/lib")
 try:
-    from commU import WifiConnector
+    from wifi import WifiConnector
     import time
     import subprocess
 except Exception as e:

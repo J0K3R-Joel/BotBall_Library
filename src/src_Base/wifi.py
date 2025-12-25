@@ -47,7 +47,7 @@ class WifiConnector:
         Args:
             None
 
-       Returns:
+        Returns:
             If it is in AP (Access Point) or Client mode at this moment
                 0 -> AP mode
                 1 -> Client mode
@@ -80,11 +80,11 @@ class WifiConnector:
 
         Args:
             new_mode (str):
-                             0 -> AP mode
-                             1 -> Client mode
-                             2 -> Event mode (just do not use it, since you can not use wifi in this mode -> no communication)
+                 0 -> AP mode
+                 1 -> Client mode
+                 2 -> Event mode (just do not use it, since you can not use wifi in this mode -> no communication)
 
-       Returns:
+        Returns:
             None
         '''
         text = self.file_manager.reader(self.file_path_mode)
@@ -102,7 +102,7 @@ class WifiConnector:
         Args:
             None
 
-       Returns:
+        Returns:
             the created instance of this WifiConnector class
         '''
         if not os.path.exists(cls.file_path_std_wifi_conf):
@@ -136,7 +136,7 @@ class WifiConnector:
 
         Args:
             ssid (str): The name of the WIFI you want to connect to
-            password (str): The password of the WIFI you want to connect to
+            password (str): The password of the WIFI you want to connect
             connect (bool, optional): immediately connect to the given WIFI
 
         Returns:
@@ -184,7 +184,7 @@ class WifiConnector:
         Args:
             None
 
-       Returns:
+        Returns:
             None
         '''
         try:
@@ -221,7 +221,7 @@ class WifiConnector:
         Args:
             None
 
-       Returns:
+        Returns:
             bool: If you are connected with the chosen wifi (True), or with any other wifi or just no wifi at all (False)
         '''
         try:
@@ -275,7 +275,7 @@ class WifiConnector:
         Args:
             None
 
-       Returns:
+        Returns:
             None, but tells you the IP-Address in the end
         '''
         if self.ssid == None or self.password == None:

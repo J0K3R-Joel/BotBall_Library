@@ -15,7 +15,7 @@ try:
     import threading
     import subprocess
     from wheelR import WheelR  # selfmade
-    from commU import WifiConnector  # selfmade
+    from wifi import WifiConnector  # selfmade
     from RoboComm import RobotCommunicator  # selfmade
     from util import Util  # selfmade
     from distance_sensor import DistanceSensor  # selfmade
@@ -28,6 +28,7 @@ try:
     from camera_manager import CameraManager  # selfmade
     from brightness_detector import CameraBrightnessDetector  # selfmade
     from object_detector import CameraObjectDetector  # selfmade
+    from pausR import PausR  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
@@ -35,7 +36,6 @@ except Exception as e:
 # ======================== VARIABLE DECLARATION =======================
 # ===== GLOBAL VARIABLES =====
 wifi = None
-comm = None
 file_Manager = None
 camera_man = None
 brightness_cam = None
@@ -75,15 +75,11 @@ def Wifi_Setup():
         log(f'WIFI Exception: {str(e)}', important=True, in_exception=True)
 
 
-def Comm_Setup(p_event, Communication_instance):
-	global comm
+def Comm_Setup():
 	try:
-		if Communication_instance == None:
-			comm = RobotCommunicator('192.168.XX.XX', 10000, is_server=True) # one has to be the server, the other one has to be is_server=False (or be left out) -> both need the IP-Adress (IP from the the server) and the same port to communicate
-			#  XX here represents the complete IPv4-Address. eg: 192.168.0.10; 10.290.5.100; 172.100.5.134
-			pause_event.set()
-		else:
-			Communication_instance.set_pause_event_instance(p_event)
+        globals()['pause_event'] = PausR()
+        globals()['comm'] = RobotCommunicator('192.168.XX.XX', 10000, is_server=True, pause_event=pause_event) # one has to be the server, the other one has to be is_server=False (or be left out) -> both need the IP-Adress (IP from the the server) and the same port to communicate
+        #  XX here represents the complete IPv4-Address. eg: 192.168.0.10; 10.290.5.100; 172.100.5.134
 	except Exception as e:
 		log(f'Communication Exception: {str(e)}', important=True, in_exception=True)
 
@@ -118,17 +114,16 @@ def FileR_Setup():
 
 def fake_main_setup():  # see this as the call of the main function -> only execute this in the if __name__ == "__main__": line (if you want communication)
     try:
-        Comm_Setup(pause_event, comm)
         f_main = FakeR(thread_instance=pause_event, comm_instance=comm)
         f_main.start()
     except Exception as e:
         log(str(e), important=True, in_exception=True)
 
 
-def setup(pause_instance, Communication_instance):
+def setup():
     try:
         Wifi_Setup()  # you can delete this line from now on, just as the function!
-        # Comm_Setup(pause_instance, Communication_instance)
+        # Comm_Setup()
         # Camera_Setup()  # if you want to use the camera
         FileR_Setup()
         Instancer_Setup()
@@ -171,7 +166,6 @@ def another_main(p_event, communication):  # every new main should have the p_ev
 def main(p_event, communication):  # leave it as it is, just write in the try / catch block! Do not remove the "p_event" or "communication"! (You can obviously write anything outside and inside the main though) If you delete any of those parameters, there wont be a communication
     try:  # try / catch is always useful in the main! leave it!
         #communication.on_new_main(another_main, p_event, communication)  # if something does not working accordingly you can all the time send a message so another main will be executed
-        setup(p_event, communication)  # if you use the ocmmunication, you need these parameters
         #communication.on_high_priority(handle_high_priority)
         print(TestButton.is_pressed(), flush=True)
         log('actual program running right now...')
@@ -190,6 +184,7 @@ def main(p_event, communication):  # leave it as it is, just write in the try / 
 
 if __name__ == "__main__":
     try:
+        setup()
         main(None, None)  # if you want communication, replace this line with the "fake_main_setup()" line
         #fake_main_setup()  # if you do not need communication, you can replace this line with the main() function
     except Exception as e:

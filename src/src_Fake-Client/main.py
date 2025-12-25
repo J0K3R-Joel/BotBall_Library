@@ -15,7 +15,7 @@ try:
     import threading
     import subprocess
     from wheelR import WheelR  # selfmade
-    from commU import WifiConnector  # selfmade
+    from wifi import WifiConnector  # selfmade
     from RoboComm import RobotCommunicator  # selfmade
     from fake import FakeR  # selfmade
     from driveR import *  # selfmade

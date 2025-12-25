@@ -33,7 +33,7 @@ In this user you can find everything related to communication between two contro
 
 ### Fake-Client
 
-This user is an example on how communication can look like on the client side. This provides an example of the complex `FakeR` class, which let's you be able to pause the main at any given moment using `high_priority` or `new_main`. For more information get into the [./explainer/user_server_client_fake.md](./explainer/user_server_client_fake.md) file.
+This user is an example on how communication can look like on the client side. This provides an example of the complex `FakeR` class, which let's you be able to pause the main at any given moment using `high_priority` or `new_main`. For more information get into the [./explainer/user_server_client_fake.md](./explainer/user_server_client_fake.md) file.
 
 ---
 
@@ -45,6 +45,6 @@ This user is an example on how communication can look like on the server side. T
 
 ### WIFI
 
-The WIFI user provides you with the `commU` class and every class that is linked to this class. This provides you necessary functionality concerning the WIFI. 
+The WIFI user provides you with the `WifiConnector` class and every class that is linked to this class. This provides you necessary functionality concerning the WIFI. 
 
 ---

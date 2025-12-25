@@ -14,7 +14,7 @@ try:
     import time
     import threading
     import subprocess
-    from commU import WifiConnector  # selfmade
+    from wifi import WifiConnector  # selfmade
     from RoboComm import RobotCommunicator  # selfmade
     from digital import Digital  # selfmade
     from fake import FakeR  # selfmade

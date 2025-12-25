@@ -12,7 +12,7 @@
 | servo.py               | ServoX                   | Class for the servo                                    |
 | brightness_detector.py | CameraBrightnessDetector | Class for black and white detection via camera         |
 | camera_manager.py      | CameraManager            | Class for taking pictures via camera                   |
-| commU.py               | WifiConnector            | Class for Wifi connection                              |
+| wifi.py                | WifiConnector            | Class for Wifi connection                              |
 | fake.py                | FakeR                    | Class for _high_ and _new main_ priority communication |
 | fileR.py               | FileR                    | Class for actions with files                           |
 | logger.py              | -                        | Every function for logging                             |

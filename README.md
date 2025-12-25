@@ -90,7 +90,7 @@ The repository is organized as follows:
 
 Detailed explanations of the classes are included in the repository:
 
-- [commU.md](./doc/explainer/commU.md) – Full explanation and usage guide for the `WifiConnector` class
+- [wifi.md](./doc/explainer/wifi.md) – Full explanation and usage guide for the `WifiConnector` class
 
 - [digital.md](./doc/explainer/digital.md) – Full explanation and usage guide for the `Digital` class
 

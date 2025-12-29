@@ -25,7 +25,7 @@ This document explains the usage of the `WifiConnector` class, which manages WiF
 Import into your project:
 
 ```python
-from wifi_connector import WifiConnector
+from wifi import WifiConnector
 ```
 
 ---

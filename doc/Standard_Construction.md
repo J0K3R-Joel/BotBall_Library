@@ -85,3 +85,24 @@
 - **Justification**:
   
   - The type of buttons do not really matter. You can choose the small touch or the large touch. The large touch are a little bit better, because on the mecanum wheels It is a little bit better since the buttons are larger and therefor the robot (with mecanum wheels) does not slide as much against the pipes when it aligns. If the mecanum wheels are not allowed, then on the rubber wheels it does not matter. The buttons need to be the furthest extended point in the front and rear of the robot.
+
+---
+
+## 4. Wheel orientation
+
+### Solarbotic Wheels
+
+Nothing specific here, just be aware that the wheels NEED TO DRIVE FORWARD when you put a positive value to the motor port ([./Controller_Guide.md](./Controller_Guide.md) as an explanation on how to set the value for test purpose)
+
+### Mecanum Wheels
+
+- The orientation of the mecanum wheels need to look like this: ![Mecanum Wheel Robot with ESP-NOW Remote Control](https://i0.wp.com/dronebotworkshop.com/wp-content/uploads/2022/12/mecanum-wheel-arrangement.jpg?resize=750%2C422&ssl=1)
+
+​	(The website has nothing to do with anything, but since I am referencing them, I need to add their website URL)
+
+- The wheels NEED TO DRIVE FORWARD when you put a positive value to the motor port ([./Controller_Guide.md](./Controller_Guide.md) as an explanation on how to set the value for test purpose)
+
+  
+
+
+

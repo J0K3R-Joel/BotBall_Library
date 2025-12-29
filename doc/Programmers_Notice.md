@@ -102,6 +102,12 @@ Using this kind of logic, a drive straight function can look something like this
 
 notice that the adjuster reduces / increases the speed to drive more straight
 
+#### mecanum wheels drive
+
+This is essentially how the mecanum wheels work (if you followed the [./Standard_Construction.md](./Standard_Construction.md) file so you know how to correctly set them up) and drive: ![Mecanum wheel - Wikipedia](https://upload.wikimedia.org/wikipedia/commons/c/c4/Mecanum_wheel_control_principle.svg)
+
+----
+
 ## The way servos work
 
 Servos work very similarly to motors. Kipr also provides functions [on their website](https://www.kipr.org/doc/group__servo.html), you can go there to see the possibilities of using servos

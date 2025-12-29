@@ -9,7 +9,7 @@ Non-advanced users should only use the following files:
 - `analog.py` - Analog
 - `brightness_detector.py` - CameraBrightnessDetector
 - `camera_manager.py` - CameraManager
-- `commU.py` - WifiConnector
+- `wifi.py` - WifiConnector
 - `digital.py` - Digital
 - `distance_sensor.py` - DistanceSensor
 - `driveR.py` - Rubber_Wheels_two, Mecanum_Wheels_four, base_driver

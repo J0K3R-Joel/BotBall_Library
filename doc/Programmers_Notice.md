@@ -104,7 +104,9 @@ notice that the adjuster reduces / increases the speed to drive more straight
 
 #### mecanum wheels drive
 
-This is essentially how the mecanum wheels work (if you followed the [./Standard_Construction.md](./Standard_Construction.md) file so you know how to correctly set them up) and drive: ![Mecanum wheel - Wikipedia](https://upload.wikimedia.org/wikipedia/commons/c/c4/Mecanum_wheel_control_principle.svg)
+This is essentially how the mecanum wheels work (if you followed the [./Standard_Construction.md](./Standard_Construction.md) file so you know how to correctly set them up) and drive:
+
+ ![Mecanum Wheel... Omni Direction Wifi RC Car | Arduino Project Hub](https://projects.arduinocontent.cc/2d1299ed-cd28-49bf-9d51-62c1990ff8a1.png)
 
 ----
 

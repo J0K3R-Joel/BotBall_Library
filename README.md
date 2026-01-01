@@ -20,7 +20,7 @@ This repository provides a set of utility classes and communication tools design
 
 - Sensor interaction (`Digital`, `DistanceSensor`, `LightSensor`)
 
-- Robot driving (`base_driver`, `Rubber_Wheels_two`, `Mechanum_Wheels_four`, `MOTOR_SCHEDULER`, `WheelR`)
+- Robot driving (`base_driver`, `Solarbotic_Wheels_two`, `Mechanum_Wheels_four`, `MOTOR_SCHEDULER`, `WheelR`)
 
 - Servo / micro-servo usage (`ServoX`, `SERVO_SCHEDULER`)
 
@@ -55,7 +55,7 @@ The repository is organized as follows:
   - `LightSensor` – Analog light sensor
 - **Movement Classes:**
   - `WheelR` - functionality for wheels
-  - `Rubber_Wheels_two` – Two-motor drive system using rubber wheels
+  - `Solarbotic_Wheels_two` – Two-motor drive system using rubber / solarbotic wheels
   - `Mecanum_Wheels_four` – Four-motor drive system
   - `MOTOR_SCHEDULER` - Schedules which motor function should be executed
   - `ServoX` - Servo / micro-servo controlling
@@ -96,7 +96,7 @@ Detailed explanations of the classes are included in the repository:
 
 - [distance_sensor.md](./doc/explainer/distance_sensor.md) – Full explanation and usage guide for the `DistanceSensor` class
 
-- [driveR.md](./doc/explainer/driveR.md) – Full explanation and usage guide for the `Rubber_Wheels_two` and `Rubber_Wheels_four` classes
+- [driveR.md](./doc/explainer/driveR.md) – Full explanation and usage guide for the `Solarbotic_Wheels_two` and `Mecanum_Wheels_four` classes
 
 - [fake.md](./doc/explainer/fake.md) – Full explanation and usage guide for the `FakeR` class
 

@@ -12,7 +12,7 @@ Non-advanced users should only use the following files:
 - `wifi.py` - WifiConnector
 - `digital.py` - Digital
 - `distance_sensor.py` - DistanceSensor
-- `driveR.py` - Rubber_Wheels_two, Mecanum_Wheels_four, base_driver
+- `driveR.py` - Solarbotic_Wheels_two, Mecanum_Wheels_four, base_driver
 - `fileR.py` - FileR
 - `light_sensor.py` - LightSensor
 - `logger.py`

@@ -84,7 +84,7 @@
   
 - **Justification**:
   
-  - The type of buttons do not really matter. You can choose the small touch or the large touch. The large touch are a little bit better, because on the mecanum wheels It is a little bit better since the buttons are larger and therefor the robot (with mecanum wheels) does not slide as much against the pipes when it aligns. If the mecanum wheels are not allowed, then on the rubber wheels it does not matter. The buttons need to be the furthest extended point in the front and rear of the robot.
+  - The type of buttons do not really matter. You can choose the small touch or the large touch. The large touch are a little bit better, because on the mecanum wheels It is a little bit better since the buttons are larger and therefor the robot (with mecanum wheels) does not slide as much against the pipes when it aligns. On the other hand on the solarbotic wheels it your choice does not really matter. The buttons need to be the furthest extended point in the front and rear of the robot.
 
 ---
 
@@ -92,7 +92,7 @@
 
 ### Solarbotic Wheels
 
-Nothing specific here, just be aware that the wheels NEED TO DRIVE FORWARD when you put a positive value to the motor port ([./Controller_Guide.md](./Controller_Guide.md) as an explanation on how to set the value for test purpose)
+Nothing specific here, just be aware that the wheels NEED TO DRIVE FORWARD when you put a positive value to the motor port ([./Controller_Guide.md](./Controller_Guide.md) as an explanation on how to set the value for test purpose)
 
 ### Mecanum Wheels
 

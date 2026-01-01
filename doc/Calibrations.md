@@ -23,7 +23,7 @@ front, back and side:
 ##### driveR
 
 ```python
-Rubber_Wheels_two.auto_calibration()
+Solarbotic_Wheels_two.auto_calibration()
 ```
   or 
 ```python
@@ -50,11 +50,11 @@ On the other hand, there are some functions where manual execution is required, 
 **Code:**
 
 ```python
-driveR_two.calibrate_mm_per_sec()
+Solarbotic_Wheels_two.calibrate_mm_per_sec()
 ```
   or 
 ```python
-driveR_four.calibrate_mm_per_sec()
+Mecanum_Wheels_four.calibrate_mm_per_sec()
 ```
 
 **Explanation:**
@@ -69,7 +69,7 @@ This needs to be calculated so the `calibrate_distance()` function works properl
 
 
 ```python
-Rubber_Wheels_two.calibrate_distance(XX)
+Solarbotic_Wheels_two.calibrate_distance(XX)
 ```
 
 or 
@@ -136,7 +136,7 @@ If you do not need some parts to calibrate, you can just leave them out
 
 - The front AND back <u>brightness sensor</u> have to be calibrated. This is because this function turns from a black line to a white area and back to the black line and to recognize the line and area, the brightness sensor needs to know what the black and white values are   
 - Make sure that the <u>brightness sensors</u> (front and back) are parallel on the front and rear of the robot
-- There is a slight difference between the two classes `driveR_two` and `driveR_four`. In the class `driveR_four` you are able to tell this function if the robot is on a black line or not. If you tell the function, that the robot is not on the line, then (only in `driveR_four`!) you have to place the robot parallel next to the line, so it can find the line by itself. On the other hand you can tell the function that it got placed on the line (`on_line=True`). The example in the "How to calibrate" section the robot will be placed on the line 
+- There is a slight difference between the two classes `Solarbotic_Wheels_two` and `Mecanum_Wheels_four`. In the class `Mecanum_Wheels_four` you are able to tell this function if the robot is on a black line or not. If you tell the function, that the robot is not on the line, then (only in `Mecanum_Wheels_four`!) you have to place the robot parallel next to the line, so it can find the line by itself. On the other hand you can tell the function that it got placed on the line (`on_line=True`). The example in the "How to calibrate" section the robot will be placed on the line 
 
 ###### How to calibrate
 

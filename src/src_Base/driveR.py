@@ -641,7 +641,7 @@ class base_driver:
     # ======================== PUBLIC METHODS =======================
 
 
-class Rubber_Wheels_two(base_driver):
+class Solarbotic_Wheels_two(base_driver):
     def __init__(self,
                  Instance_right_wheel: WheelR,
                  Instance_left_wheel: WheelR,

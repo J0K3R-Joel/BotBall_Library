@@ -91,7 +91,7 @@ def Instancer_Setup():
 
 
         # ================= DriveR ==================
-        #globals()['Noris'] = Rubber_Wheels_two(Instance_right_wheel=Wheel_R,
+        #globals()['Noris'] = Solarbotic_Wheels_two(Instance_right_wheel=Wheel_R,
         #                                                    Instance_left_wheel=Wheel_L,
         #                                                    controller_standing=XX,  # If the controller is standing up-right (True) or if it is laying flat on the surface of the chassis bracket (False)
         #                                                    Instance_light_sensor_front=LightSensorFront,

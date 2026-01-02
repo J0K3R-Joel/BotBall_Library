@@ -74,6 +74,18 @@ class CameraManager:
             log("No valid frame found. Maybe wrong camera index?", important=True, in_exception=True)
             raise RuntimeError("No valid frame found. Maybe wrong camera index?")
 
+    def get_warmed_up(self) -> bool:
+        '''
+        Return if the camera is already warmed up.
+
+        Args:
+            None
+
+        Returns:
+            bool: If the camera is warmed up (True) or not (False)
+        '''
+        return self._warmed_up
+
 
     # ======================== SETTER ========================
     def set_warmed_up(self, new_warmed_up: bool) -> None:

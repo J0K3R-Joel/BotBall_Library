@@ -434,6 +434,7 @@ class CameraObjectDetector:
         start_time = time.time()
         last_frame = None
         mean_brightness_list = []
+        min_brightness = 0
         called_function = False
         try:
             self.camera_manager.set_warmed_up(False)
@@ -445,7 +446,7 @@ class CameraObjectDetector:
                 mean_brightness = np.mean(gray)
                 mean_brightness_list.append(mean_brightness)
 
-                if time.time() - start_time > 2 and called_function is False:
+                if time.time() - start_time > 4 and called_function is False:
                     min_brightness = self._calc_min_brightness(mean_brightness_list)
                     called_function = True
 

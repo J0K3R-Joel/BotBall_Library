@@ -291,27 +291,32 @@ class CameraObjectDetector:
         median = np.median(filtered, axis=0)
         return median  # (H, S, V)
 
-    def _calc_min_brightness(self, mean_brightness_list: list, avg_diff: float = 0.05) -> float:
+    def _calc_min_brightness(self, mean_brightness_list: list, avg_diff: float = 0.075) -> float:
         '''
         calculates the min_brightness based on the average value from all mean_brightnesses that are equal or similar to the previous mean_brightness
 
         Args:
             mean_brightness_list (list): list of the last few mean_brightnesses
-            avg_diff (float, optional): the difference that allows the current mean_brightness to be similar to the previous one (default: 0.05)
+            avg_diff (float, optional): the difference that allows the current mean_brightness to be similar to the previous one (default: 0.075)
 
         Returns:
             float: the new min_brightness
         '''
         counter = 0
         sum_mean_brightness = 0
-        previous_mean_brightness = mean_brightness_list[4]
-        for mean_brightness in mean_brightness_list[5:]:
+        index_from = 4
+        if len(mean_brightness_list) < 5:
+            index_from = 0
+        previous_mean_brightness = mean_brightness_list[index_from]
+        for mean_brightness in mean_brightness_list[index_from:]:
             if previous_mean_brightness - avg_diff < mean_brightness < previous_mean_brightness + avg_diff:
                 sum_mean_brightness += mean_brightness
                 counter += 1
             if counter == 7:
                 return (sum_mean_brightness / counter)
             previous_mean_brightness = mean_brightness
+        if counter != 0:
+            return (sum_mean_brightness / counter)
         return previous_mean_brightness
 
     def _save_result(self, frame, label:str, mode:str="find", status:str="FOUND"):

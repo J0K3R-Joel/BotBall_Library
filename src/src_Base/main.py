@@ -91,6 +91,8 @@ def Instancer_Setup():
         globals()['TestButton'] = Digital(PORT_BUTTON)  # This is how you will declare all sensors and motors and servos. globals()['{VAR_NAME)'] creates a global variable that is accessable EVERYWHERE (see main function)!
 
         # ================= ServoX ==================
+
+        # ================= WheelR ==================
     
         # ============== DistanceSensor =============
 

@@ -282,6 +282,36 @@ class RobotCommunicator:
         self.new_message_flag = False
         return self.latest_message
 
+    def wait_for_new_message(self) -> str:
+        '''
+        Wait until you received a new message and return the message
+
+        Args:
+            None
+
+        Returns:
+            str: latest message
+        '''
+        while not self.has_new_message():
+            continue
+
+        return self.get_latest()
+
+    def wait_for_specific_message(self, msg: str) -> bool:
+        '''
+        Wait for a new message and check if the new message is equal to the given string
+
+        Args:
+            msg (str): The message that should be checked for equality
+
+        Returns:
+            bool: If the latest message is the same as the given string (True) or if they are different (False)
+        '''
+        new_msg = self.wait_for_new_message()
+        return True if new_msg == msg else False
+
+
+
     def remove_message(self, msg) -> None:
         '''
         deletes a message from the message queue

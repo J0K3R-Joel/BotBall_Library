@@ -20,18 +20,18 @@ except Exception as e:
     log(f'Import Exception in WifiConnector: {str(e)}', important=True, in_exception=True)
 
 class ServoX:
-    def __init__(self, port: int, maxValue: int = 2047, minValue: int = 0):
+    def __init__(self, port: int, max_value: int = 2047, min_value: int = 0):
         '''
         Class for using the servos. HINT: You can use this class for micro servos as well, just set the min and max values to fit the micro servo
 
         Args:
             port (int): The integer value from where it is plugged in (the hardware) (e.g.: 1; 3; 4; 2).
-            maxValue (int, optional): The highest value which the servo can go to (default: 2047)
-            minValue (int, optional): The lowest value which the servo can go to (default: 0)
+            max_value (int, optional): The highest value which the servo can go to (default: 2047)
+            min_value (int, optional): The lowest value which the servo can go to (default: 0)
         '''
         self.port = port
-        self.max_value = maxValue
-        self.min_value = minValue
+        self.max_value = max_value
+        self.min_value = min_value
         self._servo_lock = threading.Lock()
         self._active_servo_id = None
         self.new_pos_val = 0

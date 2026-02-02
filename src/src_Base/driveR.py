@@ -636,9 +636,8 @@ class base_driver:
         if output:
             log('Every hardware calibration finished.')
 
-
-
     # ======================== PUBLIC METHODS =======================
+    # there are none at this time
 
 
 class Solarbotic_Wheels_two(base_driver):
@@ -673,7 +672,6 @@ class Solarbotic_Wheels_two(base_driver):
             Instance_distance_sensor (DistanceSensor, optional): The distance sensor instance where the button is mounted on of the robot (default: None)
 
         '''
-
         super().__init__(DS_SPEED, controller_standing, Instance_right_wheel, Instance_left_wheel)
         self.right_wheel = Instance_right_wheel
         self.left_wheel = Instance_left_wheel
@@ -2149,7 +2147,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Args:
             direction (str): "left" or "right", depending on where you want to go
-            degree (int): the amount of degrees (B0) to turn from the current point (only values from 0 - 180 allowed for maximum efficiency)
+            degree (int): the amount of degrees (B0) to turn from the current point (only values from 0> - 180 allowed for maximum efficiency)
 
         Returns:
             None
@@ -2159,10 +2157,10 @@ class Solarbotic_Wheels_two(base_driver):
             raise ValueError(
                 'Only "right" or "left" are valid options for the "direction" parameter')
 
-        if degree > 180 or degree < 1:
-            log('Only values from range 1 - 180 are valid for the "degree" parameter', in_exception=True)
+        if degree > 180 or degree <= 0:
+            log('Only values from range 0> - 180 are valid for the "degree" parameter', in_exception=True)
             raise ValueError(
-                'Only values from range 1 - 180 are valid for the "degree" parameter')
+                'Only values from range 0> - 180 are valid for the "degree" parameter')
 
         div = 180 / degree
         value = self.ONEEIGHTY_DEGREES_SECS / div
@@ -3315,7 +3313,7 @@ class Mechanum_Wheels_four(base_driver):
 
         Args:
             direction (str): "left" or "right", depending on where you want to go
-            degree (int): the amount of degrees (B0) to turn from the current point (only values from 0 - 180 allowed for maximum efficiency)
+            degree (int): the amount of degrees (B0) to turn from the current point (only values from 0> - 180 allowed for maximum efficiency)
 
         Returns:
             None
@@ -3324,9 +3322,9 @@ class Mechanum_Wheels_four(base_driver):
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
             raise ValueError('turn_degrees() Exception: Only "right" or "left" are valid options for the "direction" parameter')
 
-        if degree > 180 and degree < 1:
-            log('Only values from range 1 - 180 are valid for the "degree" parameter', in_exception=True)
-            raise ValueError('turn_degrees_far() Exception: Only values from range 1 - 180 are valid for the "degree" parameter')
+        if degree > 180 and degree <= 0:
+            log('Only values from range 0> - 180 are valid for the "degree" parameter', in_exception=True)
+            raise ValueError('turn_degrees_far() Exception: Only values from range 0> - 180 are valid for the "degree" parameter')
         div = 180 / degree
         value = self.ONEEIGHTY_DEGREES_SECS / div
         if degree <= 90:

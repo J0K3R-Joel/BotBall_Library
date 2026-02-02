@@ -255,9 +255,12 @@ class WifiConnector:
         name = ssid if ssid is not None else self.ssid
         passw = password if password is not None else self.password
 
-        print(name, ssid, self.ssid, flush=True)
+        if self.get_mode() != self.CLIENT_MODE:
+            log("Changing to client mode ...")
+            self.set_mode(self.CLIENT_MODE)
 
         try:
+            print(f'Trying to connect to {ssid}...', flush=True)
             subprocess.run(
                 ['sudo', 'nmcli', 'dev', 'wifi', 'connect', name, 'password', passw],
                 check=True,
@@ -283,11 +286,11 @@ class WifiConnector:
             raise RuntimeError('You need to tell the constructor the SSID and password of the WIFI you are trying to connect to!')
 
         if self.get_mode() != self.CLIENT_MODE:
-            log("Change to client mode ...")
+            log("Changing to client mode ...")
             self.set_mode(self.CLIENT_MODE)
 
         if not self.is_connected_to_ssid():
-            log(f"Not connected with {self.ssid} . Connecting ...")
+            log(f"Not connected with {self.ssid}. Connecting ...")
             self.connect_to_wifi()
 
         ip = self.get_ip_address()

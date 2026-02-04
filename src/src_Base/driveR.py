@@ -469,6 +469,15 @@ class base_driver:
 
     # ===================== Check instances =====================
     def check_wheelr_instance(self, *motors) -> bool:
+        '''
+        Check, if the arguments are motors (instances of the WheelR class)
+
+        Args:
+            *motors (args): the instances that should be checked
+
+        Returns:
+            bool: True, if every instance is a instance of the WheelR class. Raises TypeError if otherwise.
+        '''
         for motor in motors[0]:
             if not isinstance(motor, WheelR):
                 log(f'{motor} is an instance of {type(motor).__name__} and not an instance of WheelR! {motor} needs to be an instance of WheelR!', in_exception=True)
@@ -476,9 +485,51 @@ class base_driver:
 
         return True
 
+    # ====================== CALCULATIONS ======================
+    def calculate_seconds_in_degrees(self, seconds: float) -> float:
+        '''
+        Calculates (based on the seconds given) the degrees
+
+        Args:
+            seconds (float): The time in seconds which will be calculated in degrees
+
+        Returns:
+            float: The degrees (for example 92.192 degrees)
+        '''
+        if not self.ONEEIGHTY_DEGREES_SECS:
+            raise ValueError('You need to calibrate the degrees first using the "calibrate_degrees" function!')
+
+        multi = seconds / self.ONEEIGHTY_DEGREES_SECS
+        return 180 * multi
+
+    def calculate_degrees_in_seconds(self, degrees: int) -> float:
+        '''
+        Calculates (based on the degrees given) the seconds
+
+        Args:
+            degrees (int): The degrees which should be calculated in seconds
+
+        Returns:
+            float: The seconds (for example 2.1482 seconds)
+        '''
+        if not self.ONEEIGHTY_DEGREES_SECS:
+            raise ValueError('You need to calibrate the degrees first using the "calibrate_degrees" function!')
+
+        multi = degrees / 180
+        return self.ONEEIGHTY_DEGREES_SECS * multi
+
 
     # ===================== CALIBRATE BIAS =====================
-    def calibrate_degrees(self, output):
+    def calibrate_degrees(self, output: bool) -> None:
+        '''
+        Function that needs to be overwritten to calibrate the degrees (this should calibrate the time it takes the robot/wombat for a 180 degree turn)
+
+        Args:
+            output (bool): (Could be used for -> ) If you want an output / print message (True) or not (False)
+
+        Returns:
+            None
+        '''
         log(f'You need to create a {self.calibrate_degrees.__name__} method in your own class!', in_exception=True)
         raise NotImplementedError(
             f'You need to create a {self.calibrate_degrees.__name__} method in your own class!')
@@ -666,10 +717,6 @@ class base_driver:
             log('Every hardware calibration finished.')
 
 
-    # ======================== PUBLIC METHODS =======================
-    # No public function at this moment
-
-
 class Solarbotic_Wheels_two(base_driver):
     def __init__(self,
                  Instance_right_wheel: WheelR,
@@ -685,7 +732,7 @@ class Solarbotic_Wheels_two(base_driver):
                  Instance_light_sensor_side: LightSensor = None,
                  Instance_distance_sensor: DistanceSensor = None):
         '''
-        Rubber_Wheels_two represents a robot with two solarbotics wheels and a caster ball. This class is for driving this kind of wheels only!
+        Rubber_Wheels_two represents a robot with two solarbotic wheels and a caster ball. This class is for driving this kind of wheels only!
 
         Args:
             Instance_right_wheel (WheelR): Wheel of the right side from the robot. The front is where both wheels are moving straight when using positive values
@@ -1612,7 +1659,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def drift(self, direction: str, end: str, degree: int) -> None:
-        # missing in the function table
+        # missing in the function table. Also not finished, so do not execute this function yet!
         if direction != 'left' and direction != 'right':
             log('direction parameter has to be "left" or "right"!', in_exception=True, important=True)
             raise ValueError('direction parameter has to be "left" or "right"!')
@@ -1736,7 +1783,7 @@ class Solarbotic_Wheels_two(base_driver):
         self.break_all_motors()
 
     @DriveableFunction
-    def line_time_turner(self, millis: int = None, speed: int = None, leaning_side: str = None) -> None:
+    def line_time_turner(self, millis: int = None, speed: int = None, leaning_side: str = None, adjust_wanted: bool = True) -> None:
         '''
         If you are on the line, then it will turn as long as you wish and look for the line. If the line was not found in the time given, then it will turn the other way
 
@@ -1744,6 +1791,7 @@ class Solarbotic_Wheels_two(base_driver):
             millis (int, optional): how long it is allowed to look for the line (default: NINETY_DEGREES_SECS)
             speed (int, optional): how fast it should drive (default: ds_speed)
             leaning_side (str, optional): the side ("right" or "left") where the wombat has to get to (default: None)
+            adjust_wanted (bool, optional): should it get in the dead center of the line (True) or is it enough if just the desired sensor is on the line (False)? (default: True)
 
         Returns:
             None
@@ -1752,6 +1800,7 @@ class Solarbotic_Wheels_two(base_driver):
             speed = self.ds_speed
         startTime = k.seconds()
         maxDuration = millis/1000 if millis is not None else self.NINETY_DEGREES_SECS
+        counter_drive = False
         instances = self.right_wheel, self.left_wheel, self.button_fl, self.button_fr, self.light_sensor_front
         direction = 'left', 'right'
         if speed < 0:
@@ -1772,15 +1821,20 @@ class Solarbotic_Wheels_two(base_driver):
                 instances[1].drive(speed)
 
             if k.seconds() - startTime > maxDuration:
+                print('TIMEOUT', flush=True)
                 self.turn_degrees_condition_analog(direction[1], instances[4], '<', instances[4].get_value_black_bias(), speed=speed)
                 #self.turn_to_black_line(direction[1], 15, speed)
+                counter_drive = True
                 break
             if instances[2].is_pressed() or instances[3].is_pressed():
                 break
+            if instances[4].sees_black():
+                print('black found', flush=True)
+                break
 
         #if counter_drive and adjust_wanted:  #@TODO some kind of drift function here so the rear moves but the front stays still -> drift
-            #self.turn_degrees_condition_analog(direction[1], instances[4], '<', instances[4].get_value_black_bias(), speed=-speed)
-         #   self.turn_to_black_line(direction[1], speed=-speed)
+         #   self.turn_degrees(direction[1], 2)
+            #self.turn_to_black_line(direction[1], speed=-speed)
 
         self.break_all_motors()
 
@@ -1802,19 +1856,21 @@ class Solarbotic_Wheels_two(base_driver):
         self.check_instance_light_sensors_middle()
 
         first_run = True
-        ports = self.button_fl, self.button_fr, self.light_sensor_front
+        ports = self.button_fl, self.button_fr, self.light_sensor_front, self.light_sensor_back
         if speed < 0:
-            ports = self.button_bl, self.button_br, self.light_sensor_back
+            ports = self.button_bl, self.button_br, self.light_sensor_back, self.light_sensor_front
 
         def drive_validator(millis):
             i = 0
 
             while i < millis:
-                while ports[2].sees_black():
-                    i += 3
+                if ports[2].sees_black() and ports[2].sees_black():
+                    i += 2
                     k.msleep(1)
-                    if i < millis:
-                        break
+                elif ports[2].sees_black():
+                    i += 1
+                    k.msleep(1)
+
 
         t = multiprocessing.Process(target=drive_validator, args=(millis,), daemon=True)
         t.start()
@@ -1824,11 +1880,11 @@ class Solarbotic_Wheels_two(base_driver):
 
             if not ports[2].sees_black():
                 if first_run:
-                    self.line_time_turner(speed=speed)
+                    self.line_time_turner(speed=speed, adjust_wanted=True)
                     self.break_all_motors()
                     first_run = False
                 else:
-                    self.line_time_turner(millis=200, speed=speed)
+                    self.line_time_turner(millis=(self.NINETY_DEGREES_SECS*1000)//2, speed=speed, adjust_wanted=True) # (self.NINETY_DEGREES_SECS*1000)//2 to get the time for 45 degrees in milliseconds
                     self.break_all_motors()
         self.break_all_motors()
         print('outside', flush=True)
@@ -2583,7 +2639,6 @@ class Mechanum_Wheels_four(base_driver):
 
 
     # ======================== SET METHODS ========================
-
     def set_instance_distance_sensor(self, Instance_distance_sensor: DistanceSensor) -> None:
         '''
         create or overwrite the existence of the distance_sensor
@@ -2717,8 +2772,8 @@ class Mechanum_Wheels_four(base_driver):
         '''
         self.button_br = Instance_button_back_right
 
-    # ======================== CHECK METHODS ========================
 
+    # ======================== CHECK METHODS ========================
     def check_instance_light_sensors(self) -> bool:
         '''
         inspect the existence of all light sensors
@@ -4383,17 +4438,17 @@ class Mechanum_Wheels_four(base_driver):
     @DriveableFunction
     def drive_straight_condition_analog(self, instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
         '''
-       drive straight until an analog value gets reached for the desired instance
+        drive straight until an analog value gets reached for the desired instance
 
-       Args:
-           instance (Analog): just has to be from something analog (since there is (as of time of creation) only light and distance sensors, which are valid for this argument, just those should be used.
-           condition (str): ("let" / "<=") or ("get" / ">=") or ("ht" / ">") or ("lt" / "<") are valid. Notice: l -> less | h -> higher | e -> equal | t -> than. (The parentheses should be left out, as well as the slash, only choose one argument Example: ">=")
-           value (int): The value that the current value gets compared to and has to be reached
-           millis (int, optional): The maximum amount of time (in milliseconds) which can be taken (default: 9999999)
-           speed (int, optional): The speed it drives sideways (default: ds_speed)
+        Args:
+            instance (Analog): just has to be from something analog (since there is (as of time of creation) only light and distance sensors, which are valid for this argument, just those should be used.
+            condition (str): ("let" / "<=") or ("get" / ">=") or ("ht" / ">") or ("lt" / "<") are valid. Notice: l -> less | h -> higher | e -> equal | t -> than. (The parentheses should be left out, as well as the slash, only choose one argument Example: ">=")
+            value (int): The value that the current value gets compared to and has to be reached
+            millis (int, optional): The maximum amount of time (in milliseconds) which can be taken (default: 9999999)
+            speed (int, optional): The speed it drives sideways (default: ds_speed)
 
-       Returns:
-           None
+        Returns:
+            None
        '''
         if speed is None:
             speed = self.ds_speed
@@ -4496,16 +4551,16 @@ class Mechanum_Wheels_four(base_driver):
                             precise: bool = False) -> None:
         # hint: do not face the black line (?)
         '''
-       Align yourself on the black line. If there is a crossing you can choose on which line you want to get onto by switching the direction parameter. You need to be somewhere on top of the black line to let this function work!
+        Align yourself on the black line. If there is a crossing you can choose on which line you want to get onto by switching the direction parameter. You need to be somewhere on top of the black line to let this function work!
 
-       Args:
-           crossing (bool): are there two overlapping black lines (True) or not (False)
-           direction (str, optional): "vertical" (default) or "horizontal" - depends on where you want to go
-           leaning_side (str, optional): "left" or "right" - helps the roboter to turn in the right direction (-> faster)
-           precise (bool, optional): if True, then it takes longer, but is slightly better aligned on the black line. If False, it takes less time but the bias is therefor more forgiving
+        Args:
+            crossing (bool): are there two overlapping black lines (True) or not (False)
+            direction (str, optional): "vertical" (default) or "horizontal" - depends on where you want to go
+            leaning_side (str, optional): "left" or "right" - helps the roboter to turn in the right direction (-> faster)
+            precise (bool, optional): if True, then it takes longer, but is slightly better aligned on the black line. If False, it takes less time but the bias is therefor more forgiving
 
-       Returns:
-           None
+        Returns:
+            None
        '''
         self.check_instance_light_sensors_middle()
         try:
@@ -4765,17 +4820,17 @@ class Mechanum_Wheels_four(base_driver):
     @DriveableFunction
     def align_line(self, onLine: bool, direction: str = None, speed: int = None, maxDuration: int = 100) -> None:
         '''
-         If you are anywhere on the black line, you can align yourself on the black line. If you are not on the line, it drives (forwards or backwards, depends if the speed is positive or negative) until the line was found and then aligns as desired.
-         Improvement: align backwards, so there is no need to make a 180 degrees turn. Would spare you some time.
+        If you are anywhere on the black line, you can align yourself on the black line. If you are not on the line, it drives (forwards or backwards, depends if the speed is positive or negative) until the line was found and then aligns as desired.
+        Improvement: align backwards, so there is no need to make a 180 degrees turn. Would spare you some time.
 
         Args:
-           onLine (bool): Are you already on the black line (True), or do you need to get onto it (False)? If you are not on the line, you need to write the direction you want to face to!
-           direction (str): "right" or "left" - depends on where you want to go (only needed, if onLine is False)
-           speed (int, optional): how fast it should drive (default: ds_speed)
-           maxDuration  (int, optional): the time (in milliseconds) it is allowed to turn in one direction until a failsave gets executed to turn to the other direction (default: 100)
+            onLine (bool): Are you already on the black line (True), or do you need to get onto it (False)? If you are not on the line, you need to write the direction you want to face to!
+            direction (str): "right" or "left" - depends on where you want to go (only needed, if onLine is False)
+            speed (int, optional): how fast it should drive (default: ds_speed)
+            maxDuration  (int, optional): the time (in milliseconds) it is allowed to turn in one direction until a failsave gets executed to turn to the other direction (default: 100)
 
         Returns:
-           None
+            None
         '''
         if speed is None:
             speed = self.ds_speed
@@ -4832,14 +4887,14 @@ class Mechanum_Wheels_four(base_driver):
     @DriveableFunction
     def black_line(self, millis: int, speed: int = None) -> None:
         '''
-       drive on the black line as long as wished
+        drive on the black line as long as wished
 
-       Args:
-           millis (int): how long you want to follow the black line (in milliseconds)
-           speed (int, optional): how fast it should drive straight (default: ds_speed)
+        Args:
+            millis (int): how long you want to follow the black line (in milliseconds)
+            speed (int, optional): how fast it should drive straight (default: ds_speed)
 
-       Returns:
-           None
+        Returns:
+            None
        '''
         if speed is None:
             speed = self.ds_speed
@@ -4866,14 +4921,14 @@ class Mechanum_Wheels_four(base_driver):
     @DriveableFunction
     def scanner_face_object(self, degree: int) -> None:
         '''
-       Scan the location for the nearest object and then face the nearest object
+        Scan the location for the nearest object and then face the nearest object
 
-       Args:
-           degree (int): how much area the scan should cover
+        Args:
+            degree (int): how much area the scan should cover
 
-       Returns:
-           None
-       '''
+        Returns:
+            None
+        '''
         self.check_instance_distance_sensor()
         if degree > 90:
             log('Only a value under 91 is acceptable for the degree!', in_exception=True)

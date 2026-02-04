@@ -29,7 +29,7 @@ This file will tell you things to consider and important stuff. This is very imp
   1. repeat every step in the [README installation](../README.md#Installation) guide
   2. only copy the new files from the pulled directory which are relevant for you and paste it into the corresponding folder. The old file gets overwritten this way.
 
-  No matter which path you choose, you need to make sure that nothing important gets overwritte -> you can not get the changes back. Save every important file, especially when you use the first step, since it overwrites every file.
+  No matter which path you choose, you need to make sure that nothing important gets overwritte -> you can not get the changes back. Save every important file (like the `main.py`'s), especially when you use the first step, since it overwrites every file.
 
 - If you have no experience on the controller, then consider the [./controller_guide.md](./controller_guide.md) file
 

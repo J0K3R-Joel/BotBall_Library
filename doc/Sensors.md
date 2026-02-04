@@ -146,7 +146,7 @@ The linear slide returns a value from `0`  - `2047`. The value it returns depend
 
 - The position of the slider (the further away from the cable the higher the value)
 
-Unfortunatelly you can not set the value, you can only receive the value it is at the moment
+Unfortunately you can not set the value, you can only receive the value it is at the moment
 
 ---
 

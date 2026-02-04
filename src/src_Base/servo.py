@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 import os, sys
+import time
+
 sys.path.append("/usr/lib")
 
 from logger import *  # selfmade
@@ -138,10 +140,7 @@ class ServoX:
             None
         '''
         new_pos = self.get_pos() + value
-        if self._valid_range(new_pos):
-            self._set_pos_internal(new_pos)
-        else:
-            self._set_pos_internal(self.new_pos_val)
+        self._set_pos_internal(new_pos)
 
     def range_to_pos(self, value: int, multi: int = 2) -> None:
         '''
@@ -156,9 +155,6 @@ class ServoX:
         '''
         curr_pos = self.get_pos()
 
-        if not self._valid_range(value):
-            value = self.new_pos_val
-
         if multi < 1:
             multi = 1
 
@@ -168,15 +164,11 @@ class ServoX:
         if value-curr_pos < 0:
             multi = -multi
 
-
         counter = int(multi)
 
-        if counter > 0:
-            while self.get_pos() < value:
-                self.add_to_pos(counter)
-        else:
-            while self.get_pos() > value:
-                self.add_to_pos(counter)
+        while self.get_pos() < value:
+            self.add_to_pos(counter)
+
 
     def range_from_to_pos(self, interval: list, multi: int = 2) -> None:
         '''
@@ -189,8 +181,5 @@ class ServoX:
         Returns:
             None
         '''
-        for i in range(len(interval)):
-            interval[i] = int(interval[i]) if self._valid_range(interval[i]) else self.new_pos_val
-
         self.set_pos(interval[0])
         self.range_to_pos(interval[1], multi)

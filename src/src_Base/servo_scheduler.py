@@ -88,8 +88,7 @@ class ServoScheduler:
                             self.enable_servo(port)
                             to_sleep = data['millis']
                             k.set_servo_position(port, data['pos'])
-
-                k.msleep(to_sleep)
+                            #k.msleep(to_sleep)
 
                 if self.last_activity and time.time() - self.last_activity > self.AUTO_SHUTDOWN_TIMEOUT:
                     self.disable_all()
@@ -111,7 +110,7 @@ class ServoScheduler:
 
                 key = (port, func_id)
                 self.last_activity = now
-                millis = int((abs(k.get_servo_position(port) - pos) / 10))  # + 20 is just a kind of bias.
+                millis = int((abs(k.get_servo_position(port) - pos) / 100))  # + 20 is just a kind of bias.
 
                 if key in self._commands:
                     self._commands[key].update({

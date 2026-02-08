@@ -94,13 +94,20 @@ class LightSensor(Analog):
 
         diff = self.get_value_black() - self.get_value_white()
         if diff < 0:
-            log('Black value needs to be higher than the white value. Since this is not the case, this means that you did something wrong in setting the light values!', in_exception=True)
-            raise ValueError('Black value needs to be higher than the white value. Since this is not the case, this means that you did something wrong in setting the light values!')
+            log('Black value needs to be higher than the white value. Since this is not the case, this means that you did something wrong in setting the light values!', important=True)
+            return None
         elif diff < 400:
-            log('The difference between the value of the black- and white light sensor is too small. Please consider either dropping the sensors lower (more near to the floor) or replacing your sensors!', in_exception=True)
-            raise ValueError('The difference between the value of the black- and white light sensor is too small. Please consider either dropping the sensors lower (more near to the floor) or replacing your sensors!')
+            log('The difference between the value of the black- and white light sensor is too small. Please consider either dropping the sensors lower (more near to the floor) or replacing your sensors!', important=True)
+            return None
 
         return int(155.5 * math.log(diff) - 782)  # value between ~150 and ~500
+
+    # =========================== CHECK ===========================
+    def check_bias(self):
+        if self.bias is None:
+            log(f'The difference between the value of the {self.position.upper()} black- and white light sensor is too small. Please consider either dropping the sensors lower (more near to the floor) or replacing your sensors!')
+            raise ValueError(f'The difference between the value of the {self.position.upper()} black- and white light sensor is too small. Please consider either dropping the sensors lower (more near to the floor) or replacing your sensors!')
+
 
     # ======================== Save-Methods =======================
 
@@ -202,6 +209,7 @@ class LightSensor(Analog):
        Returns:
            int: value for the sensor to see black (inclusive bias)
        '''
+        self.check_bias()
         if isinstance(self.val_black, int):
             return self.val_black - self.bias
         file_name = os.path.join(self.BIAS_FOLDER, f'light_sensor_black_{self.position}.txt')
@@ -222,6 +230,7 @@ class LightSensor(Analog):
         Returns:
              int: value for the sensor to see white (inclusive bias)
         '''
+        self.check_bias()
         if isinstance(self.val_white, int):
             return self.val_white + self.bias
         file_name = os.path.join(self.BIAS_FOLDER, f'light_sensor_white_{self.position}.txt')
@@ -235,14 +244,15 @@ class LightSensor(Analog):
 
     def get_bias(self) -> int:
         '''
-         get the kind of error that is allowed
+        get the kind of error that is allowed
 
-         Args:
-             None
+        Args:
+            None
 
         Returns:
              bias of the on and off value (int)
-         '''
+        '''
+        self.check_bias()
         return self.bias
 
 
@@ -297,10 +307,11 @@ class LightSensor(Analog):
        Returns:
             if it sees black (True) or if it can not recognise it (Falsa)
         '''
-        if not isinstance(self.val_white, int):
+        self.check_bias()
+        if not isinstance(self.val_black, int):
             log('You need to set the black value before trying to see if it is white', in_exception=True, important=True)
             raise TypeError('You need to set the white value before trying to see if it is black')
-        return self.current_value() >= self.val_white + self.bias
+        return self.current_value() >= self.val_black - self.bias
 
     def sees_white(self) -> bool:
         '''
@@ -312,7 +323,8 @@ class LightSensor(Analog):
        Returns:
             if it sees white (True) or if it can not recognise it (Falsa)
         '''
-        if not isinstance(self.val_black, int):
+        self.check_bias()
+        if not isinstance(self.val_white, int):
             log('You need to set the black value before trying to see if it is white', in_exception=True, important=True)
             raise TypeError('You need to set the black value before trying to see if it is white')
-        return self.current_value() <= self.val_black - self.bias
+        return self.current_value() <= self.val_white + self.bias

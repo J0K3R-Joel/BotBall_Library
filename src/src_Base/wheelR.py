@@ -265,7 +265,7 @@ class WheelR:
         '''
         self.bw(-self.max_speed)
 
-    def drive(self, speed:int):
+    def drive(self, speed: int):
         '''
         Default Function for driving in any direction
 

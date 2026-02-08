@@ -20,6 +20,7 @@ try:
     import math
     from typing import Optional
     from scipy.interpolate import interp1d
+    from threadR import KillableThread  # selfmade
     from wheelR import WheelR  # selfmade
     from analog import Analog  # selfmade
     from distance_sensor import DistanceSensor  # selfmade
@@ -98,7 +99,7 @@ class base_driver:
             None
         '''
         self.mm_per_sec = self.get_mm_per_sec()
-        self.ONEEIGHTY_DEGREES_SECS = self.get_degrees()
+        self.ONEEIGHTY_DEGREES_SECS = self.get_degrees_time()
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
         self.bias_gyro_z = self.get_bias_gyro_z()
         self.bias_gyro_y = self.get_bias_gyro_y()
@@ -151,9 +152,9 @@ class base_driver:
             return k.gyro_z() if self.standing else k.gyro_y()
         return k.gyro_y() if self.standing else k.gyro_z()
 
-    def get_degrees(self, calibrated: bool = False) -> float:
+    def get_degrees_time(self, calibrated: bool = False) -> float:
         '''
-        Getting the average degrees from the bias_degrees.txt file
+        Getting the average time for a 180 degree turn from the bias_degrees.txt file
 
         Args:
             calibrated (bool, optional): Writing to the file bias_degrees.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
@@ -316,6 +317,17 @@ class base_driver:
         if only_sec:
             return sec
         return total
+
+    def get_light_sensor_distance_sec(self) -> float:
+        file_name = os.path.join(BIAS_FOLDER, 'light_sensor_distance_sec.txt')
+        try:
+            distance_sec = file_Manager.reader(file_name, 'float')
+            if not distance_sec:
+                log('You need to calibrate the light sensor distance first!', in_exception=True)
+                raise ValueError('You need to calibrate the light sensor distance first!')
+            return distance_sec
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
 
     # ======================== SET METHODS ========================
     def set_degrees(self, secs: float) -> None:
@@ -520,6 +532,24 @@ class base_driver:
 
 
     # ===================== CALIBRATE BIAS =====================
+    @DriveableFunction
+    def calibrate_light_sensor_distance_sec(self):
+        '''
+        Function that needs to be overwritten to calibrate the distance between the two light sensors in the middle (light sensors for line follower (black_line))
+
+        Args:
+            None
+
+        Returns:
+            None, but writes the calibrated distance (in seconds) into the file
+        '''
+        log(f'You need to create a "{self.calibrate_light_sensor_distance_sec.__name__}" method in your own class!', in_exception=True)
+        raise NotImplementedError(
+            f'You need to create a "{self.calibrate_light_sensor_distance_sec.__name__}" method in your own class!')
+
+
+
+    @DriveableFunction
     def calibrate_degrees(self, output: bool) -> None:
         '''
         Function that needs to be overwritten to calibrate the degrees (this should calibrate the time it takes the robot/wombat for a 180 degree turn)
@@ -530,10 +560,11 @@ class base_driver:
         Returns:
             None
         '''
-        log(f'You need to create a {self.calibrate_degrees.__name__} method in your own class!', in_exception=True)
+        log(f'You need to create a "{self.calibrate_degrees.__name__}" method in your own class!', in_exception=True)
         raise NotImplementedError(
-            f'You need to create a {self.calibrate_degrees.__name__} method in your own class!')
+            f'You need to create a "{self.calibrate_degrees.__name__}" method in your own class!')
 
+    @DriveableFunction
     def auto_calibration(self, times: int, output: bool = False) -> None:
         '''
         Automatically calibrates as often as you wish
@@ -547,10 +578,12 @@ class base_driver:
         '''
         for i in range(times):
             self.calibrate(output=output)
-
+            self.break_all_motors()
             print(f'=== {i + 1} / {times} times calibrated ===', flush=True)
+
         log('AUTO CALIBRATION DONE')
 
+    @DriveableFunction
     def calibrate(self, output: bool = True) -> None:
         '''
         Calibrates all necessary bias
@@ -563,15 +596,13 @@ class base_driver:
             None. Writes bias into files
         '''
         self.calibrate_hardware('gyro_z', 'gyro_y', 'accel_z', 'accel_y', output=False)
-        #self.calibrate_gyro_z(1, 4)
-        #self.calibrate_gyro_y(2, 4)
-        #self.calibrate_accel_z(3, 4)
-        #self.calibrate_accel_y(4, 4)
         self.bias_gyro_y = self.get_bias_gyro_y(True)
         self.bias_accel_z = self.get_bias_accel_y(True)
         self.bias_gyro_z = self.get_bias_gyro_z(True)
         self.bias_accel_y = self.get_bias_accel_y(True)
         self.calibrate_degrees(output)
+        self.break_all_motors()
+        self.get_degrees_time(True)
         if output:
             log('CALIBRATION DONE', important=True)
 
@@ -663,8 +694,6 @@ class base_driver:
         if counter is not None and max is not None:
             log(f'{counter}/{max} - ACCEL Y CALIBRATED')
 
-
-
     def calibrate_hardware(self, *args: str, millis: int = None, output: bool = True) -> None:
         '''
         Gives you access to thread based calibration, so you do not need to wait for every function individually.
@@ -715,6 +744,23 @@ class base_driver:
 
         if output:
             log('Every hardware calibration finished.')
+
+
+    # ======================== PUBLIC METHODS =======================
+    def break_all_motors(self):
+        '''
+        Function that needs to be overwritten to make every registered motor stop
+
+        Args:
+            None
+
+        Returns:
+            None
+        '''
+        log(f'You need to create a "{self.break_all_motors.__name__}" method in your own class!', in_exception=True)
+        raise NotImplementedError(
+            f'You need to create a "{self.break_all_motors.__name__}" method in your own class!')
+
 
 
 class Solarbotic_Wheels_two(base_driver):
@@ -1160,36 +1206,51 @@ class Solarbotic_Wheels_two(base_driver):
         '''
         self.check_instance_light_sensors_middle()
         startTime = time.time()
+        turning_time = self.ONEEIGHTY_DEGREES_SECS/4 if self.ONEEIGHTY_DEGREES_SECS else 1
 
         def sensor_checker():
+            global front_found, back_found
+            front_found = False
+            back_found = False
+
             def white_front_valid():
-                while self.light_sensor_front.sees_white():
-                    continue
+                global front_found
+                while not front_found:
+                    if not self.light_sensor_front.sees_white():
+                        front_found = True
+                        print('front found', flush=True)
 
             def white_back_valid():
-                while self.light_sensor_back.sees_white():
-                    continue
+                global back_found
+                while not back_found:
+                    if not self.light_sensor_back.sees_white():
+                        back_found = True
+                        print('back found', flush=True)
 
-
-            t_front = threading.Thread(target=white_front_valid)
-            t_rear = threading.Thread(target=white_back_valid)
+            t_front = KillableThread(target=white_front_valid)
+            t_back = KillableThread(target=white_back_valid)
             t_front.start()
-            t_rear.start()
+            t_back.start()
 
-            while t_front.is_alive() or t_rear.is_alive():
-                self.left_wheel.drive_dfw(-self.left_wheel.get_default_speed()/2)
-                self.right_wheel.drive_dbw(+self.right_wheel.get_default_speed()/2)
+            while not front_found and not back_found:
+                #self.left_wheel.drive_dfw(-self.left_wheel.get_default_speed())
+                #self.right_wheel.drive_dbw(+self.right_wheel.get_default_speed())
+                self.left_wheel.drive_dfw()
+                self.right_wheel.drive_dbw()
 
 
-        while k.seconds() - startTime < (1200) / 1000:
-            self.left_wheel.drive_dfw(-self.left_wheel.get_default_speed()/2)
-            self.right_wheel.drive_dbw(+self.right_wheel.get_default_speed()/2)
+        while k.seconds() - startTime < turning_time:
+            #self.left_wheel.drive_dfw(-self.left_wheel.get_default_speed())
+            #self.right_wheel.drive_dbw(+self.right_wheel.get_default_speed())
+            self.left_wheel.drive_dfw()
+            self.right_wheel.drive_dbw()
 
         sensor_checker()
-        self.break_all_motors()
         endTime = time.time()
-        self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime)/2
+        self.break_all_motors()
+        self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime)
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
+
         if output:
             log('DEGREES CALIBRATED')
 
@@ -1216,6 +1277,25 @@ class Solarbotic_Wheels_two(base_driver):
 
         self.set_TOTAL_mm_per_sec(mm=mm, sec=sec)
 
+    @DriveableFunction
+    def calibrate_light_sensor_distance_sec(self):
+        self.check_instance_light_sensors_middle()
+        self.drive_straight_condition_analog(self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
+        start = k.seconds()
+        self.drive_straight_condition_analog(self.light_sensor_back, '<', self.light_sensor_back.get_value_black_bias())
+        self.light_sensor_distance_sec = k.seconds() - start
+        self.break_all_motors()
+
+        file_name = os.path.join(BIAS_FOLDER, 'light_sensor_distance_sec.txt')
+        try:
+            distance_sec = file_Manager.reader(file_name, 'float')
+            if distance_sec:
+                avg = (distance_sec + self.light_sensor_distance_sec) / 2
+                file_Manager.writer(file_name, 'w', str(avg))
+            else:
+                file_Manager.writer(file_name, 'w', self.light_sensor_distance_sec)
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
 
     @DriveableFunction
     def calibrate_distance(self, start_mm: int, speed: int = None, step: float = 0.15) -> None:
@@ -1309,7 +1389,7 @@ class Solarbotic_Wheels_two(base_driver):
         Drives (forwards or backwards, depending if the speed is positive or negative) until it bumps into something, but it won't readjust with the other wheel, resulting in aligning as far away as possible
 
         Args:
-            speed (int): How fast the robot should drive (and if it should go backwards (negative value) or forward (positive value)
+            speed (int): How fast the robot should drive (and if it should go backwards (negative value) or forward (positive value))
             drive_dir (bool, optional): If True it should drive the other direction to be able to turn again, without bumping (default: True) -> sometimes you want to be as close to an object as possible
             millis (int): The maximum amount of time (in milliseconds) it is allowed to try to align itself (default: 5000)
 
@@ -1356,13 +1436,13 @@ class Solarbotic_Wheels_two(base_driver):
 
 
     @DriveableFunction
-    def align_drive_front(self, drive_bw: bool = True, millis: int = 2000, speed: int = None) -> None:
+    def align_drive_front(self, drive_bw: bool = True, millis: int = 4000, speed: int = None) -> None:
         '''
         aligning front by bumping into something, so both buttons on the front will be pressed. If there's an error by pressing the buttons, a fail save will occur. If at will it also drive backwards a little bit to be able to turn after it bumped into something
 
         Args:
             drive_bw (bool, optional): If you desire to drive backward a little bit (default: True) -> (but sometimes you want to stay aligned at the object)
-            millis (int): The maximum amount of time (in milliseconds) it is allowed to try to align itself (default: 2000)
+            millis (int): The maximum amount of time (in milliseconds) it is allowed to try to align itself (default: 4000)
             speed (int): How fast the robot should drive (gets converted to a positive value) (default: ds_speed)
 
 
@@ -1405,22 +1485,26 @@ class Solarbotic_Wheels_two(base_driver):
         self.break_all_motors()
 
         if drive_bw and hit:
-            self.drive_straight(200, -500)
+            self.drive_straight(100, -speed)
 
 
     @DriveableFunction
-    def align_drive_back(self, drive_fw: bool = True, millis: int = 2000) -> None:
+    def align_drive_back(self, drive_fw: bool = True, drive_fw_speed: int = None, millis: int = 4000) -> None:
         '''
         aligning back by bumping into something, so both buttons on the back will be pressed. If there's an error by pressing the buttons, a fail save will occur. If at will it also drive forwards a little bit to be able to turn after it bumped into something
 
         Args:
             drive_fw (bool, optional): If you desire to drive forward a little bit (default: True) -> (but sometimes you want to stay aligned at the object)
-            millis (int): The maximum amount of time (in milliseconds) it is allowed to try to align itself (default: 2000)
+            millis (int, optional): The maximum amount of time (in milliseconds) it is allowed to try to align itself (default: 4000)
+            drive_fw_speed (int, optional): The speed it should drive forward (if you wanted it to drive forward) (default: ds_speed)
 
         Returns:
             None
         '''
         self.check_instances_buttons_back()
+        if drive_fw_speed is None:
+            drive_fw_speed = self.ds_speed
+
         hit = False
         startTime: float = k.seconds()
         while k.seconds() - startTime < millis / 1000:
@@ -1441,7 +1525,7 @@ class Solarbotic_Wheels_two(base_driver):
         self.break_all_motors()
 
         if drive_fw and hit:
-            self.drive_straight(200, 500)
+            self.drive_straight(100, drive_fw_speed)
 
 
     @DriveableFunction
@@ -1633,28 +1717,52 @@ class Solarbotic_Wheels_two(base_driver):
         Returns:
            None
         '''
-        if speed is None:
-            speed = self.ds_speed
         self.check_instances_buttons()
         self.check_instance_light_sensors_middle()
+
+        if speed is None:
+            speed = self.ds_speed
 
         if direction != 'left' and direction != 'right':
             log('If the Wombat is not on the line, please tell it which direction it should face when it is on the line ("right" or "left")',
                 in_exception=True)
             raise ValueError('drive_align_line() Exception: If the Wombat is not on the line, please tell it which direction it should face when it is on the line ("right" or "left")')
 
-        ports = self.light_sensor_back, self.light_sensor_front
+        ports = [self.light_sensor_front, self.light_sensor_back]
         if speed < 0:
-            ports = self.light_sensor_front, self.light_sensor_back
+            ports = [self.light_sensor_back, self.light_sensor_front]
 
-        self.drive_straight_condition_analog(ports[1], '<=', ports[1].get_value_black() - ports[1].get_bias(), speed=speed)
+        self.drive_straight_condition_analog(ports[0], '<=', ports[0].get_value_black_bias(), speed=speed)
         start_time = k.seconds()
-        self.drive_straight_condition_analog(ports[0], '<=', ports[0].get_value_black() - ports[0].get_bias(), speed=speed)
+        self.drive_straight_condition_analog(ports[0], '>', ports[0].get_value_white_bias(), speed=speed)
+        line_end_time = k.seconds()
+        self.drive_straight_condition_analog(ports[1], '<', ports[1].get_value_white_bias(), speed=speed)
         end_time = k.seconds()
+        self.break_all_motors()
 
-        seconds = end_time - start_time
-        self.drive_straight((seconds * 1000) // 2, speed=-speed)
-        self.turn_to_black_line(direction, speed=abs(speed))
+        seconds_start_finish = end_time - start_time
+        seconds_black_tape = line_end_time - start_time
+        self.drive_straight((seconds_start_finish * 1000 + (seconds_black_tape * 1000)) // 2, speed=-speed)  #  + seconds_black_tape * 1000
+        self.break_all_motors()
+        if ports[0].sees_black():
+            print('front top', flush=True)
+            ports[0], ports[1] = ports[1], ports[0]
+
+        enter_deg = self.turn_degrees_condition_analog(direction, ports[0], '<', ports[0].get_value_black_bias())
+        self.break_all_motors()
+        exit_deg = self.turn_degrees_condition_analog(direction, ports[0], '>', ports[0].get_value_black_bias())
+
+        radius = self.get_light_sensor_distance_sec()/2
+        distance_sec = math.pi * radius * (enter_deg/180)
+        distance_deg = self.calculate_seconds_in_degrees(distance_sec)
+
+        direction = 'right' if 'right' != direction else 'left'
+        print('turning ', direction, ' with ', distance_deg, flush=True)
+        self.turn_degrees(direction, distance_deg)
+        self.break_all_motors()
+        #direction_new = 'right' if direction != 'right' else 'left'
+        #self.turn_to_black_line(direction, speed=-abs(speed))
+        #self.break_all_motors()
 
 
     @DriveableFunction
@@ -1791,7 +1899,7 @@ class Solarbotic_Wheels_two(base_driver):
             millis (int, optional): how long it is allowed to look for the line (default: NINETY_DEGREES_SECS)
             speed (int, optional): how fast it should drive (default: ds_speed)
             leaning_side (str, optional): the side ("right" or "left") where the wombat has to get to (default: None)
-            adjust_wanted (bool, optional): should it get in the dead center of the line (True) or is it enough if just the desired sensor is on the line (False)? (default: True)
+            adjust_wanted (bool, optional): (as long as the drift function does not work perfectly, this parameter will not do anything) should it get in the dead center of the line (True) or is it enough if just the desired sensor is on the line (False)? (default: True)
 
         Returns:
             None
@@ -1821,15 +1929,12 @@ class Solarbotic_Wheels_two(base_driver):
                 instances[1].drive(speed)
 
             if k.seconds() - startTime > maxDuration:
-                print('TIMEOUT', flush=True)
                 self.turn_degrees_condition_analog(direction[1], instances[4], '<', instances[4].get_value_black_bias(), speed=speed)
-                #self.turn_to_black_line(direction[1], 15, speed)
                 counter_drive = True
                 break
             if instances[2].is_pressed() or instances[3].is_pressed():
                 break
             if instances[4].sees_black():
-                print('black found', flush=True)
                 break
 
         #if counter_drive and adjust_wanted:  #@TODO some kind of drift function here so the rear moves but the front stays still -> drift
@@ -1864,7 +1969,7 @@ class Solarbotic_Wheels_two(base_driver):
             i = 0
 
             while i < millis:
-                if ports[2].sees_black() and ports[2].sees_black():
+                if ports[2].sees_black() and ports[3].sees_black():
                     i += 2
                     k.msleep(1)
                 elif ports[2].sees_black():
@@ -1884,10 +1989,9 @@ class Solarbotic_Wheels_two(base_driver):
                     self.break_all_motors()
                     first_run = False
                 else:
-                    self.line_time_turner(millis=(self.NINETY_DEGREES_SECS*1000)//2, speed=speed, adjust_wanted=True) # (self.NINETY_DEGREES_SECS*1000)//2 to get the time for 45 degrees in milliseconds
+                    self.line_time_turner(millis=(self.NINETY_DEGREES_SECS*1000)//4, speed=speed, adjust_wanted=True) # (self.NINETY_DEGREES_SECS*1000)//2 to get the time for 22.5 degrees in milliseconds
                     self.break_all_motors()
         self.break_all_motors()
-        print('outside', flush=True)
 
 
     @DriveableFunction

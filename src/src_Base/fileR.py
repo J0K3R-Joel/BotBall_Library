@@ -27,6 +27,7 @@ class FileR:
 
 		Args:
 			file_name (str): the file (and/or path) to the desired file
+			type_name (str, optional): the type of value which you want to get returned
 
 		Returns:
 			content of the file

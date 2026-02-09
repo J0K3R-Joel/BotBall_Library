@@ -37,7 +37,7 @@ except Exception as e:
 
 BIAS_FOLDER = '/usr/lib/bias_files'
 os.makedirs(BIAS_FOLDER, exist_ok=True)
-FILE_PATH = os.path.join(sys.path[0],__file__)
+FILE_PATH = os.path.join(sys.path[0], __file__)
 breakable_function_name = None
 
 def DriveableFunction(func):
@@ -108,6 +108,15 @@ class base_driver:
         self._handle_standard_bias()
 
     def _handle_standard_bias(self):
+        '''
+        Creates all bias which change on the orientation of the controller
+
+        Args:
+            None
+
+        Returns:
+            None
+        '''
         if self.standing:
             self.standard_bias_gyro = self.bias_gyro_y
             self.standard_bias_accel = self.bias_accel_z
@@ -118,23 +127,6 @@ class base_driver:
             self.standard_bias_accel = self.bias_accel_y
             self.rev_standard_bias_gyro = self.bias_gyro_y
             self.rev_standard_bias_accel = self.bias_gyro_z
-
-    def _caller_same_class(self):
-        res = False
-        try:
-            # frame 0 = break_all_motors
-            # frame 1 = caller
-            # frame 2 = caller des callers
-            frame = sys._getframe(3)
-            caller_self = frame.f_locals.get("self", None)
-
-            if caller_self is not None and isinstance(caller_self, self.__class__):
-                res = True
-
-        except (ValueError, AttributeError):
-            pass
-        finally:
-            return res
 
     # ================== GET / OVERWRITE BIAS ==================
 
@@ -319,6 +311,15 @@ class base_driver:
         return total
 
     def get_light_sensor_distance_sec(self) -> float:
+        '''
+        Receive the distance between the very front and very rear light / brightness sensor
+
+        Args:
+            None
+
+        Returns:
+            float: the distance in seconds calculated to the current default speed (ds_speed) between the front and rear light / brightness sensor
+        '''
         file_name = os.path.join(BIAS_FOLDER, 'light_sensor_distance_sec.txt')
         try:
             distances_str = file_Manager.reader(file_name)
@@ -1286,6 +1287,15 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def calibrate_light_sensor_distance_sec(self):
+        '''
+        Calibrates the distance between the very front and rear light / brightness sensor in seconds
+
+        Args:
+            None
+
+        Returns:
+            None, but writes into a bias file
+        '''
         self.check_instance_light_sensors_middle()
         self.drive_straight_condition_analog(self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
         start = k.seconds()

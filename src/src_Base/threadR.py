@@ -19,6 +19,7 @@ try:
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
+# NOT YET TESTED -> needs further testing to be able to tell if this class should stay
 class KillableThread(threading.Thread):
     def __init__(self, *args, **keywords):
         threading.Thread.__init__(self, *args, **keywords)

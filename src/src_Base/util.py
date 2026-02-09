@@ -16,12 +16,16 @@ try:
     import os
     import threading
     from scipy.interpolate import interp1d
+    from fileR import FileR  # selfmade
     from digital import Digital  # selfmade
     from light_sensor import LightSensor  # selfmade
     from distance_sensor import DistanceSensor  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
+
+UTIL_FOLDER = '/usr/lib/util_files'
+os.makedirs(UTIL_FOLDER, exist_ok=True)
 
 class Util:
     def __init__(self,
@@ -40,6 +44,7 @@ class Util:
         self.light_sensor_start = Instance_light_sensor_start
         self.distance_sensor = Instance_distance_sensor
 
+        self.file_manager = FileR()
         self.isClose = False
         self.running_allowed = True
 
@@ -188,10 +193,37 @@ class Util:
         Args:
             None
 
-       Returns:
+        Returns:
             None
         '''
         self.check_instance_button_fr()
         log('waiting for button FR...')
         while not self.button_fr.is_pressed():
             continue
+
+
+    def toggle_local_test_variable(self) -> str:
+        '''
+        Variable that toggles between "''" and "'1'". Can be useful because for test purpose you might want to change something every second run
+
+        Args:
+            None
+
+        Returns:
+            str: '': Empty string which can be interpreted as False
+                 '1': String with some content which can be interpreted as True
+
+        '''
+        std_msg = ''
+        file_name = UTIL_FOLDER + 'local_test_variable.txt'
+        if not os.path.exists(file_name):
+            self.file_manager.writer(file_name, 'w', std_msg)
+            return std_msg
+        else:
+            text = self.file_manager.reader(file_name)
+            if text != std_msg:
+                new_msg = std_msg
+            else:
+                new_msg = '1'
+            self.file_manager.writer(file_name, 'w', new_msg)
+            return new_msg

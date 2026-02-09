@@ -56,6 +56,7 @@ def Instance_Setup():
         globals()['RubberWheeler'] = Solarbotic_Wheels_two(Instance_right_wheel=Wheel_R,
                                                    Instance_left_wheel=Wheel_L,
                                                    controller_standing=XX,                                  # If the controller is standing up-right (True) or if it is laying flat on the surface of the chassis bracket (False)
+                                                   wheels_at_front=XX,                                      # If the wheels from the solarbotic wheels robot are located in the front (True) or back (False) half
                                                    Instance_light_sensor_front=LightSensorFront,
                                                    Instance_light_sensor_back=LightSensorBack,
                                                    Instance_light_sensor_side=LightSensorSide,

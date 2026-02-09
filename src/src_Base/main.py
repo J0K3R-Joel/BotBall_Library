@@ -76,12 +76,12 @@ def Wifi_Setup():
 
 
 def Comm_Setup():
-	try:
+    try:
         globals()['pause_event'] = PausR()
         globals()['comm'] = RobotCommunicator('192.168.XX.XX', 10000, is_server=True, pause_event=pause_event) # one has to be the server, the other one has to be is_server=False (or be left out) -> both need the IP-Adress (IP from the the server) and the same port to communicate
         #  XX here represents the complete IPv4-Address. eg: 192.168.0.10; 10.290.5.100; 172.100.5.134
 	except Exception as e:
-		log(f'Communication Exception: {str(e)}', important=True, in_exception=True)
+        log(f'Communication Exception: {str(e)}', important=True, in_exception=True)
 
 
 def Instancer_Setup():

@@ -321,10 +321,15 @@ class base_driver:
     def get_light_sensor_distance_sec(self) -> float:
         file_name = os.path.join(BIAS_FOLDER, 'light_sensor_distance_sec.txt')
         try:
-            distance_sec = file_Manager.reader(file_name, 'float')
-            if not distance_sec:
+            distances_str = file_Manager.reader(file_name)
+            if distances_str == '0':  # not initialized
                 log('You need to calibrate the light sensor distance first!', in_exception=True)
                 raise ValueError('You need to calibrate the light sensor distance first!')
+
+            speed, value = distances_str.split(' ')
+            speed_multi = int(speed) / self.ds_speed
+            distance_sec = float(value) * speed_multi
+
             return distance_sec
         except Exception as e:
             log(str(e), important=True, in_exception=True)
@@ -529,7 +534,6 @@ class base_driver:
 
         multi = degrees / 180
         return self.ONEEIGHTY_DEGREES_SECS * multi
-
 
     # ===================== CALIBRATE BIAS =====================
     @DriveableFunction
@@ -768,6 +772,7 @@ class Solarbotic_Wheels_two(base_driver):
                  Instance_right_wheel: WheelR,
                  Instance_left_wheel: WheelR,
                  controller_standing: bool,
+                 wheels_at_front: bool,
                  DS_SPEED: int = 1400,
                  Instance_button_front_right: Digital = None,
                  Instance_button_front_left: Digital = None,
@@ -784,6 +789,7 @@ class Solarbotic_Wheels_two(base_driver):
             Instance_right_wheel (WheelR): Wheel of the right side from the robot. The front is where both wheels are moving straight when using positive values
             Instance_left_wheel (WheelR): Wheel of the side side from the robot. The front is where both wheels are moving straight when using positive values
             controller_standing (bool): If the controller is standing on top of the metal chassis the robot is based on (True), or if it is laying down flat on the metal chassis (False)
+            wheels_at_front (bool): If the wheels are located on the front half of the robot (True) or in the rear half (False)
             DS_SPEED (int, optional): The default speed the robot should drive, when no speed is set (default: 1400)
             Instance_button_front_right (Digital, optional): The button instance where the button is mounted on the front right of the robot (default: None)
             Instance_button_front_left (Digital, optional): The button instance where the button is mounted on the front left of the robot (default: None)
@@ -812,6 +818,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         self.distance_sensor = Instance_distance_sensor
 
+        self.wheels_at_front = wheels_at_front
         self.ds_speed = DS_SPEED
         self.bias_gyro_z = None
         self.bias_gyro_y = None
@@ -1288,12 +1295,16 @@ class Solarbotic_Wheels_two(base_driver):
 
         file_name = os.path.join(BIAS_FOLDER, 'light_sensor_distance_sec.txt')
         try:
-            distance_sec = file_Manager.reader(file_name, 'float')
-            if distance_sec:
+            distance_sec = file_Manager.reader(file_name)
+            if distance_sec != '0':
+                distance_sec = self.get_light_sensor_distance_sec()
                 avg = (distance_sec + self.light_sensor_distance_sec) / 2
-                file_Manager.writer(file_name, 'w', str(avg))
+                msg = str(self.ds_speed) + ' ' + str(avg)
             else:
-                file_Manager.writer(file_name, 'w', self.light_sensor_distance_sec)
+                msg = str(self.ds_speed) + ' ' + str(self.light_sensor_distance_sec)
+            file_Manager.writer(file_name, 'w', msg)
+
+
         except Exception as e:
             log(str(e), important=True, in_exception=True)
 
@@ -1711,8 +1722,8 @@ class Solarbotic_Wheels_two(base_driver):
         If you are not on the line, it drives (forwards or backwards, depends if the speed is positive or negative) until the line was found and then aligns as desired.
 
         Args:
-           direction (str): "right" or "left" - depends on where you want to go
-           speed (int, optional): how fast it should drive (default: ds_speed)
+            direction (str): "right" or "left" - depends on where you want to go
+            speed (int, optional): how fast it should drive (default: ds_speed)
 
         Returns:
            None
@@ -1728,41 +1739,39 @@ class Solarbotic_Wheels_two(base_driver):
                 in_exception=True)
             raise ValueError('drive_align_line() Exception: If the Wombat is not on the line, please tell it which direction it should face when it is on the line ("right" or "left")')
 
+        multi_possibilities = [2.5, 0.25]
         ports = [self.light_sensor_front, self.light_sensor_back]
         if speed < 0:
             ports = [self.light_sensor_back, self.light_sensor_front]
 
+        if self.wheels_at_front:
+            multi = multi_possibilities[0]
+        else:
+            multi = multi_possibilities[1]
+
+        if speed < 0:
+            multi = multi if multi != multi_possibilities[0] else multi_possibilities[1]
+
         self.drive_straight_condition_analog(ports[0], '<=', ports[0].get_value_black_bias(), speed=speed)
         start_time = k.seconds()
-        self.drive_straight_condition_analog(ports[0], '>', ports[0].get_value_white_bias(), speed=speed)
+        self.drive_straight_condition_analog(ports[0], '>', ports[0].get_value_white_bias(), speed=speed, millis=(self.get_light_sensor_distance_sec()*1000)//2)
         line_end_time = k.seconds()
-        self.drive_straight_condition_analog(ports[1], '<', ports[1].get_value_white_bias(), speed=speed)
-        end_time = k.seconds()
-        self.break_all_motors()
 
-        seconds_start_finish = end_time - start_time
         seconds_black_tape = line_end_time - start_time
-        self.drive_straight((seconds_start_finish * 1000 + (seconds_black_tape * 1000)) // 2, speed=-speed)  #  + seconds_black_tape * 1000
+        dist = (self.get_light_sensor_distance_sec()*1000)/2 - (seconds_black_tape*1000) * multi  # multiplicator is only there since it makes a difference if the wheels are located in the front or rear half when turning and you need to be a little bit behind half of the black line
+        self.drive_straight(dist, speed=speed)
         self.break_all_motors()
-        if ports[0].sees_black():
-            print('front top', flush=True)
-            ports[0], ports[1] = ports[1], ports[0]
-
-        enter_deg = self.turn_degrees_condition_analog(direction, ports[0], '<', ports[0].get_value_black_bias())
+        self.turn_degrees_condition_analog(direction, ports[0], '<', ports[0].get_value_white_bias(), speed=speed)
         self.break_all_motors()
-        exit_deg = self.turn_degrees_condition_analog(direction, ports[0], '>', ports[0].get_value_black_bias())
-
-        radius = self.get_light_sensor_distance_sec()/2
-        distance_sec = math.pi * radius * (enter_deg/180)
-        distance_deg = self.calculate_seconds_in_degrees(distance_sec)
-
+        # something is missing here -> if the angle is too steep, then the robot makes a 360 degree turn -> needs to be avoided
+        #direction = 'right' if 'right' != direction else 'left'
+        self.turn_wheel_condition_analog(direction, ports[1], '<', ports[1].get_value_white_bias(), speed=speed)
+        print('first done', flush=True)
         direction = 'right' if 'right' != direction else 'left'
-        print('turning ', direction, ' with ', distance_deg, flush=True)
-        self.turn_degrees(direction, distance_deg)
+        self.turn_wheel_condition_analog(direction, ports[0], '<', ports[0].get_value_white_bias(), speed=speed)  # basically a fail-save, since the ports[0] ALWAYS needs to be on the black line
         self.break_all_motors()
-        #direction_new = 'right' if direction != 'right' else 'left'
-        #self.turn_to_black_line(direction, speed=-abs(speed))
-        #self.break_all_motors()
+
+
 
 
     @DriveableFunction
@@ -2450,8 +2459,6 @@ class Solarbotic_Wheels_two(base_driver):
 
         if speed is None:
             speed = self.ds_speed
-        else:
-            speed = abs(speed)
 
         start_time = k.seconds()
         wheel_to_drive = self.right_wheel if direction == 'left' else self.left_wheel
@@ -2480,7 +2487,7 @@ class Solarbotic_Wheels_two(base_driver):
             condition (str): either ">=", ">", "<=", "<", "!=" or "==" indicating how the current value of the given analog sensor should corrolates to the "value" - parameter
             value (int): the value that the function depends on and the current value of an analog sensor needs to reach this value depending on the condition
             millis (int, optional): the longest amount of time it is allowed to wait for the condition (default: 9999999)
-            speed (int, optional): how fast it should turn (default: ds_speed)
+            speed (int, optional): how fast it should turn (and in which direction) (default: ds_speed)
 
         Returns:
             None
@@ -2493,11 +2500,8 @@ class Solarbotic_Wheels_two(base_driver):
             log('The "instance" parameter needs to be a child of a Analog class', in_exception=True)
             raise ValueError('The "instance" parameter needs to be a child of a Analog class')
 
-
         if speed is None:
             speed = self.ds_speed
-        else:
-            speed = abs(speed)
 
         start_time = k.seconds()
         wheel_to_drive = self.right_wheel if direction == 'left' else self.left_wheel

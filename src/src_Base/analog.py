@@ -10,10 +10,11 @@ from logger import *  # selfmade
 
 try:
     import _kipr as k
+    from sensors import Sensor  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
-class Analog:
+class Analog(Sensor):
     def __init__(self, port: int):
         '''
         Class for every analog sensor available

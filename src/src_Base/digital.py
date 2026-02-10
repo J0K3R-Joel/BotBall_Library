@@ -14,11 +14,12 @@ from logger import *
 try:
     import _kipr as k
     from typing import *
+    from sensors import Sensor  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 
-class Digital:
+class Digital(Sensor):
     def __init__(self, port: int):
         '''
         Class for every digital sensor available

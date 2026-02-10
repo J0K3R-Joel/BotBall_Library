@@ -1727,13 +1727,13 @@ class Solarbotic_Wheels_two(base_driver):
 
 
     @DriveableFunction
-    def drive_align_line(self, direction: str, speed: int = None) -> None:
+    def drive_align_line(self, direction: str, forward: bool) -> None:
         '''
         If you are not on the line, it drives (forwards or backwards, depends if the speed is positive or negative) until the line was found and then aligns as desired.
 
         Args:
             direction (str): "right" or "left" - depends on where you want to go
-            speed (int, optional): how fast it should drive (default: ds_speed)
+            forward (bool): If it should drive forwards towards the black line or backwards with the default speed
 
         Returns:
            None
@@ -1741,8 +1741,10 @@ class Solarbotic_Wheels_two(base_driver):
         self.check_instances_buttons()
         self.check_instance_light_sensors_middle()
 
-        if speed is None:
+        if forward:
             speed = self.ds_speed
+        else:
+            speed = -self.ds_speed
 
         if direction != 'left' and direction != 'right':
             log('If the Wombat is not on the line, please tell it which direction it should face when it is on the line ("right" or "left")',
@@ -1764,19 +1766,20 @@ class Solarbotic_Wheels_two(base_driver):
 
         self.drive_straight_condition_analog(ports[0], '<=', ports[0].get_value_black_bias(), speed=speed)
         start_time = k.seconds()
-        self.drive_straight_condition_analog(ports[0], '>', ports[0].get_value_white_bias(), speed=speed, millis=(self.get_light_sensor_distance_sec()*1000)//2)
+        self.drive_straight_condition_analog(ports[0], '>', ports[0].get_value_white_bias(), speed=speed, millis=int((self.get_light_sensor_distance_sec()*1000)/2))
         line_end_time = k.seconds()
 
         seconds_black_tape = line_end_time - start_time
         dist = (self.get_light_sensor_distance_sec()*1000)/2 - (seconds_black_tape*1000) * multi  # multiplicator is only there since it makes a difference if the wheels are located in the front or rear half when turning and you need to be a little bit behind half of the black line
         self.drive_straight(dist, speed=speed)
+        if not ports[0].sees_white():
+            self.break_all_motors()
+            log('drive_align_line failed: angle was too steep to be certain on how to rotate', important=True)
+            return
         self.break_all_motors()
         self.turn_degrees_condition_analog(direction, ports[0], '<', ports[0].get_value_white_bias(), speed=speed)
         self.break_all_motors()
-        # something is missing here -> if the angle is too steep, then the robot makes a 360 degree turn -> needs to be avoided
-        #direction = 'right' if 'right' != direction else 'left'
         self.turn_wheel_condition_analog(direction, ports[1], '<', ports[1].get_value_white_bias(), speed=speed)
-        print('first done', flush=True)
         direction = 'right' if 'right' != direction else 'left'
         self.turn_wheel_condition_analog(direction, ports[0], '<', ports[0].get_value_white_bias(), speed=speed)  # basically a fail-save, since the ports[0] ALWAYS needs to be on the black line
         self.break_all_motors()
@@ -1927,7 +1930,6 @@ class Solarbotic_Wheels_two(base_driver):
             speed = self.ds_speed
         startTime = k.seconds()
         maxDuration = millis/1000 if millis is not None else self.NINETY_DEGREES_SECS
-        counter_drive = False
         instances = self.right_wheel, self.left_wheel, self.button_fl, self.button_fr, self.light_sensor_front
         direction = 'left', 'right'
         if speed < 0:
@@ -1949,7 +1951,6 @@ class Solarbotic_Wheels_two(base_driver):
 
             if k.seconds() - startTime > maxDuration:
                 self.turn_degrees_condition_analog(direction[1], instances[4], '<', instances[4].get_value_black_bias(), speed=speed)
-                counter_drive = True
                 break
             if instances[2].is_pressed() or instances[3].is_pressed():
                 break
@@ -2063,61 +2064,30 @@ class Solarbotic_Wheels_two(base_driver):
         self.check_instance_light_sensors_middle()
         if not leaning_side or leaning_side == 'right':
             instances = self.left_wheel, self.right_wheel
+            direction = 'right'
         else:
+            direction = 'right'
             instances = self.right_wheel, self.left_wheel
         startTime = k.seconds()
 
-        while self.light_sensor_back.sees_white() and self.light_sensor_front.sees_white():
+        while not self.light_sensor_back.sees_black() and not self.light_sensor_front.sees_black():
             if k.seconds() - startTime < self.NINETY_DEGREES_SECS:
                 instances[0].drive_dfw()
                 instances[1].drive_dbw()
             else:
                 instances[0].drive_dbw()
                 instances[1].drive(instances[1].get_default_speed()//2)
-                k.msleep(1)
+        self.break_all_motors()
+        start_time = k.seconds()
+        if self.light_sensor_back.sees_black():
+            print('back', flush=True)
+            self.drive_straight_condition_analog(self.light_sensor_front, '<', self.light_sensor_front.get_value_white_bias(), speed=-self.ds_speed)
+            self.drive_straight(((k.seconds() - start_time)*1000)//2)
 
-        if not self.light_sensor_back.sees_white():
-            while not self.light_sensor_front.sees_black():
-                instances[0].drive_dbw()
-                instances[1].drive_dbw()
-
-            while self.light_sensor_front.sees_black():
-                instances[0].drive_mfw()
-
-            while not self.light_sensor_front.sees_black():
-                instances[1].drive_mfw()
-
-            while self.light_sensor_front.sees_black():
-                instances[1].drive_mfw()
-
-            while not self.light_sensor_front.sees_black():
-                instances[1].drive_mbw()
-                instances[0].drive(-200)
-            # maybe add drift here
-
-        elif not self.light_sensor_front.sees_white():
-            while not self.light_sensor_back.sees_black():
-                instances[0].drive_dfw()
-                instances[1].drive_dfw()
-            while not self.light_sensor_front.sees_black():
-                instances[0].drive_mbw()
-                instances[1].drive_mfw()
-
-
-
-            if not self.light_sensor_front.sees_black():
-
-                while not self.light_sensor_front.sees_white():
-                    instances[1].drive_mfw()
-                while not self.light_sensor_front.sees_black():
-                    instances[1].drive_mfw()
-
-            if not self.light_sensor_back.sees_black():
-                while self.light_sensor_front.sees_black():
-                    instances[1].drive_mfw()
-                while self.light_sensor_back.sees_white():
-                    instances[1].drive_mbw()
-                    instances[0].drive_mfw()
+        elif self.light_sensor_front.sees_black():
+            print('front', flush=True)
+            self.drive_straight_condition_analog(self.light_sensor_back, '<', self.light_sensor_front.get_value_white_bias())
+            self.drive_straight(((k.seconds() - start_time)*1000)//2, -self.ds_speed)
         self.break_all_motors()
 
     @DriveableFunction
@@ -2159,36 +2129,37 @@ class Solarbotic_Wheels_two(base_driver):
                 else:
                     instances[0].drive_dbw()
                     instances[1].drive(instances[1].get_default_speed()//2)
-                    k.msleep(1)
-
-
+            self.break_all_motors()
 
             if not self.light_sensor_back.sees_white():
-                while not self.light_sensor_front.sees_black():
-                    instances[0].drive_dbw()
-                    instances[1].drive_dbw()
+                self.drive_straight_condition_analog(self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias(), speed=-self.ds_speed)
+                self.break_all_motors()
 
                 while self.light_sensor_front.sees_black():
                     instances[0].drive_mfw()
+                self.break_all_motors()
 
                 while not self.light_sensor_front.sees_black():
                     instances[1].drive_mfw()
+                self.break_all_motors()
 
                 while self.light_sensor_front.sees_black():
                     instances[1].drive_mfw()
+                self.break_all_motors()
 
                 while not self.light_sensor_front.sees_black():
                     instances[1].drive_mbw()
                     instances[0].drive(-200)
+                self.break_all_motors()
 
 
             elif not self.light_sensor_front.sees_white():
-                while not self.light_sensor_back.sees_black():
-                    instances[0].drive_dfw()
-                    instances[1].drive_dfw()
+                self.drive_straight_condition_analog(self.light_sensor_back, '<', self.light_sensor_front.get_value_black_bias())
+                self.break_all_motors()
                 while not self.light_sensor_front.sees_black():
                     instances[0].drive_mbw()
                     instances[1].drive_mfw()
+                self.break_all_motors()
 
 
 
@@ -2196,16 +2167,21 @@ class Solarbotic_Wheels_two(base_driver):
 
                 while not self.light_sensor_front.sees_white():
                     instances[1].drive_mfw()
+                self.break_all_motors()
 
                 while not self.light_sensor_front.sees_black():
                     instances[1].drive_mfw()
+                self.break_all_motors()
 
             if not self.light_sensor_back.sees_black():
                 while self.light_sensor_front.sees_black():
                     instances[1].drive_mfw()
+                self.break_all_motors()
+
                 while self.light_sensor_back.sees_white():
                     instances[1].drive_mbw()
                     instances[0].drive_mfw()
+                self.break_all_motors()
 
             # @TODO a drift would fit here
 

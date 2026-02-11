@@ -2051,7 +2051,7 @@ class Solarbotic_Wheels_two(base_driver):
         self.break_all_motors()
 
     @DriveableFunction
-    def next_to_onto_line(self, leaning_side: str = None) -> None:
+    def next_to_onto_line(self, leaning_side: str = None) -> bool:
         '''
         If you are next to a black line, you can get onto it and be aligned
 
@@ -2059,36 +2059,79 @@ class Solarbotic_Wheels_two(base_driver):
             leaning_side (str, optional): the side ("right" or "left") where the wombat has to get to (default: None)
 
         Returns:
-            None
+            bool: If a line was found in the beginning (True) or if you were too far away (False)
         '''
         self.check_instance_light_sensors_middle()
-        if not leaning_side or leaning_side == 'right':
+
+        if not leaning_side:
+            leaning_side = 'right'  # begin with turning right
+
+        if leaning_side == 'right':
             instances = self.left_wheel, self.right_wheel
-            direction = 'right'
         else:
-            direction = 'right'
             instances = self.right_wheel, self.left_wheel
         startTime = k.seconds()
 
         while not self.light_sensor_back.sees_black() and not self.light_sensor_front.sees_black():
-            if k.seconds() - startTime < self.NINETY_DEGREES_SECS:
+            if k.seconds() - startTime < self.ONEEIGHTY_DEGREES_SECS * 2:
                 instances[0].drive_dfw()
                 instances[1].drive_dbw()
             else:
-                instances[0].drive_dbw()
-                instances[1].drive(instances[1].get_default_speed()//2)
+                log('next_to_onto_line error: line not found -> you were too far away!', important=True)
+                return False
         self.break_all_motors()
+
         start_time = k.seconds()
         if self.light_sensor_back.sees_black():
             print('back', flush=True)
-            self.drive_straight_condition_analog(self.light_sensor_front, '<', self.light_sensor_front.get_value_white_bias(), speed=-self.ds_speed)
-            self.drive_straight(((k.seconds() - start_time)*1000)//2)
+            self.drive_straight_condition_analog(self.light_sensor_back, '>', self.light_sensor_back.get_value_black_bias(), millis=int(self.get_light_sensor_distance_sec()*1000), speed=-self.ds_speed)
+            self.drive_straight(((self.get_light_sensor_distance_sec() - k.seconds()-start_time)//2)*1000, -self.ds_speed)
+            self.break_all_motors()
+            self.turn_degrees_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias(), millis=int(self.NINETY_DEGREES_SECS*1000))
+            self.break_all_motors()
+            if not self.light_sensor_front.sees_black():
+                leaning_side = 'right' if 'right' != leaning_side else 'left'
+                self.turn_degrees_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
+                self.break_all_motors()
+
+            leaning_side = 'right' if 'right' != leaning_side else 'left'
+            self.turn_wheel_condition_analog(leaning_side, self.light_sensor_back, '<', self.light_sensor_back.get_value_black_bias())
+
+
 
         elif self.light_sensor_front.sees_black():
             print('front', flush=True)
-            self.drive_straight_condition_analog(self.light_sensor_back, '<', self.light_sensor_front.get_value_white_bias())
-            self.drive_straight(((k.seconds() - start_time)*1000)//2, -self.ds_speed)
+            self.drive_straight_condition_analog(self.light_sensor_front, '>', self.light_sensor_front.get_value_black_bias(), millis=int(self.get_light_sensor_distance_sec() * 1000))
+            self.drive_straight(((self.get_light_sensor_distance_sec() - k.seconds() - start_time) // 2)*1000)
+            self.break_all_motors()
+            self.turn_degrees_condition_analog(leaning_side, self.light_sensor_back, '<', self.light_sensor_back.get_value_black_bias(), millis=int(self.NINETY_DEGREES_SECS*1000))
+            self.break_all_motors()
+            if not self.light_sensor_back.sees_black():
+                leaning_side = 'right' if 'right' != leaning_side else 'left'
+                self.turn_degrees_condition_analog(leaning_side, self.light_sensor_back, '<', self.light_sensor_back.get_value_black_bias())
+                self.break_all_motors()
+            leaning_side = 'right' if 'right' != leaning_side else 'left'
+            self.turn_wheel_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
+        else:
+            print('neither, ', self.light_sensor_front.current_value(), self.light_sensor_front.get_value_black_bias(), ' ||| ', self.light_sensor_back.current_value(), self.light_sensor_back.get_value_black_bias(), flush=True)
+
         self.break_all_motors()
+        if not self.light_sensor_front.sees_black():
+            leaning_side = 'right' if 'right' != leaning_side else 'left'
+            self.drive_straight_condition_analog(self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias(), speed=-self.ds_speed)
+            self.turn_wheel_condition_analog(leaning_side, self.light_sensor_back, '<', self.light_sensor_back.get_value_black_bias())
+            leaning_side = 'right' if 'right' != leaning_side else 'left'
+            self.turn_wheel_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
+            self.break_all_motors()
+
+        if not self.light_sensor_back.sees_black():
+            print('rear is not on top!', flush=True)
+            leaning_side = 'right' if 'right' != leaning_side else 'left'
+            self.turn_wheel_condition_analog(leaning_side, self.light_sensor_back, '<', self.light_sensor_back.get_value_black_bias(), speed=-self.ds_speed)
+
+        leaning_side = 'right' if 'right' != leaning_side else 'left'
+        self.turn_wheel_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
+        return True
 
     @DriveableFunction
     def align_on_black_line(self, direction: str = 'vertical', leaning_side: str = None) -> None:

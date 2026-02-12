@@ -35,6 +35,7 @@ except Exception as e:
 
 # ======================== VARIABLE DECLARATION =======================
 # ===== GLOBAL VARIABLES =====
+utility = None
 wifi = None
 file_Manager = None
 camera_man = None
@@ -83,6 +84,13 @@ def Comm_Setup():
 	except Exception as e:
         log(f'Communication Exception: {str(e)}', important=True, in_exception=True)
 
+def Util_Setup():
+    global utility
+    try:
+        utility = Util()  # Add parameters here, if needed
+    except Exception as e:
+        log(str(e), in_exception=True)
+
 
 def Instancer_Setup():
     try:
@@ -125,6 +133,7 @@ def fake_main_setup():  # see this as the call of the main function -> only exec
 def setup():
     try:
         Wifi_Setup()  # you can delete this line from now on, just as the function!
+        Util_Setup()
         # Comm_Setup()
         # Camera_Setup()  # if you want to use the camera
         FileR_Setup()

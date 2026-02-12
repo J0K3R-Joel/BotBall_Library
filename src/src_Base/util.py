@@ -25,7 +25,10 @@ except Exception as e:
 
 
 UTIL_FOLDER = '/usr/lib/util_files'
-os.makedirs(UTIL_FOLDER, exist_ok=True)
+subprocess.run(['chmod', '777', '-R', UTIL_FOLDER])
+if not os.path.exists(UTIL_FOLDER):
+    os.makedirs(UTIL_FOLDER, exist_ok=True)
+    subprocess.run(['chmod', '777', '-R', UTIL_FOLDER])
 
 class Util:
     def __init__(self,
@@ -227,3 +230,9 @@ class Util:
                 new_msg = '1'
             self.file_manager.writer(file_name, 'w', new_msg)
             return new_msg
+
+    def shutdown_wombat(self):
+        subprocess.run(['shutdown', '-h', 'now'])
+
+    def reboot_wombat(self):
+        subprocess.run(['shutdown', '-r', 'now'])

@@ -2028,6 +2028,11 @@ class Solarbotic_Wheels_two(base_driver):
         '''
         if speed is None:
             speed = self.ds_speed
+
+        if millis < 0:
+            log('millis parameter can not be negative!', important=True)
+            raise ValueError('millis parameter can not be negative!')
+
         startTime: float = k.seconds()
         theta = 0.0
         adjuster = int(speed/15)  # 15 is just a value that worked the best
@@ -2073,49 +2078,39 @@ class Solarbotic_Wheels_two(base_driver):
         startTime = k.seconds()
 
         while not self.light_sensor_back.sees_black() and not self.light_sensor_front.sees_black():
-            if k.seconds() - startTime < self.ONEEIGHTY_DEGREES_SECS * 2:
+            if k.seconds() - startTime < self.ONEEIGHTY_DEGREES_SECS * 2:  # 360 degree turn so that you at least look at the same direction
                 instances[0].drive_dfw()
                 instances[1].drive_dbw()
             else:
+                self.break_all_motors()
                 log('next_to_onto_line error: line not found -> you were too far away!', important=True)
                 return False
         self.break_all_motors()
 
-        start_time = k.seconds()
+        light_sensors = [self.light_sensor_front, self.light_sensor_back]
+        speed = self.ds_speed
+        turn_after = False
         if self.light_sensor_back.sees_black():
-            print('back', flush=True)
-            self.drive_straight_condition_analog(self.light_sensor_back, '>', self.light_sensor_back.get_value_black_bias(), millis=int(self.get_light_sensor_distance_sec()*1000), speed=-self.ds_speed)
-            self.drive_straight(((self.get_light_sensor_distance_sec() - k.seconds()-start_time)//2)*1000, -self.ds_speed)
-            self.break_all_motors()
-            self.turn_degrees_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias(), millis=int(self.NINETY_DEGREES_SECS*1000))
-            self.break_all_motors()
-            if not self.light_sensor_front.sees_black():
-                leaning_side = 'right' if 'right' != leaning_side else 'left'
-                self.turn_degrees_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
-                self.break_all_motors()
+            light_sensors = [self.light_sensor_back, self.light_sensor_front]
+            speed = -speed
 
-            leaning_side = 'right' if 'right' != leaning_side else 'left'
-            self.turn_wheel_condition_analog(leaning_side, self.light_sensor_back, '<', self.light_sensor_back.get_value_black_bias())
+        if k.seconds() - startTime > self.ONEEIGHTY_DEGREES_SECS * 0.75:  # longer than 135 degrees -> did not hit the line because one side was too far (location of the wheels determines how it turns)
+            turn_after = True
 
-
-
-        elif self.light_sensor_front.sees_black():
-            print('front', flush=True)
-            self.drive_straight_condition_analog(self.light_sensor_front, '>', self.light_sensor_front.get_value_black_bias(), millis=int(self.get_light_sensor_distance_sec() * 1000))
-            self.drive_straight(((self.get_light_sensor_distance_sec() - k.seconds() - start_time) // 2)*1000)
-            self.break_all_motors()
-            self.turn_degrees_condition_analog(leaning_side, self.light_sensor_back, '<', self.light_sensor_back.get_value_black_bias(), millis=int(self.NINETY_DEGREES_SECS*1000))
-            self.break_all_motors()
-            if not self.light_sensor_back.sees_black():
-                leaning_side = 'right' if 'right' != leaning_side else 'left'
-                self.turn_degrees_condition_analog(leaning_side, self.light_sensor_back, '<', self.light_sensor_back.get_value_black_bias())
-                self.break_all_motors()
-            leaning_side = 'right' if 'right' != leaning_side else 'left'
-            self.turn_wheel_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
-        else:
-            print('neither, ', self.light_sensor_front.current_value(), self.light_sensor_front.get_value_black_bias(), ' ||| ', self.light_sensor_back.current_value(), self.light_sensor_back.get_value_black_bias(), flush=True)
-
+        self.drive_straight_condition_analog(light_sensors[0], '>', light_sensors[0].get_value_black_bias(), millis=int(self.get_light_sensor_distance_sec() * 1000), speed=speed)
         self.break_all_motors()
+        self.turn_degrees_condition_analog(leaning_side, light_sensors[1], '<', light_sensors[1].get_value_black_bias(), millis=int(self.NINETY_DEGREES_SECS * 1000))
+        self.break_all_motors()
+
+        if not light_sensors[1].sees_black():
+            leaning_side = 'right' if 'right' != leaning_side else 'left'
+            self.turn_degrees_condition_analog(leaning_side, light_sensors[1], '<', light_sensors[1].get_value_black_bias())
+            self.break_all_motors()
+
+        leaning_side = 'right' if 'right' != leaning_side else 'left'
+        self.turn_wheel_condition_analog(leaning_side, light_sensors[0], '<', light_sensors[0].get_value_black_bias())
+        self.break_all_motors()
+
         if not self.light_sensor_front.sees_black():
             leaning_side = 'right' if 'right' != leaning_side else 'left'
             self.drive_straight_condition_analog(self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias(), speed=-self.ds_speed)
@@ -2125,12 +2120,21 @@ class Solarbotic_Wheels_two(base_driver):
             self.break_all_motors()
 
         if not self.light_sensor_back.sees_black():
-            print('rear is not on top!', flush=True)
             leaning_side = 'right' if 'right' != leaning_side else 'left'
             self.turn_wheel_condition_analog(leaning_side, self.light_sensor_back, '<', self.light_sensor_back.get_value_black_bias(), speed=-self.ds_speed)
 
         leaning_side = 'right' if 'right' != leaning_side else 'left'
         self.turn_wheel_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
+
+        if turn_after:
+            self.turn_degrees(leaning_side, 90)
+            self.turn_degrees_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
+            leaning_side = 'right' if 'right' != leaning_side else 'left'
+            self.turn_wheel_condition_analog(leaning_side, self.light_sensor_back, '<', self.light_sensor_back.get_value_black_bias())
+            leaning_side = 'right' if 'right' != leaning_side else 'left'
+            self.turn_wheel_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias(), speed=-self.ds_speed)
+
+        self.break_all_motors()
         return True
 
     @DriveableFunction

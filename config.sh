@@ -10,7 +10,7 @@ echo "Starting selected scripts in defined order from: $SCRIPTS_DIR"
 echo "------------------------------------------------------------"
 
 # Define prioritized scripts (in order)
-PRIORITY_SCRIPTS=("replace_fs.sh" "wifi_executor.sh" "setup_harrogate.sh" "comm_executor.sh" "bias_creater.sh" "util_creater.sh" "base_executor.sh" "camera_executor.sh" "fake_client_executor.sh" "fake_server_executor.sh" "bias_executor.sh" "wifi_setupper.sh")
+PRIORITY_SCRIPTS=("wifi_executor.sh" "setup_harrogate.sh" "comm_executor.sh" "bias_creater.sh" "util_creater.sh" "base_executor.sh" "camera_executor.sh" "fake_client_executor.sh" "fake_server_executor.sh" "bias_executor.sh" "wifi_setupper.sh")
 
 # Define the script that must be executed last
 FINAL_SCRIPT="wifi_finisher.sh"
@@ -61,5 +61,6 @@ fi
 echo "All scripts executed successfully."
 
 # Step 4: Set the ownership of specific paths
-chmod -R 777 "/usr/lib/bias_files"
+chmod -R 777 /usr/lib/bias_files
+chmor -R 777 /usr/lib/util_files
 chmod 777 /usr/lib/LOCAL_STD_WIFI.conf

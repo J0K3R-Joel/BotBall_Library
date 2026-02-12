@@ -32,8 +32,12 @@ class ServoX:
             min_value (int, optional): The lowest value which the servo can go to (default: 0)
         '''
         self.port = port
-        self.max_value = max_value
-        self.min_value = min_value
+        if min_value > max_value:
+            self.max_value = min_value
+            self.min_value = max_value
+        else:
+            self.max_value = max_value
+            self.min_value = min_value
         self._servo_lock = threading.Lock()
         self._active_servo_id = None
         self.new_pos_val = 0

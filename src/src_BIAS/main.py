@@ -43,9 +43,9 @@ def Instance_Setup():
         globals()['DistanceSens'] = DistanceSensor(PORT_DISTANCE_SENSOR)
 
         # ============== LightSensor =============
-        globals()['LightSensorFront'] = LightSensor('front', PORT_LIGHT_SENSOR_FRONT, bias=XX)  # the amount of error that you allow from the light sensor. Higher value means it is more forgiving. Integer value is required. eg: 150; 500; 300
-        globals()['LightSensorBack'] = LightSensor('back', PORT_LIGHT_SENSOR_BACK, bias=XX)  # the amount of error that you allow from the light sensor. Higher value means it is more forgiving. Integer value is required. eg: 150; 500; 300
-        globals()['LightSensorSide'] = LightSensor('side', PORT_LIGHT_SENSOR_SIDE, bias=XX)  # the amount of error that you allow from the light sensor. Higher value means it is more forgiving. Integer value is required. eg: 150; 500; 300
+        globals()['LightSensorFront'] = LightSensor('front', PORT_LIGHT_SENSOR_FRONT)  # the amount of error that you allow from the light sensor. Higher value means it is more forgiving. Integer value is required. eg: 150; 500; 300
+        globals()['LightSensorBack'] = LightSensor('back', PORT_LIGHT_SENSOR_BACK)  # the amount of error that you allow from the light sensor. Higher value means it is more forgiving. Integer value is required. eg: 150; 500; 300
+        globals()['LightSensorSide'] = LightSensor('side', PORT_LIGHT_SENSOR_SIDE)  # the amount of error that you allow from the light sensor. Higher value means it is more forgiving. Integer value is required. eg: 150; 500; 300
 
         # ================== WheelR =================
         globals()['Wheel_R'] = WheelR(PORT_MOTOR_R)

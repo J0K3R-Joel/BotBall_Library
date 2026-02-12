@@ -164,6 +164,7 @@ The issue IDs have (at least at this moment) no real purpose. The ID is only exi
   1. Plug the USB-Stick containing the BotBall_Library into the controller
   2. Get into the BotBall_Library folder on your USB-stick
   3. Copy (or cut) the folder and paste it into any other directory where you are allowed to paste it
+     1. Alternatively you can use `sudo cp -R /path/to/BotBall_Library /any/permission/granted/folder` where `/any/permission/granted/folder` can be something simple like "`/bin`".
   4. run the script as usual (via `sudo bash config.sh`) 
 - **Status:** Resolved
 

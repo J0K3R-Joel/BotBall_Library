@@ -34,7 +34,7 @@ Every user that exists is also written down in:
 
 #### /home/kipr/Documents/KISS/users.json
 
-In here you can find the name of every user with the corresponding level of experience (which just changes the functionality of the KISS IDE).  
+In here you can find the name of every user with the corresponding level of experience (which just changes the functionality of the KISS IDE). If a user is not found in here, then the KISS IDE will not see / recognise this user and will not show it.
 
 ---
 

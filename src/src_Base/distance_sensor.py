@@ -17,7 +17,7 @@ except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 
-BIAS_FOLDER = '/usr/lib/bias_files'
+BIAS_FOLDER = '/home/kipr/BotBall-data/bias_files'
 os.makedirs(BIAS_FOLDER, exist_ok=True)
 
 class DistanceSensor(Analog):

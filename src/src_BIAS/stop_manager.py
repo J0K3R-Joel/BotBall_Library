@@ -15,6 +15,12 @@ except Exception as e:
 
 class StopManager:
     def __init__(self):
+        '''
+        Not for the basic user! Class for immediate stopping of motors and servos in every thread
+
+        Args:
+            None
+        '''
         self.wheels = []
         self.servos = []
         self._lock = threading.Lock()
@@ -57,8 +63,8 @@ class StopManager:
         from servo import ServoX
         self.servo_classes = [ServoX]
 
-    # ======================== CHECK INSTANCES ========================
 
+    # ======================== CHECK INSTANCES ========================
     def check_motor_instance(self, wheelr) -> None:
         '''
         Checks, if the wanted driver is a member of the driveR class
@@ -76,7 +82,6 @@ class StopManager:
             valid = [cls.__name__ for cls in self.wheel_classes]
             log(f"{wheelr} is not a valid driveR-class. Valid: {valid}", important=True, in_exception=True)
             raise TypeError(f"{wheelr} is not a valid driveR-class. Valid: {valid}")
-
 
     def check_servo_instance(self, servox) -> None:
         '''
@@ -112,7 +117,7 @@ class StopManager:
         with self._lock:
             self.wheels.append(wheelr)
 
-    def register_servox(self, servox):
+    def register_servox(self, servox) -> None:
         '''
         Let's you register a servox class which has to stop if the emergency_stop() function gets executed
 
@@ -126,7 +131,7 @@ class StopManager:
         with self._lock:
             self.servos.append(servox)
 
-    def emergency_stop(self):
+    def emergency_stop(self) -> None:
         '''
         Stops all driveR and ServoX function from execution, if they are currently running
 
@@ -144,7 +149,7 @@ class StopManager:
 
         for s in self.servos: 
             try:
-                s._servo_disabler()
+                s._hard_stop()
             except Exception as e:
                 log(f"Error stopping servo: {e}", important=True, in_exception=True)
         self.is_stopped = True

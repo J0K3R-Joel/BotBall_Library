@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import os, sys
+
 sys.path.append("/usr/lib")
 
 from logger import *
@@ -7,92 +8,177 @@ from logger import *
 try:
     import _kipr as k
     import threading
+    from collections import defaultdict
     import time
 except Exception as e:
     log(f'ServoScheduler Import Exception: {str(e)}', important=True, in_exception=True)
 
 
 class ServoScheduler:
-    AUTO_DISABLE_TIMEOUT = 0.10
+    AUTO_STOP_TIMEOUT = 0.2  # 50ms  -> time after which the port will reduce it's speed to 0
+    AUTO_SHUTDOWN_TIMEOUT = 0.2  # 200ms  - > time after which every motor immediately will shut off when no valid ID sent a new request (it will boot up automatically again, when there is a new command)
+    TIME_RECOGNIZER = 0.5  # 500ms  -> time where a new tid will be created with the same thread id
 
     def __init__(self):
-        self._lock = threading.Lock()
+        '''
+        Not for basic users! Schedules every servo which makes them threadsafe. Blocks old activities so only the newest calls can use the servo
+
+        Args:
+            None
+        '''
+        self._lock = threading.RLock()
         self._running = True
-
-        self._commands = {}  # port: {pos, cmd_id, last_update, enabled}
-        self._cmd_counter = 0
-
+        self.last_activity = None
+        self._last_tid = None
+        self._last_valid_tid = None
+        self._all_tid = defaultdict(list)
+        self._tid_counter = 0
+        self.id_dict = {}
+        self.id_set = set()
+        self._commands = {}
+        self._old_funcs = set()
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
 
+    def _setup_loop(self):
+        self._running = True
+        self._thread = threading.Thread(target=self._loop, daemon=True).start()
+
+    def _get_ID(self):
+        tid = threading.current_thread().ident
+
+        if self._last_valid_tid != tid and tid not in self.id_set and \
+                (tid not in self.id_dict or time.time() - self.id_dict[tid] > self.TIME_RECOGNIZER):
+            if tid not in self._all_tid:
+                if len(self._all_tid[tid]) == 0 or self._all_tid[tid][-1] != self._tid_counter:  # does not exist yet
+                    self._tid_counter += 1
+                    self._all_tid[tid].append(self._tid_counter)
+            elif self._all_tid[tid][-1] - 1 != self._all_tid[self._last_valid_tid][-1]:  # exists, but is not up-to-date
+                self._tid_counter += 1
+                self._all_tid[tid].append(self._tid_counter)
+
+            if self._last_valid_tid in self.id_set:  # free the last tid from being blocked
+                self.id_set.remove(self._last_valid_tid)
+            self._last_valid_tid = tid
+            self.id_set.add(self._last_tid)  # block last tid from entering this function
+
+        self.id_dict[tid] = time.time()
+        self._last_tid = tid
+        return f'{tid}-{self._all_tid[tid][-1]}'
+
     def _loop(self):
-        while self._running:
-            now = time.time()
+        try:
+            while self._running:
+                now = time.time()
+                to_sleep = 1
+                with self._lock:
+                    for key, data in list(self._commands.items()):
+                        port = data['port']
+                        fid = key[1]
 
-            with self._lock:
-                for port, data in list(self._commands.items()):
-                    pos = data["pos"]
-                    last_update = data["last_update"]
-                    enabled = data["enabled"]
+                        if fid in self._old_funcs:
+                            continue
 
-                    if now - last_update > self.AUTO_DISABLE_TIMEOUT:
-                        try:
-                            k.disable_servo(port)
-                        except Exception:
-                            pass
-                        data["enabled"] = False
-                        continue
+                        if now - data['last_update'] > self.AUTO_STOP_TIMEOUT or not data['enabled']:
+                            if data['enabled']:
+                                self.disable_servo(port)
+                            continue
 
-                    if not enabled:
-                        try:
-                            k.enable_servo(port)
-                        except Exception:
-                            pass
-                        data["enabled"] = True
+                        if data['enabled']:
+                            self.enable_servo(port)
+                            to_sleep = data['millis']
+                            k.set_servo_position(port, data['pos'])
+                            #k.msleep(to_sleep)
 
-                    try:
-                        k.set_servo_position(port, pos)
-                    except Exception:
-                        pass
+                if self.last_activity and time.time() - self.last_activity > self.AUTO_SHUTDOWN_TIMEOUT:
+                    self.disable_all()
+                    self._running = False
 
-            time.sleep(0.01)
+        except Exception as e:
+            log(str(e), in_exception=True)
 
     def set_position(self, port, pos):
+        now = time.time()
+        try:
+            with self._lock:
+                func_id = self._get_ID()
+                if func_id in self._old_funcs:
+                    return
+
+                if not self._running:
+                    self._setup_loop()
+
+                key = (port, func_id)
+                self.last_activity = now
+                millis = int((abs(k.get_servo_position(port) - pos) / 100))  # + 20 is just a kind of bias.
+
+                if key in self._commands:
+                    self._commands[key].update({
+                        'pos': pos,
+                        'millis': millis,
+                        'last_update': now,
+                        'enabled': True
+                    })
+                    return
+
+                for old_key, data in list(self._commands.items()):
+                    if data['port'] == port:
+                        self._old_funcs.add(data['func_id'])
+                        self.disable_all()
+                        break
+
+                self._commands[key] = {
+                    'port': port,
+                    'pos': pos,
+                    'millis': millis,
+                    'func_id': func_id,
+                    'enabled': True,
+                    'last_update': now
+                }
+            k.msleep(millis)
+        except Exception as e:
+            log(str(e), in_exception=True)
+
+    def shutdown(self):
         with self._lock:
-            self._cmd_counter += 1
-            cmd_id = self._cmd_counter
+            self._running = False
 
-            self._commands[port] = {
-                "pos": int(pos),
-                "cmd_id": cmd_id,
-                "last_update": time.time(),
-                "enabled": self._commands.get(port, {}).get("enabled", False)
-            }
-
-            return cmd_id
+    def enable_servo(self, port):
+        try:
+            with self._lock:
+                for key, data in list(self._commands.items()):
+                    if data['port'] == port:
+                        self._commands[key]['enabled'] = True
+                        k.enable_servo(port)
+                        break
+        except Exception as e:
+            log(str(e), in_exception=True)
 
     def disable_servo(self, port):
         with self._lock:
-            try:
-                k.disable_servo(port)
-            except Exception:
-                pass
-
-            self._cmd_counter += 1
-            self._commands[port] = {
-                "pos": 0,
-                "cmd_id": self._cmd_counter,
-                "last_update": 0,
-                "enabled": False
-            }
+            for key, data in list(self._commands.items()):
+                if data['port'] == port:
+                    self._commands[key]['enabled'] = False
+                    k.disable_servo(port)
+                    break
 
     def disable_all(self):
+        try:
+            with self._lock:
+                for key, data in list(self._commands.items()):
+                    self._commands[key]['enabled'] = False
+                    k.disable_servo(data['port'])
+        except Exception as e:
+            log(str(e), in_exception=True)
+
+    def clear_list(self):
         with self._lock:
-            for port in list(self._commands.keys()):
-                try:
-                    k.disable_servo(port)
-                except Exception:
-                    pass
-                self._commands[port]["enabled"] = False
+            if len(self._commands) != 0:
+                self.shutdown()
+                for old_key, data in list(self._commands.items()):
+                    self._old_funcs.add(old_key[1])
+                    k.disable_servo(data['port'])
+                self._commands.clear()
+
 
 SERVO_SCHEDULER = ServoScheduler()

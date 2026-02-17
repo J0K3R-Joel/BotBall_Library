@@ -11,8 +11,9 @@ sys.path.append("/usr/lib")
 from datetime import datetime
 import inspect
 import subprocess
+import traceback
 
-LOG_FOLDER = "/usr/lib/logger_log"
+LOG_FOLDER = "/home/kipr/BotBall-data/logger_log"
 LOG_FILE = os.path.join(LOG_FOLDER, "log_file.txt")
 os.makedirs(LOG_FOLDER, exist_ok=True)
 subprocess.run(["sudo", "chmod", "-R", "777", LOG_FOLDER], check=True)
@@ -41,46 +42,43 @@ def log(message: str, with_print: bool = True, important: bool = False, in_excep
     if in_exception:
         important = True
         label = "EXCEPTION"
-        caller_frame = inspect.stack()[1].frame
-        location = str(caller_frame)
-        location = '<' + location[location.find(',') + 2:]
-    else:
-        label = "INFO"
+        frame_info = inspect.stack()[1]
+        filename = os.path.basename(frame_info.filename)
+        func_name = frame_info.function
+
         if "self" in caller_frame.f_locals:
             class_name = caller_frame.f_locals["self"].__class__.__name__
 
         if class_name:
             location = f"{class_name}.{func_name}"
         else:
+            location = f"{filename}.{func_name}"
+
+        tb = traceback.format_exc()
+        if tb and tb != 'NoneType: None\n':
+            message += f"\nStacktrace:\n{tb}"
+
+    else:
+        label = "INFO"
+        if "self" in caller_frame.f_locals:
+            class_name = caller_frame.f_locals["self"].__class__.__name__
+        if class_name:
+            location = f"{class_name}.{func_name}"
+        else:
             filename = caller_frame.f_code.co_filename
-            if in_exception:
-                if func_name == "<module>":
-                    location = filename
-                else:
-                    location = f"{filename}.{func_name}"
-            else:
-                if func_name == "<module>":
-                    location = os.path.basename(filename)
-                else:
-                    location = func_name
-
-    message = str(message)
-    if important:
-        message = '=' * 10 + message + '=' * 10
-
-    log_entry = f"{now} [{location}] - [{label}] {message}\n"
+            location = func_name if func_name != "<module>" else os.path.basename(filename)
 
     if in_exception:
-        print_text = (
-            "=================================\n"
-            f"[{location}] - [{label}] {message}\n"
-            "================================="
-        )
+        log_entry = f"{'=' * 50} \n{'=' * 10} \n{now} [{location}] - [{label}] \n {message}{'=' * 10}\n{'=' * 50}\n"
     else:
-        print_text = f"[{location}] - [{label}] {message}"
+        if important:
+            message = '=' * 10 + message + '=' * 10
+        log_entry = f"{now} [{location}] - [{label}] {message}\n"
 
     with open(LOG_FILE, 'a') as fwriter:
         fwriter.write(log_entry)
+
+    print_text = f"[{location}] - [{label}] {message}" if not in_exception else f"=================================\n[{location}] - [{label}]\n{message}\n================================="
 
     if with_print:
         print(print_text, flush=True)
@@ -134,8 +132,9 @@ def backup_log() -> None:
     next_num = max(numbers) + 1 if numbers else 1
     backup_file = os.path.join(LOG_FOLDER, f"backup_log_file_{next_num}.txt")
 
-    with open(LOG_FILE, 'r') as fsrc, open(backup_file, 'w') as fdst:
-        fdst.writelines(fsrc.readlines())
+    with open(LOG_FILE, 'r') as freader:
+        with open(backup_file, 'w') as fwriter:
+            fwriter.writelines(freader.readlines())
 
     log("Backup successful!", important=True)
 

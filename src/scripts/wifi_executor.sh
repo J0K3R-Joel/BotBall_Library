@@ -50,6 +50,8 @@ fi
 MANIFEST_PATH="$USB_EDITME_PATH/project.manifest"
 TMP_MANIFEST="/tmp/project.manifest"
 
+chmod 777 "$MANIFEST_PATH"
+
 if [ -f "$MANIFEST_PATH" ]; then
     sed "s/\"user\":\"EDITME_USER\"/\"user\":\"$USER_NAME\"/" "$MANIFEST_PATH" > "$TMP_MANIFEST"
     echo "Updated project.manifest for user: $USER_NAME"
@@ -108,9 +110,9 @@ else
     echo "User $USER_NAME already exists in users.json."
 fi
 
-# ==== Step 9: Copy LOCAL_STD_WIFI_CONFI.conf to /usr/lib ====
+# ==== Step 9: Copy LOCAL_STD_WIFI_CONFI.conf to /home/kipr/BotBall-data ====
 CONF_FILE="$ROOT_DIR/LOCAL_STD_WIFI.conf"
-DEST_CONF="/usr/lib/LOCAL_STD_WIFI.conf"
+DEST_CONF="/home/kipr/BotBall-data/LOCAL_STD_WIFI.conf"
 
 if [ -f "$CONF_FILE" ]; then
     cp "$CONF_FILE" "$DEST_CONF"

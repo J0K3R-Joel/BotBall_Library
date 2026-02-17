@@ -13,7 +13,7 @@ import inspect
 import subprocess
 import traceback
 
-LOG_FOLDER = "/usr/lib/logger_log"
+LOG_FOLDER = "/home/kipr/BotBall-data/logger_log"
 LOG_FILE = os.path.join(LOG_FOLDER, "log_file.txt")
 os.makedirs(LOG_FOLDER, exist_ok=True)
 subprocess.run(["sudo", "chmod", "-R", "777", LOG_FOLDER], check=True)

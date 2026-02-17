@@ -18,7 +18,7 @@ except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 class WifiConnector:
-    file_path_std_wifi_conf = '/usr/lib/LOCAL_STD_WIFI.conf'
+    file_path_std_wifi_conf = '/home/kipr/BotBall-data/LOCAL_STD_WIFI.conf'
 
     def __init__(self, ssid: str = None, password: str = None):
         '''

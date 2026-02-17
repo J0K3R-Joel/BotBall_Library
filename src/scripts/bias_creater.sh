@@ -5,7 +5,7 @@
 # Purpose: Create the bias files for the python files
 
 # ==== Configuration ====
-DEST_BASE="/usr/lib"
+DEST_BASE="/home/kipr/BotBall-data"
 BIAS_ORIGINAL_FOLDER_NAME="bias"
 
 # ==== Skript-Verzeichnis bestimmen ====

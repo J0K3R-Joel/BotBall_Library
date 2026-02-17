@@ -5,16 +5,25 @@
 # Absolute path to this file
 BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPTS_DIR="$BASE_DIR/src/scripts"
+NEW_DATA_DIR="/home/kipr/BotBall-data"
 
 echo "Starting selected scripts in defined order from: $SCRIPTS_DIR"
 echo "------------------------------------------------------------"
 
-# Define prioritized scripts (in order)
+# Define prioritized scripts (in order) -> some scripts need to be executed before others
 PRIORITY_SCRIPTS=("wifi_executor.sh" "comm_executor.sh" "bias_creater.sh" "util_creater.sh" "base_executor.sh" "camera_executor.sh" "fake_client_executor.sh" "fake_server_executor.sh" "bias_executor.sh" "wifi_setupper.sh")
 
 # Define the script that must be executed last
 FINAL_SCRIPT="wifi_finisher.sh"
 FINAL_SCRIPT_PATH="$SCRIPTS_DIR/$FINAL_SCRIPT"
+
+# Change permissions for every user and project that gets created (for BotBall)
+chmod 777 "/home/kipr/Documents/KISS"/*
+
+
+# Step 0: Create the folder for every data and log file that gets created by my library
+mkdir $NEW_DATA_DIR
+chmod 777 $NEW_DATA_DIR
 
 # Step 1: Run prioritized scripts
 for script_name in "${PRIORITY_SCRIPTS[@]}"; do
@@ -61,6 +70,6 @@ fi
 echo "All scripts executed successfully."
 
 # Step 4: Set the ownership of specific paths
-chmod -R 777 /usr/lib/bias_files
-chmor -R 777 /usr/lib/util_files
-chmod 777 /usr/lib/LOCAL_STD_WIFI.conf
+chmod -R 777 "$NEW_DATA_DIR"/bias_files
+chmod -R 777 "$NEW_DATA_DIR"/util_files
+chmod 777 "$NEW_DATA_DIR"/LOCAL_STD_WIFI.conf

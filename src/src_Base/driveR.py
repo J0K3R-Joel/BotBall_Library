@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-import inspect
 import os, sys
 
 sys.path.append("/usr/lib")
@@ -18,6 +17,7 @@ try:
     import multiprocessing
     import uuid
     import math
+    import inspect
     from typing import Optional
     from scipy.interpolate import interp1d
     from threadR import KillableThread  # selfmade
@@ -35,7 +35,7 @@ try:
 except Exception as e:
     log(f'FileR Error: {str(e)}', important=True, in_exception=True)
 
-BIAS_FOLDER = '/usr/lib/bias_files'
+BIAS_FOLDER = '/home/kipr/BotBall-data/bias_files'
 os.makedirs(BIAS_FOLDER, exist_ok=True)
 FILE_PATH = os.path.join(sys.path[0], __file__)
 breakable_function_name = None
@@ -721,16 +721,16 @@ class base_driver:
 
         for arg in args:
             if arg == 'gyro_z' or arg == 'gz':
-                t1 = threading.Thread(target=self.calibrate_gyro_z, kwargs=arguments, name='gyro_z')
+                t1 = threading.Thread(target=self.calibrate_gyro_z, kwargs=arguments, name='gyro_z', daemon=True)
                 calibrations.append(t1)
             elif arg == 'gyro_y' or arg == 'gy':
-                t1 = threading.Thread(target=self.calibrate_gyro_y, kwargs=arguments, name='gyro_y')
+                t1 = threading.Thread(target=self.calibrate_gyro_y, kwargs=arguments, name='gyro_y', daemon=True)
                 calibrations.append(t1)
             elif arg == 'accel_z' or arg == 'az':
-                t1 = threading.Thread(target=self.calibrate_accel_z, kwargs=arguments, name='accel_z')
+                t1 = threading.Thread(target=self.calibrate_accel_z, kwargs=arguments, name='accel_z', daemon=True)
                 calibrations.append(t1)
             elif arg == 'accel_y' or arg == 'ay':
-                t1 = threading.Thread(target=self.calibrate_accel_y, kwargs=arguments, name='accel_y')
+                t1 = threading.Thread(target=self.calibrate_accel_y, kwargs=arguments, name='accel_y', daemon=True)
                 calibrations.append(t1)
             else:
                 log(f'You can only calibrate "gyro_z", "gyro_y", "accel_z" or "accel_y" and not "{arg}"', in_exception=True)
@@ -1214,7 +1214,7 @@ class Solarbotic_Wheels_two(base_driver):
         '''
         self.check_instance_light_sensors_middle()
         startTime = time.time()
-        turning_time = self.ONEEIGHTY_DEGREES_SECS/4 if self.ONEEIGHTY_DEGREES_SECS else 1
+        turning_time = self.ONEEIGHTY_DEGREES_SECS/2 if self.ONEEIGHTY_DEGREES_SECS else 1
 
         def sensor_checker():
             global front_found, back_found
@@ -1224,16 +1224,14 @@ class Solarbotic_Wheels_two(base_driver):
             def white_front_valid():
                 global front_found
                 while not front_found:
-                    if not self.light_sensor_front.sees_white():
+                    if self.light_sensor_front.sees_black():
                         front_found = True
-                        print('front found', flush=True)
 
             def white_back_valid():
                 global back_found
                 while not back_found:
-                    if not self.light_sensor_back.sees_white():
+                    if self.light_sensor_back.sees_black():
                         back_found = True
-                        print('back found', flush=True)
 
             t_front = KillableThread(target=white_front_valid)
             t_back = KillableThread(target=white_back_valid)

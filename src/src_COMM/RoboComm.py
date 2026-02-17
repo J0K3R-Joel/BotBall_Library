@@ -22,7 +22,16 @@ except Exception as e:
 
 
 class RobotCommunicator:
-    def __init__(self, ip, port, is_server=False, pause_event=None):
+    def __init__(self, ip: str, port: int, is_server: bool, pause_event: threading.Event = None):
+        '''
+        Class for communication between two robots. You can send messages, receive them and every message gets stored to access them at any given moment
+
+        Args:
+            ip (str): The IP-Address of the server which you want to connect to (e.g. "172.12.200.14", "192.168.1.240", "10.200.15.2", ...)
+            port (int): The logical port of a WIFI (like 8080, 443, 88, ...), so just ports which only exist in the "wifi sense". Server and Client need to be on the same port! (use ports > 10000 since they are not recerved)
+            is_server (bool): Is this instance the server (True) or the client (False) (not really a difference between the server and client in here by the way)
+            pause_event (threading.Event, optional): == GETS IMPROVED, WORK IN PROGRESS == The pause event which makes high or new main priority available (default: None)
+        '''
         self.ip = ip
         self.port = port
         self.is_server = is_server
@@ -48,42 +57,11 @@ class RobotCommunicator:
 
         self.pause_event = pause_event
 
-        self.__start_connection()
+        self._start_connection()
 
-    # ======================== SET INSTANCES ========================
-
-    def set_pause_event_instance(self, p_event: threading.Event) -> None:
-        '''
-        create or overwrite the existance of the pause event
-
-        Args:
-            p_event (threading.Event): the instance of the pause event
-
-       Returns:
-            None
-        '''
-        self.pause_event = p_event
-
-    # ======================== CHECK INSTANCES ========================
-
-    def check_pause_event_instance(self) -> bool:
-        '''
-        inspect the existance of the pause event
-
-        Args:
-            None
-
-       Returns:
-            if there is an instance of the pause event in existance
-        '''
-        if not isinstance(self.pause_event, threading.Event):
-            log('pause_event is not defined!', in_exception=True)
-            raise TypeError('pause_event is not defined!')
-        return True
 
     # ======================== PRIVATE METHODS ========================
-
-    def __start_connection(self) -> None:
+    def _start_connection(self) -> None:
         '''
         starting the connection with the server or client, depends on which was set when initializing this class
 
@@ -115,9 +93,9 @@ class RobotCommunicator:
                     time.sleep(1)
 
         log("Connected!")
-        threading.Thread(target=self.__receive_loop, daemon=True).start()
+        threading.Thread(target=self._receive_loop, daemon=True).start()
 
-    def __receive_loop(self) -> None:
+    def _receive_loop(self) -> None:
         '''
         loop after connecting to be able to receive all the messages
 
@@ -151,9 +129,9 @@ class RobotCommunicator:
                     self.position_history.append(msg)
                     log(f'[POS PRIORITY] {msg}', important=True)
                 elif priority == "high" and self.high_priority_callback:
-                    self.__handle_high_priority(msg)
+                    self._handle_high_priority(msg)
                 elif priority == "new_main" and self.new_main_callback:
-                    self.__handle_new_main(msg)
+                    self._handle_new_main(msg)
                 else:
                     log(f'Received message: {msg}', with_print=False, important=True)
 
@@ -162,7 +140,7 @@ class RobotCommunicator:
                 self.disconnect()
                 break
 
-    def __handle_high_priority(self, msg: str) -> None:
+    def _handle_high_priority(self, msg: str) -> None:
         '''
         Function to handle high priority messages. Only passes exactly what the user registered via on_high_priority().
 
@@ -191,7 +169,7 @@ class RobotCommunicator:
         if self.pause_event:
             self.pause_event.set()
 
-    def __handle_new_main(self, msg: str) -> None:
+    def _handle_new_main(self, msg: str) -> None:
         '''
         Function to determine what should happen if there was a new_main priority message. Will execute the other main function which was last defined via on_new_main().
 
@@ -204,8 +182,39 @@ class RobotCommunicator:
         log(f"[NEW MAIN] {msg}", important=True)
         stop_manager.emergency_stop()
 
-    # ======================== PUBLIC METHODS ========================
 
+    # ======================== SET INSTANCES ========================
+    def set_pause_event_instance(self, p_event: threading.Event) -> None:
+        '''
+        create or overwrite the existence of the pause event
+
+        Args:
+            p_event (threading.Event): the instance of the pause event
+
+       Returns:
+            None
+        '''
+        self.pause_event = p_event
+
+
+    # ======================== CHECK INSTANCES ========================
+    def check_pause_event_instance(self) -> bool:
+        '''
+        inspect the existence of the pause event
+
+        Args:
+            None
+
+       Returns:
+            if there is an instance of the pause event in existence
+        '''
+        if not isinstance(self.pause_event, threading.Event):
+            log('pause_event is not defined!', in_exception=True)
+            raise TypeError('pause_event is not defined!')
+        return True
+
+
+    # ======================== PUBLIC METHODS ========================
     def send(self, message, priority="normal") -> None:
         '''
         function to pass a message to the receiver
@@ -272,6 +281,36 @@ class RobotCommunicator:
         '''
         self.new_message_flag = False
         return self.latest_message
+
+    def wait_for_new_message(self) -> str:
+        '''
+        Wait until you received a new message and return the message
+
+        Args:
+            None
+
+        Returns:
+            str: latest message
+        '''
+        while not self.has_new_message():
+            continue
+
+        return self.get_latest()
+
+    def wait_for_specific_message(self, msg: str) -> bool:
+        '''
+        Wait for a new message and check if the new message is equal to the given string
+
+        Args:
+            msg (str): The message that should be checked for equality
+
+        Returns:
+            bool: If the latest message is the same as the given string (True) or if they are different (False)
+        '''
+        new_msg = self.wait_for_new_message()
+        return True if new_msg == msg else False
+
+
 
     def remove_message(self, msg) -> None:
         '''

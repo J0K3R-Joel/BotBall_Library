@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import os, sys
 sys.path.append("/usr/lib")
 
@@ -10,14 +11,21 @@ from logger import *  # selfmade
 
 try:
     import _kipr as k
+    from sensors import Sensor  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
-class Analog:
-    def __init__(self, Port):
-        self.port = Port
+class Analog(Sensor):
+    def __init__(self, port: int):
+        '''
+        Class for every analog sensor available
 
-    def current_value(self):
+        Args:
+            port (int): The integer value from where it is plugged in (the hardware) e.g.: 1; 3; 4; 2.
+        '''
+        self.port = port
+
+    def current_value(self) -> int:
         '''
         get the current value of the distance sensor
 
@@ -25,6 +33,6 @@ class Analog:
             None
 
        Returns:
-            current value of the assigned analog Port of the distance sensor (int)
+            int: current value of the assigned analog Port of the distance sensor (int)
         '''
         return k.analog(self.port)

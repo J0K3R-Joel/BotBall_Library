@@ -36,7 +36,7 @@ class LightSensor(Analog):
         self.val_white = value_white
         self.val_black = value_black
         self.bias = bias
-        self.BIAS_FOLDER = '/usr/lib/bias_files'
+        self.BIAS_FOLDER = '/home/kipr/BotBall-data/bias_files'
         self.std_white_file_name = 'light_sensor_white_'
         self.std_black_file_name = 'light_sensor_black_'
         self.file_manager = FileR()

@@ -5,7 +5,7 @@
 # Purpose: Create utility files for the python classes
 
 # ==== Configuration ====
-DEST_BASE="/usr/lib"
+DEST_BASE="/home/kipr/BotBall-data"
 UTIL_ORIGINAL_FOLDER_NAME="util"
 
 # ==== Skript-Verzeichnis bestimmen ====

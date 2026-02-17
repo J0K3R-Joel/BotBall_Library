@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import os, sys
+import threading
 
 sys.path.append("/usr/lib")
 
@@ -13,7 +14,6 @@ from logger import *
 try:
     import _kipr as k
     import time
-    from threading import Lock
     from fileR import FileR  # selfmade
     from motor_scheduler import MOTOR_SCHEDULER  # selfmade
     from stop_manager import stop_manager  # selfmade
@@ -21,12 +21,22 @@ except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 class WheelR:
-    def __init__(self, Port: int, max_speed: int = 1500, default_speed: int = 1400, servo_like: bool = False):  # @TODO -> servo like motor
-        self.port = Port
+
+    def __init__(self, port: int, default_speed: int = 1400, max_speed: int = 1500, servo_like: bool = False):  # @TODO -> servo like motor
+        '''
+        Class for motors. Uses the kipr method mav (move_at_velocity).
+
+        Args:
+            port (int): The integer value from where it is plugged in (the hardware) e.g.: 1; 3; 4; 2.
+            default_speed (int, optional): how fast the wheel should turn if no speed is specified (default: 1400)
+            max_speed (int, optional): The maximum speed which the robot can drive (since this robot uses move_at_velocity, the max_speed is capped at 1500 and can not exceed this speed whatsoever) (default:1500)
+            servo_like (bool, optional): == NO LOGIC YET == Changes the motor functionality completely to a servo. (default: False)
+        '''
+        self.port = port
         self.max_speed = max_speed
         self.d_speed = default_speed
-        self.wheel_lock = Lock()
         stop_manager.register_wheelr(self)
+
 
     # ======================== PRIVATE METHODS ========================
     def _base_speed_func(self, speed: int) -> None:
@@ -44,7 +54,20 @@ class WheelR:
         elif speed > self.max_speed:
             speed = self.max_speed
 
+
         MOTOR_SCHEDULER.set_speed(self.port, speed)
+
+    def _hard_stop(self) -> None:
+        '''
+        Immediately deletes all activity and future activity from the same thread for some time
+
+        Args:
+            None
+
+        Returns:
+            None
+        '''
+        MOTOR_SCHEDULER.clear_list()
 
 
     # ======================== GET METHODS ========================
@@ -83,6 +106,7 @@ class WheelR:
             int: default speed you are able to drive
         '''
         return self.get_default_speed()
+
 
     # ======================== SET METHODS ========================
     def set_port(self, port_number: int) -> None:
@@ -137,7 +161,6 @@ class WheelR:
 
         print(f'Success! Motor {self.port} plugged in.', flush=True)
 
-
     def fw(self, speed: int) -> None:
         '''
         Function for driving forward (expects that the motor will move forwards when the value gets positive)
@@ -148,7 +171,12 @@ class WheelR:
         Returns:
             None
         '''
-        self._base_speed_func(abs(speed))
+        if speed < 0:
+            speed = -speed
+
+        speed = int(speed)
+        self._base_speed_func(speed)
+
     def forward(self, speed: int) -> None:
         '''
         Function for driving forward (expects that the motor will move forwards when the value gets positive)
@@ -185,7 +213,6 @@ class WheelR:
         '''
         self.fw(self.max_speed)
 
-
     def bw(self, speed: int) -> None:
         '''
         Function for driving backwards (expects that the motor will move backwards when the value gets negative)
@@ -196,7 +223,12 @@ class WheelR:
         Returns:
             None
         '''
-        self._base_speed_func(-abs(speed))
+        if speed > 0:
+            speed = -speed
+
+        speed = int(speed)
+        self._base_speed_func(speed)
+
     def backward(self, speed: int) -> None:
         '''
         Function for driving backwards (expects that the motor will move backwards when the value gets negative)
@@ -233,8 +265,7 @@ class WheelR:
         '''
         self.bw(-self.max_speed)
 
-
-    def drive(self, speed:int):
+    def drive(self, speed: int):
         '''
         Default Function for driving in any direction
 
@@ -244,6 +275,7 @@ class WheelR:
         Returns:
             None
         '''
+        speed = int(speed)
         self._base_speed_func(speed)
 
     def drive_dfw(self, adjuster: int = None) -> None:
@@ -260,6 +292,7 @@ class WheelR:
             adjuster = int(adjuster)
         elif not isinstance(adjuster, int):
             adjuster = 0
+
         self.drive(self.d_speed + adjuster)
 
     def drive_dbw(self, adjuster: int = None) -> None:
@@ -276,6 +309,7 @@ class WheelR:
             adjuster = int(adjuster)
         elif not isinstance(adjuster, int):
             adjuster = 0
+
         self.drive(-self.d_speed + adjuster)
 
     def drive_mfw(self, adjuster: int = None) -> None:
@@ -292,7 +326,11 @@ class WheelR:
             adjuster = int(adjuster)
         elif not isinstance(adjuster, int):
             adjuster = 0
-        self.drive(self.max_speed - abs(adjuster))
+
+        if adjuster < 0:
+            adjuster = -adjuster
+
+        self.drive(self.max_speed - adjuster)
 
     def drive_mbw(self, adjuster: int = None) -> None:
         '''
@@ -308,12 +346,15 @@ class WheelR:
             adjuster = int(adjuster)
         elif not isinstance(adjuster, int):
             adjuster = 0
-        self.drive(-self.max_speed + abs(adjuster))
 
+        if adjuster < 0:
+            adjuster = -adjuster
+
+        self.drive(-self.max_speed + adjuster)
 
     def drive_time(self, speed: int, millis: int) -> None:
         '''
-        Default Function for driving in any direction for a time
+        Default Function for driving in any direction for a certain amount of time (hint: it will not drive straight, if you use it for driving!)
 
         Args:
             speed (int): velocity to drive
@@ -328,9 +369,24 @@ class WheelR:
 
     def stop(self) -> None:
         '''
-        Immediately halt the motor
+        Stopping this singular motor immediately
+
+        Args:
+            None
 
         Returns:
-            None
+            None, but stops the motor immediately
         '''
         MOTOR_SCHEDULER.stop_motor(self.port)
+
+    def stop_all(self) -> None:
+        '''
+        Stopping every motor immediately
+
+        Args:
+            None
+
+        Returns:
+            None, but stops the motors immediately
+        '''
+        MOTOR_SCHEDULER.stop_all()

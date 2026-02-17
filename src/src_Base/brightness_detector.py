@@ -52,7 +52,7 @@ class CameraBrightnessDetector:
         self._bias_lock = threading.Lock()
 
         self.camera_manager = camera_manager
-        self.save_base_path = "/usr/lib/bias_files/brightness_detector"
+        self.save_base_path = "/home/kipr/BotBall-data/bias_files/brightness_detector"
         os.makedirs(self.save_base_path, exist_ok=True)
 
     # ======================== SETTER ========================

@@ -13,14 +13,21 @@ import builtins
 
 class FileR:
 	def __init__(self):
+		'''
+		Class for threadsafe file management (reading, writing, cleaning)
+
+		Args:
+			None
+		'''
 		self._writer_lock = threading.Lock()
 
-	def reader(self, file_name: str, type_name: str = 'str') -> str:
+	def reader(self, file_name: str, type_name: str = 'str'):
 		'''
 		read the content of a file
 
 		Args:
 			file_name (str): the file (and/or path) to the desired file
+			type_name (str, optional): the type of value which you want to get returned
 
 		Returns:
 			content of the file

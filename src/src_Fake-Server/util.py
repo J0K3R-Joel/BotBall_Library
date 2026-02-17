@@ -16,6 +16,7 @@ try:
     import os
     import threading
     from scipy.interpolate import interp1d
+    from fileR import FileR  # selfmade
     from digital import Digital  # selfmade
     from light_sensor import LightSensor  # selfmade
     from distance_sensor import DistanceSensor  # selfmade
@@ -23,22 +24,31 @@ except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 
+UTIL_FOLDER = '/home/kipr/BotBall-data/util_files'
+
 class Util:
     def __init__(self,
                  Instance_button_front_right: Digital = None,
                  Instance_light_sensor_start: LightSensor = None,
                  Instance_distance_sensor: DistanceSensor = None):
+        '''
+        Class for some extra functionality which does not fit into any class
 
+        Args:
+            Instance_button_front_right (Digital, optional): The button instance where the button is mounted on the front right of the robot (default: None)
+            Instance_light_sensor_start (LightSensor, optional): The light sensor instance which is responsible for starting the program when the light turn on (at the competition during "hands-off") (default: None)
+            Instance_distance_sensor (DistanceSensor, optional): The distance sensor instance where the button is mounted on of the robot (default: None)
+        '''
         self.button_fr = Instance_button_front_right
         self.light_sensor_start = Instance_light_sensor_start
         self.distance_sensor = Instance_distance_sensor
 
+        self.file_manager = FileR()
         self.isClose = False
         self.running_allowed = True
 
 
     # ======================== SET INSTANCES ========================
-
     def set_instance_distance_sensor(self, Instance_distance_sensor: DistanceSensor) -> None:
         '''
         create or overwrite the existance of the distance sensor
@@ -75,8 +85,8 @@ class Util:
         '''
         self.button_fr = Instance_button_front_right
 
-    # ======================== CHECK INSTANCES ========================
 
+    # ======================== CHECK INSTANCES ========================
     def check_instance_distance_sensor(self) -> bool:
         '''
         inspect the existance of the distance sensor
@@ -122,8 +132,7 @@ class Util:
             raise TypeError('Button front right is not initialized!')
         return True
 
-    # ======================== Normal methods =======================
-
+    # ======================== PUBLIC METHODS =======================
     def stop_runner(self) -> None:
         '''
         stops every wait function if needed (even though they are in a thread)
@@ -183,10 +192,43 @@ class Util:
         Args:
             None
 
-       Returns:
+        Returns:
             None
         '''
         self.check_instance_button_fr()
         log('waiting for button FR...')
         while not self.button_fr.is_pressed():
             continue
+
+
+    def toggle_local_test_variable(self) -> str:
+        '''
+        Variable that toggles between "''" and "'1'". Can be useful because for test purpose you might want to change something every second run
+
+        Args:
+            None
+
+        Returns:
+            str: '': Empty string which can be interpreted as False
+                 '1': String with some content which can be interpreted as True
+
+        '''
+        std_msg = ''
+        file_name = UTIL_FOLDER + 'local_test_variable.txt'
+        if not os.path.exists(file_name):
+            self.file_manager.writer(file_name, 'w', std_msg)
+            return std_msg
+        else:
+            text = self.file_manager.reader(file_name)
+            if text != std_msg:
+                new_msg = std_msg
+            else:
+                new_msg = '1'
+            self.file_manager.writer(file_name, 'w', new_msg)
+            return new_msg
+
+    def shutdown_wombat(self):
+        subprocess.run(['shutdown', '-h', 'now'])
+
+    def reboot_wombat(self):
+        subprocess.run(['shutdown', '-r', 'now'])

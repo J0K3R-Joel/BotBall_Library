@@ -24,11 +24,7 @@ except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 
-UTIL_FOLDER = '/usr/lib/util_files'
-subprocess.run(['chmod', '777', '-R', UTIL_FOLDER])
-if not os.path.exists(UTIL_FOLDER):
-    os.makedirs(UTIL_FOLDER, exist_ok=True)
-    subprocess.run(['chmod', '777', '-R', UTIL_FOLDER])
+UTIL_FOLDER = '/home/kipr/BotBall-data/util_files'
 
 class Util:
     def __init__(self,

@@ -14,13 +14,20 @@ from logger import *
 try:
     import _kipr as k
     from typing import *
+    from sensors import Sensor  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 
-class Digital:
-    def __init__(self, Port : int):
-        self.port = Port
+class Digital(Sensor):
+    def __init__(self, port: int):
+        '''
+        Class for every digital sensor available
+
+        Args:
+            port (int): the integer value from where it is plugged in (the hardware) e.g.: 1; 3; 4; 2.
+        '''
+        self.port = port
         self.last_state = 0  # initialized while the button is not pressed
         self.pressed_at = 0  # to know when the button was first pressed
         self.state_timer = 0  # initialized while the button is not pressed

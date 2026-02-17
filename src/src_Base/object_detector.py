@@ -28,7 +28,7 @@ class CameraObjectDetector:
             camera_manager (CameraManager): The camera manager which gives you frames from the camera
             test_mode (bool, optional): Use this ONLY on your pc and not the robot, since nothing will happen except using a lot of power and ressources. Will create a window which makes you able to see what the camera sees (default: False)
         '''
-        base_path = "/usr/lib/bias_files/object_detector"
+        base_path = "/home/kipr/BotBall-data/bias_files/object_detector"
         os.makedirs(base_path, exist_ok=True)
 
         self.object_dir = os.path.join(base_path, "objects")

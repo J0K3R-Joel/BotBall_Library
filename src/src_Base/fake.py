@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import os, sys
 from types import ModuleType
 

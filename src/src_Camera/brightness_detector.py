@@ -16,15 +16,27 @@ try:
     import os
     import time
     import threading
-    from camera_manager import CameraManager
+    from camera_manager import CameraManager  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 class CameraBrightnessDetector:
-    def __init__(self, camera_manager: CameraManager=None, tiles_x=1, tiles_y=1,
-                 threshold_brightness=127, threshold_black=50,
-                 threshold_white=200, test_mode=False, use_bias=False):
+    def __init__(self, camera_manager: CameraManager, tiles_x: int = 1, tiles_y: int = 1,
+                 threshold_brightness: int = 127, threshold_black: int = 50,
+                 threshold_white: int = 200, test_mode: bool = False, use_bias: bool = False):
+        '''
+        Class for the camera. This is for detecting if something on the camera is black or white, while being able to segment the camera into many fragments, each seperatly telling you something about the color black or white
 
+        Args:
+            camera_manager (CameraManager): The camera manager which gives you frames from the camera
+            tiles_x (int, optional): The amount of cachel which the camera should get divided by alongside the x-axis. (default: 1)
+            tiles_y (int, optional): the amount of cachel which the camera should get divided by alongside the y-axis. (default: 1)
+            threshold_brightness (int, optional): Point of where the black and white detection meets in the center (higher -> leaning more towards white, black gets harder seen) (default:127)
+            threshold_black (int, optional): Where the camera should detect if it sees black (default: 50)
+            threshold_white (int, optional): Where the camera should detect if it sees white (default: 200)
+            test_mode (bool, optional): Use this ONLY on your pc and not the robot, since nothing will happen except using a lot of power and ressources. Will create a window which makes you able to see what the camera sees (default: False)
+            use_bias (bool, optional): If the bias should calculate itself (True) or not (False) (default: False)
+        '''
         self.tiles_x = tiles_x
         self.tiles_y = tiles_y
         self.test_mode = test_mode
@@ -40,7 +52,7 @@ class CameraBrightnessDetector:
         self._bias_lock = threading.Lock()
 
         self.camera_manager = camera_manager
-        self.save_base_path = "/usr/lib/bias_files/brightness_detector"
+        self.save_base_path = "/home/kipr/BotBall-data/bias_files/brightness_detector"
         os.makedirs(self.save_base_path, exist_ok=True)
 
     # ======================== SETTER ========================

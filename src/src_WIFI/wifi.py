@@ -18,9 +18,19 @@ except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
 class WifiConnector:
-    file_path_std_wifi_conf = '/usr/lib/LOCAL_STD_WIFI.conf'
+    file_path_std_wifi_conf = '/home/kipr/BotBall-data/LOCAL_STD_WIFI.conf'
 
     def __init__(self, ssid: str = None, password: str = None):
+        '''
+        Class for connecting, disconnecting or changing the WIFI. (Be aware of the WIFI band width)
+
+        Args:
+            ssid (str, optional): The WIFI name you want to connect to (default: None)
+            password (str, optional): The password corresponding to the WIFI name.
+
+        Returns:
+            None, but connects to the WIFI.
+        '''
         self.ssid = ssid
         self.password = password
         self.file_path_mode = '/home/kipr/wombat-os/configFiles/wifiConnectionMode.txt'  # this file is from kipr themselves
@@ -29,8 +39,61 @@ class WifiConnector:
         self.file_manager = FileR()
 
 
-    # ======================== PUBLIC METHODS ========================
+    # ======================== GET METHODS ========================
+    def get_mode(self) -> str:
+        '''
+        Lets you see in which mode the device is at the moment
 
+        Args:
+            None
+
+        Returns:
+            If it is in AP (Access Point) or Client mode at this moment
+                0 -> AP mode
+                1 -> Client mode
+                2 -> Event mode (just do not use it, since you can not use wifi in this mode -> no communication)
+        '''
+        text = self.file_manager.reader(self.file_path_mode)
+        return text[text.find('MODE ') + 5]
+
+    def get_ip_address(self) -> str:
+        '''
+        Tells you the current IP-Address of the device
+
+        Args:
+            None
+
+        Returns:
+            The IPv4 Address of this current device
+        '''
+        try:
+            ip = subprocess.check_output(["hostname", "-I"]).decode().strip().split()[0]
+            return ip
+        except ConnectionError as e:
+            log(f'No IP-Address found: {str(e)}', important=True, in_exception=True)
+
+
+    # ======================== SET METHODS ========================
+    def set_mode(self, new_mode: str) -> None:
+        '''
+        Lets you overwrite in which mode the device should be set
+
+        Args:
+            new_mode (str):
+                 0 -> AP mode
+                 1 -> Client mode
+                 2 -> Event mode (just do not use it, since you can not use wifi in this mode -> no communication)
+
+        Returns:
+            None
+        '''
+        text = self.file_manager.reader(self.file_path_mode)
+        mode_index = text.find('MODE ') + 5
+        new_text = text[:mode_index] + text[mode_index:].replace(text[mode_index], new_mode)
+        self.file_manager.writer(self.file_path_mode, 'w', new_text)
+
+
+    # ======================== PUBLIC METHODS ========================
     @classmethod
     def standard_conf(cls):
         '''
@@ -39,7 +102,7 @@ class WifiConnector:
         Args:
             None
 
-       Returns:
+        Returns:
             the created instance of this WifiConnector class
         '''
         if not os.path.exists(cls.file_path_std_wifi_conf):
@@ -67,48 +130,13 @@ class WifiConnector:
             log('Wifi successfully setup')
         return instance
 
-    def get_mode(self) -> str:
-        '''
-        Lets you see in which mode the device is at the moment
-
-        Args:
-            None
-
-       Returns:
-            If it is in AP (Access Point) or Client mode at this moment
-                0 -> AP mode
-                1 -> Client mode
-                2 -> Event mode (just do not use it, since you can not use wifi in this mode -> no communication)
-        '''
-        text = self.file_manager.reader(self.file_path_mode)
-        return text[text.find('MODE ') + 5]
-
-    def set_mode(self, new_mode: str) -> None:
-        '''
-        Lets you overwrite in which mode the device should be set
-
-        Args:
-            new_mode (str):
-                             0 -> AP mode
-                             1 -> Client mode
-                             2 -> Event mode (just do not use it, since you can not use wifi in this mode -> no communication)
-
-       Returns:
-            None
-        '''
-        text = self.file_manager.reader(self.file_path_mode)
-        mode_index = text.find('MODE ') + 5
-        new_text = text[:mode_index] + text[mode_index:].replace(text[mode_index], new_mode)
-        self.file_manager.writer(self.file_path_mode, 'w', new_text)
-
-
     def change_local_std_wifi(self, ssid: str, password: str, connect: bool = False) -> None:
         '''
         Function to change the SSID and password of the LOCAL_STD_WIFI.conf file
 
         Args:
             ssid (str): The name of the WIFI you want to connect to
-            password (str): The password of the WIFI you want to connect to
+            password (str): The password of the WIFI you want to connect
             connect (bool, optional): immediately connect to the given WIFI
 
         Returns:
@@ -156,7 +184,7 @@ class WifiConnector:
         Args:
             None
 
-       Returns:
+        Returns:
             None
         '''
         try:
@@ -193,7 +221,7 @@ class WifiConnector:
         Args:
             None
 
-       Returns:
+        Returns:
             bool: If you are connected with the chosen wifi (True), or with any other wifi or just no wifi at all (False)
         '''
         try:
@@ -227,9 +255,12 @@ class WifiConnector:
         name = ssid if ssid is not None else self.ssid
         passw = password if password is not None else self.password
 
-        print(name, ssid, self.ssid, flush=True)
+        if self.get_mode() != self.CLIENT_MODE:
+            log("Changing to client mode ...")
+            self.set_mode(self.CLIENT_MODE)
 
         try:
+            print(f'Trying to connect to {ssid}...', flush=True)
             subprocess.run(
                 ['sudo', 'nmcli', 'dev', 'wifi', 'connect', name, 'password', passw],
                 check=True,
@@ -240,22 +271,6 @@ class WifiConnector:
         except subprocess.CalledProcessError as e:
             log(f'Wifi connection failed: {e.stderr.decode()}', important=True, in_exception=True)
 
-    def get_ip_address(self) -> str:
-        '''
-        Tells you the current IP-Address of the device
-
-        Args:
-            None
-
-       Returns:
-            The IPv4 Address of this current device
-        '''
-        try:
-            ip = subprocess.check_output(["hostname", "-I"]).decode().strip().split()[0]
-            return ip
-        except ConnectionError as e:
-            log(f'No IP-Address found: {str(e)}', important=True, in_exception=True)
-
     def run(self) -> None:
         '''
         Starts the connection with the chosen wifi with the chosen ssid and password
@@ -263,7 +278,7 @@ class WifiConnector:
         Args:
             None
 
-       Returns:
+        Returns:
             None, but tells you the IP-Address in the end
         '''
         if self.ssid == None or self.password == None:
@@ -271,11 +286,11 @@ class WifiConnector:
             raise RuntimeError('You need to tell the constructor the SSID and password of the WIFI you are trying to connect to!')
 
         if self.get_mode() != self.CLIENT_MODE:
-            log("Change to client mode ...")
+            log("Changing to client mode ...")
             self.set_mode(self.CLIENT_MODE)
 
         if not self.is_connected_to_ssid():
-            log(f"Not connected with {self.ssid} . Connecting ...")
+            log(f"Not connected with {self.ssid}. Connecting ...")
             self.connect_to_wifi()
 
         ip = self.get_ip_address()

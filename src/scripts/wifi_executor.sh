@@ -104,7 +104,7 @@ fi
 
 # ==== Step 8: Add user to users.json ====
 if ! grep -q "\"$USER_NAME\"" "$USERS_FILE"; then
-    sed -i '$ s/}$/,"'"$USER_NAME"'":{"mode":"Simpel"}}/' "$USERS_FILE"
+    sed -i '$ s/}$/"'"$USER_NAME"'":{"mode":"Simpel"}}/' "$USERS_FILE"  # do not add here a the "," symbol for seperating the useres, since this is the first user which gets added and therefore there would be already a "," existing, which (if you would add the comma) there would be 2 (",,")
     echo "User $USER_NAME added to users.json."
 else
     echo "User $USER_NAME already exists in users.json."

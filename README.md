@@ -158,7 +158,7 @@ git clone https://github.com/J0K3R-Joel/BotBall_Library.git
 10. Run the configuration script:
 
 ```bash
-sudo bash config.sh
+sudo bash change_folder.sh
 ```
 
 11. The installation is complete. You can check the log file in "**/usr/lib/logger_log/log_file.txt**". This will get edited all the time.

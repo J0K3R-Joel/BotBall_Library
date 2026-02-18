@@ -103,6 +103,3 @@ Nothing specific here, just be aware that the wheels NEED TO DRIVE FORWARD when 
 - The wheels NEED TO DRIVE FORWARD when you put a positive value to the motor port ([./Controller_Guide.md](./Controller_Guide.md) as an explanation on how to set the value for test purpose)
 
   
-
-
-

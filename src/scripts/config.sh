@@ -2,9 +2,7 @@
 # Author: Joel Kalkusch
 # Email: kalkusch.joel@gmail.com
 
-# Absolute path to this file
-BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SCRIPTS_DIR="$BASE_DIR/src/scripts"
+SCRIPTS_DIR="./"
 NEW_DATA_DIR="/home/kipr/BotBall-data"
 
 echo "Starting selected scripts in defined order from: $SCRIPTS_DIR"
@@ -43,7 +41,7 @@ done
 for script in "$SCRIPTS_DIR"/*.sh; do
     script_filename="$(basename "$script")"
 
-    if [[ " ${PRIORITY_SCRIPTS[*]} " =~ " $script_filename " ]] || [[ "$script_filename" == "$FINAL_SCRIPT" ]]; then
+    if [[ " ${PRIORITY_SCRIPTS[*]} " =~ " $script_filename " ]] || [[ "$script_filename" == "$FINAL_SCRIPT" ]] || [[ "$script_filename" == "config.sh" ]]; then
         continue
     fi
 

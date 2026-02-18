@@ -158,10 +158,10 @@ git clone https://github.com/J0K3R-Joel/BotBall_Library.git
 10. Run the configuration script:
 
 ```bash
-sudo bash change_folder.sh
+sudo bash start.sh
 ```
 
-11. The installation is complete. You can check the log file in "**/usr/lib/logger_log/log_file.txt**". This will get edited all the time.
+11. The installation is complete. You can check the log file in "**/home/kipr/BotBall-data/logger_log/log_file.txt**". This will get edited all the time.
 
 ---
 

@@ -45,7 +45,7 @@ In here you can find the name of every user with the corresponding level of expe
 If you are using my library, then the following base folder is necessary to know:
 
 
-#### /usr/lib
+#### /home/kipr/BotBall-data
 
 in here you can find the following:
 
@@ -56,6 +56,10 @@ in here you can find the following:
 ##### `./bias_files`: When calibrating, every bias will get stored somewhere in here
 
 - calibrations for e.g.: gyro, accelerometer, camera, distance, light/brightness values, ...
+
+#####  `./util_files`: Every kind of file which can help you in some way or another is stored in here
+
+- files which will help you as the programmer
 
 ##### `./logger_log`: Everything that has to do with logging gets sent into here
 

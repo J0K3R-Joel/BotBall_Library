@@ -21,6 +21,7 @@ Non-advanced users should only use the following files:
 - `servo.py` - ServoX
 - `util.py` - Util
 - `wheelR.py` - WheelR
+- `threadR.py` - KillableThread
 - (`ideas.py` -> not really for execution, but to get some ideas / add some ideas)
 - (`main.py` -> obviously, since you need to write in here)
 

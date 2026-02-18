@@ -12,11 +12,11 @@ This file will tell you things to consider and important stuff. This is very imp
 
 - Some classes—especially the `FakeR` class—are quite complex in terms of logic. The `RoboCommunicator` and `FakeR` classes work hand in hand, which makes communication increasingly complicated the more features you add. Since both robots need to communicate seamlessly to get the most value, mastering communication between `RoboCommunicator`, `FakeR`, and the camera classes unlocks almost limitless possibilities. If you have any questions about what to do or how something works, feel free to reach out to me
 
-- You can look after setting up the robot in `/usr/lib/bias_folder` to see the bias files. They get updated every time a bias is made / overwritten
+- You can look after setting up the robot in `/home/kipr/BotBall-data/bias_folder` to see the bias files. They get updated every time a bias is made / overwritten
 
-- You can look after setting up the robot in `/usr/lib/logger_log` to see all the logs, that it made. That's why it is preferred to use the `log()` function inside the `logger.py`, since you are able to see the logs, even after something went wrong and it restarted or anything else. Since they get saved in the file (name: `log_file.txt`, you can look at the errors or informations all the time
+- You can look after setting up the robot in `/home/kipr/BotBall-data/logger_log` to see all the logs, that it made. That's why it is preferred to use the `log()` function inside the `logger.py`, since you are able to see the logs, even after something went wrong and it restarted or anything else. Since they get saved in the file (name: `log_file.txt`, you can look at the errors or informations all the time
 
-- You can look after setting up the robot in `/usr/lib/LOCAL_STD_WIFI.conf` to see and change the default SSID and password of the private network / router. This is like [step 4 in the Installation](../README.md#Installation) segment
+- You can look after setting up the robot in `/home/kipr/BotBall-data/LOCAL_STD_WIFI.conf` to see and change the default SSID and password of the private network / router. This is like [step 4 in the Installation](../README.md#Installation) segment
 
 - Every time you change the weight or size, you should calibrate all bias' again. The more often the better, since the bias is getting calibrated with the current and last bias
 

@@ -48,7 +48,7 @@ Sometimes some problems will be fixed when rebooting the controller
 
 ##### Reason
 
-Sometimes you want to get to the home-screen of the controller. If you are using my library, you can access the logger file (located in the file explorer in `/usr/lib/logger_log`) this way for example. Another example would be to access the bias files (located in the file explorer in `/usr/lib/bias_file`).
+Sometimes you want to get to the home-screen of the controller. If you are using my library, you can access the logger file (located in the file explorer in `/home/kipr/BotBall-data/logger_log`) this way for example. Another example would be to access the bias files (located in the file explorer in `/home/kipr/BotBall-data/bias_file`).
 
 ##### Navigation
 

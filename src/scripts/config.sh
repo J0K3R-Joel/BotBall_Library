@@ -2,7 +2,7 @@
 # Author: Joel Kalkusch
 # Email: kalkusch.joel@gmail.com
 
-SCRIPTS_DIR="./"
+SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NEW_DATA_DIR="/home/kipr/BotBall-data"
 
 echo "Starting selected scripts in defined order from: $SCRIPTS_DIR"

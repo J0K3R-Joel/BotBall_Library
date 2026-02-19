@@ -1,3 +1,45 @@
+def Port_Test():
+    # ============== MOTOR ==============
+    # -------------- Links --------------
+    print('Motor Links...', flush=True)
+    k.mav(PORT_MOTOR_L, 3600)
+    time.sleep(0.75)
+    k.ao()
+    time.sleep(0.3)
+    # -------------- Rechts --------------
+    print('Motor Rechts...', flush=True)
+    k.mav(PORT_MOTOR_R, 3600)
+    time.sleep(0.75)
+    k.ao()
+    time.sleep(0.3)
+
+    # ============== DIGITAL ==============
+    # ----------- Hinten Links ------------
+    print('Press Back Button Left', flush=True)
+    while True:
+        if k.digital(PORT_DIGITAL_BL) == 1:
+            print('pressed!', flush=True)
+            break
+    # ----------- Hinten Rechts ------------
+    print('Press Back Button Right', flush=True)
+    while True:
+        if k.digital(PORT_DIGITAL_BR) == 1:
+            print('pressed!', flush=True)
+            break
+    # ----------- Vorne Links ------------
+    print('Press Front Button Left', flush=True)
+    while True:
+        if k.digital(PORT_DIGITAL_FL) == 1:
+            print('pressed!', flush=True)
+            break
+    # ----------- Vorne Rechts ------------
+    print('Press Front Button Right', flush=True)
+    while True:
+        if k.digital(PORT_DIGITAL_FR) == 1:
+            print('pressed!', flush=True)
+            break
+
+
 def calibrate_light_sensor() -> None:
     print('Begin calibraing light sensor!', flush=True)
     print('FR -> Einloggen  || FL -> Alle Bestaetigen ||  BR -> Letzten neu  ||  BL -> Alle neu', flush=True)

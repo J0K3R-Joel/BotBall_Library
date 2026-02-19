@@ -2712,7 +2712,7 @@ class Solarbotic_Wheels_two(base_driver):
         return 181  # if it was not found in the right amount of time, it took the robot more than 180 degrees
 
 
-class Mechanum_Wheels_four(base_driver):
+class Mecanum_Wheels_four(base_driver):
     def __init__(self,
                  Instance_front_right_wheel: WheelR,
                  Instance_front_left_wheel: WheelR,

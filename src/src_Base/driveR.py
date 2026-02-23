@@ -1354,7 +1354,7 @@ class Solarbotic_Wheels_two(base_driver):
                 prev_value = sensor_val  # this value will always be 1 value behind the actual (sensor_val) value
                 return (True, prev_value)
 
-            if sensor_val - prev_value >= 0:
+            if sensor_val - prev_value > 0:
                 return (False, prev_value)
             else:
                 prev_value = sensor_val

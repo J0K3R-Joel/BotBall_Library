@@ -229,11 +229,11 @@ class Util:
             self.file_manager.writer(file_name, 'w', new_msg)
             return new_msg
 
-    def create_port_file_entry(self, category: str, port_name: str, port_number: int):
+    def create_port_file_entry(self, port_name: str, category: str, port_number: int):
         if not os.path.exists(self.port_file_name):
             self.file_manager.writer(self.port_file_name, 'w', '')
 
-        if not self.exist_port_file_entry(port_name=port_name):
+        if not self.exist_port_file_entry(port_name=port_name) and not self.exist_port_file_entry(category=category, port_number=port_number):
             msg = category + self.port_file_seperator + port_name + self.port_file_seperator + str(port_number) + '\n'
             self.file_manager.writer(self.port_file_name, 'a', msg)
             log(f'Successfully added new entry: {port_name}')
@@ -250,11 +250,15 @@ class Util:
 
                 msg = cat + self.port_file_seperator + name + self.port_file_seperator + str(number) + '\n'
                 self.file_manager.writer(self.port_file_name, 'a', msg)
-            log(f'Successfully overwritten old entry with port name "{port_name}" to category {category} and port number {port_number}')
+            log(f'Successfully overwritten old entry with port name "{port_name}" to category "{category}" and port number #{port_number}')
+
+
+    def remove_port_file_entry(self, port_name: str = None, category: str = None, port_number: int = None):
+        print('@TODO')
 
 
 
-    def exist_port_file_entry(self, category: str = None, port_name: str = None, port_number: int = None):
+    def exist_port_file_entry(self, port_name: str = None, category: str = None, port_number: int = None):
         if not port_name and (not category or not isinstance(port_number, int)):
             log('You need to either know the port name or at least two other parameters!', in_exception=True)
             raise ValueError('You need to either know the port name or at least two other parameters!')
@@ -264,20 +268,23 @@ class Util:
                 entry = self.get_port_file_entries(port_name=port_name)
                 return True if isinstance(entry[0], int) and entry[1] else False
 
-            if category and port_number:
+            if category and isinstance(port_number, int):
                 entry = self.get_port_file_entries(category=category, port_number=port_number)
                 return True if entry else False
+
+            return False
 
         except Exception as e:
             return False
 
 
-    def get_port_file_entries(self, category: str = None, port_name: str = None, port_number: int = None):
+    def get_port_file_entries(self, port_name: str = None, category: str = None, port_number: int = None):
         cat_exists = 1 if category else 0
         pname_exists = 1 if port_name else 0
         pnumber_exists = 1 if isinstance(port_number, int) else 0
 
         counter = cat_exists + pname_exists + pnumber_exists
+
 
         if not os.path.exists(self.port_file_name):
             log('No entries created just yet', in_exception=True)
@@ -294,46 +301,43 @@ class Util:
         if counter == 0:  # nothing is given -> everything is wanted
             return port_names  # return everything
 
-        if cat_exists and pnumber_exists:  # category and port number are given -> name is wanted
+        elif cat_exists and pnumber_exists:  # category and port number are given -> name is wanted
             for name, (number, cat) in port_names.items():
                 if number == port_number and cat == category:
                     return name
-            log(f'Category "{category}" with port number "{port_number}" does not exist', in_exception=True)
-            raise ValueError(f'Category "{category}" with port number "{port_number}" does not exist')
+            log(f'Category "{category}" with port number #{port_number}" does not exist')
 
-        if cat_exists and pname_exists:  # category and port name are given -> number is wanted
+        elif cat_exists and pname_exists:  # category and port name are given -> number is wanted
             for name, (number, cat) in port_names.items():
                 if port_name == name and cat == category:
                     return number
-            log(f'Category "{category}" with port name "{port_name}" does not exist', in_exception=True)
-            raise ValueError(f'Category "{category}" with port name "{port_name}" does not exist')
+            log(f'Category "{category}" with port name "{port_name}" does not exist')
 
-        if cat_exists:  # category is given -> name and numbers are wanted
+        elif cat_exists:  # category is given -> name and numbers are wanted
             res = dict()
             for name, (number, cat) in port_names.items():
                 if cat == category:
                     res[name] = number
             return res
 
-        if pnumber_exists and pname_exists:  # number and name given -> category is wanted
+        elif pnumber_exists and pname_exists:  # number and name given -> category is wanted
             for name, (number, cat) in port_names.items():
                 if port_name == name and number == port_number:
                     return cat
-            log(f'Port number "{port_number}" with port name "{port_name}" does not exist', in_exception=True)
-            raise ValueError(f'Port number "{port_number}" with port name "{port_name}" does not exist')
+            log(f'Port number #{port_number} with port name "{port_name}" does not exist')
 
-        if pnumber_exists:  # number is given -> category and port name are wanted
+        elif pnumber_exists:  # number is given -> category and port name are wanted
             res = dict()
             for name, (number, cat) in port_names.items():
                 if port_number == number:
                     res[name] = cat
             return res
 
-        if pname_exists:  # name is given -> category and number is wanted
-            return port_names[port_name]
+        elif pname_exists:  # name is given -> category and number is wanted
+            if port_name in list(port_names.keys()):
+                return port_names[port_name]
+            log(f'Port name "{port_name}" does not exist')
 
-        log('You need to know more parameters!', in_exception=True)
-        raise ValueError('You need to know more parameters!')
 
     def get_port_file_categories(self):
         if not os.path.exists(self.port_file_name):

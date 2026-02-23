@@ -15,31 +15,58 @@ try:
     from wheelR import WheelR  # selfmade
     from light_sensor import LightSensor  # selfmade
     from digital import Digital  # selfmade
+    from util import Util
 except Exception as e:
     log(f'Import Exception {str(e)}', important=True, in_exception=True)
 
+
+utility = Util()
+#utility.create_port_file_entry('PORT_MOTOR_R', 'Motor', XX)  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
+#utility.create_port_file_entry('PORT_MOTOR_L', 'Motor', XX)  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
+#utility.create_port_file_entry('PORT_LIGHT_SENSOR_FRONT', 'Analog', XX)  # XX is an placeholder for the integor of the analog port where the sensor is plugged in. eg. 0; 1; 9; 4
+#utility.create_port_file_entry('PORT_LIGHT_SENSOR_BACK', 'Analog', XX)  # XX is an placeholder for the integor of the analog port where the sensor is plugged in. eg. 0; 1; 9; 4
+#utility.create_port_file_entry('PORT_LIGHT_SENSOR_SIDE', 'Analog', XX)  # XX is an placeholder for the integor of the analog port where the sensor is plugged in. eg. 0; 1; 9; 4
+#utility.create_port_file_entry('PORT_DISTANCE_SENSOR', 'Analog', XX)  # XX is an placeholder for the integor of the analog port where the sensor is plugged in. eg. 0; 1; 9; 4
+#utility.create_port_file_entry('PORT_BUTTON_BR', 'Digital', XX)  # XX is an placeholder for the integor of the digital port where the button is plugged in. eg. 0; 1; 9; 4
+#utility.create_port_file_entry('PORT_BUTTON_BL', 'Digital', XX)  # XX is an placeholder for the integor of the digital port where the button is plugged in. eg. 0; 1; 9; 4
+#utility.create_port_file_entry('PORT_BUTTON_FR', 'Digital', XX)  # XX is an placeholder for the integor of the digital port where the button is plugged in. eg. 0; 1; 9; 4
+#utility.create_port_file_entry('PORT_BUTTON_FL', 'Digital', XX)  # XX is an placeholder for the integor of the digital port where the button is plugged in. eg. 0; 1; 9; 4
+#utility.create_port_file_entry('PORT_SERVO_ARM', 'Servo', XX)  # XX is an placeholder for the integor of the servo port where the servo is plugged in. eg. 0; 2; 1; 3
+#utility.create_port_file_entry('PORT_SERVO_HAND', 'Servo', XX)  # XX is an placeholder for the integor of the servo port where the servo is plugged in. eg. 0; 2; 1; 3
+#print(utility.get_port_file_entries(category='Servo'), flush=True)
+
+
 # ======================== VARIABLE DECLARATION =======================
 # ===== PORTS ANALOG =====
-#PORT_LIGHT_SENSOR_FRONT = XX  # XX is an placeholder for the integor of the analog port where the sensor is plugged in. eg. 0; 1; 9; 4
-#PORT_LIGHT_SENSOR_BACK = XX  # XX is an placeholder for the integor of the analog port where the sensor is plugged in. eg. 0; 1; 9; 4
-#PORT_LIGHT_SENSOR_SIDE = XX  # XX is an placeholder for the integor of the analog port where the sensor is plugged in. eg. 0; 1; 9; 4
-#PORT_DISTANCE_SENSOR = XX  # XX is an placeholder for the integor of the analog port where the sensor is plugged in. eg. 0; 1; 9; 4
+#PORT_LIGHT_SENSOR_FRONT = utility.get_port_file_entries('PORT_LIGHT_SENSOR_FRONT', 'Analog')
+#PORT_LIGHT_SENSOR_BACK = utility.get_port_file_entries('PORT_LIGHT_SENSOR_BACK', 'Analog')
+#PORT_LIGHT_SENSOR_SIDE = utility.get_port_file_entries('PORT_LIGHT_SENSOR_SIDE', 'Analog')
+#PORT_DISTANCE_SENSOR = utility.get_port_file_entries('PORT_DISTANCE_SENSOR', 'Analog')
 
 # ===== PORTS DIGITAL =====
-#PORT_BUTTON = XX  # XX is an placeholder for the integor of the digital port where the button is plugged in. eg. 0; 1; 9; 4
+#PORT_BUTTON_STARTER = XX
+#PORT_BUTTON_FR = utility.get_port_file_entries('PORT_BUTTON_FR', 'Digital')
+#PORT_BUTTON_FL = utility.get_port_file_entries('PORT_BUTTON_FL', 'Digital')
+#PORT_BUTTON_BR = utility.get_port_file_entries('PORT_BUTTON_BR', 'Digital')
+#PORT_BUTTON_BL = utility.get_port_file_entries('PORT_BUTTON_BL', 'Digital')
 
 # ===== PORTS MOTORS =====
-#PORT_MOTOR_R = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
-#PORT_MOTOR_L = XX  # XX is an placeholder for the integor of the motor port where the motor is plugged in. eg. 0; 2; 1; 3
+#PORT_MOTOR_R = utility.get_port_file_entries('PORT_MOTOR_R', 'Motor')
+#PORT_MOTOR_L = utility.get_port_file_entries('PORT_MOTOR_L', 'Motor')
 
 
 # ======================== SETUP FUNCTIONS =======================
 def Instance_Setup():
     try:
         # ============ Ports Initializing ===========
-        globals()['AcceptButton'] = Digital(PORT_BUTTON)
+        # ================ DIGITAL ===============
+        globals()['AcceptButton'] = Digital(PORT_BUTTON_STARTER)
+        globals()['Button_FR'] = Digital(PORT_BUTTON_FR)
+        globals()['Button_FL'] = Digital(PORT_BUTTON_FL)
+        globals()['Button_BR'] = Digital(PORT_BUTTON_BR)
+        globals()['Button_BL'] = Digital(PORT_BUTTON_BL)
 
-        # ============== DistanceSensor =============
+        # ============= DistanceSensor ===========
         globals()['DistanceSens'] = DistanceSensor(PORT_DISTANCE_SENSOR)
 
         # ============== LightSensor =============
@@ -57,6 +84,10 @@ def Instance_Setup():
                                                    Instance_left_wheel=Wheel_L,
                                                    controller_standing=XX,                                  # If the controller is standing up-right (True) or if it is laying flat on the surface of the chassis bracket (False)
                                                    wheels_at_front=XX,                                      # If the wheels from the solarbotic wheels robot are located in the front (True) or back (False) half
+                                                   Instance_button_front_right=Button_FR,
+                                                   Instance_button_front_left=Button_FL,
+                                                   Instance_button_back_right=Button_BR,
+                                                   Instance_button_back_left=Button_BL,
                                                    Instance_light_sensor_front=LightSensorFront,
                                                    Instance_light_sensor_back=LightSensorBack,
                                                    Instance_light_sensor_side=LightSensorSide,
@@ -101,9 +132,21 @@ def register_light_values():
 def main():
     try:
         print('uncomment to start. Do not forget to change the invalid params (like XX)', flush=True)
+
+        # Step 0: Create the global instances
         #Instance_Setup()
+
+        # Step 1: basic calibrations (turning, driving straight and brightness sensors)
         #register_light_values()
         #RubberWheeler.auto_calibration(times=10)  # make sure that the robot is standing on top of a black line and is aligned in the direction of the black line
+
+        # Step 2: test how well it turns
+        #RubberWheeler.turn_degrees('left', 180)
+
+        # Step 3: calibrate the rest (one after the other!!!)
+        #RubberWheeler.calibrate_light_sensor_distance_sec()
+        #RubberWheeler.calibrate_mm_per_sec()
+        #RubberWheeler.calibrate_distane(XX)
 
     except Exception as e:
         log(f'Main Exception {str(e)}', important=True, in_exception=True)

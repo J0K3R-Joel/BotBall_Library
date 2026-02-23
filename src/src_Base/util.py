@@ -229,7 +229,18 @@ class Util:
             self.file_manager.writer(file_name, 'w', new_msg)
             return new_msg
 
-    def create_port_file_entry(self, port_name: str, category: str, port_number: int):
+    def create_port_file_entry(self, port_name: str, category: str, port_number: int) -> None:
+        '''
+        Create a global file to access everywhere the same port numbers. Also does not get deleted when re-installing the library
+
+        Args:
+            port_name (str): A unique name across all created entries. Using this variable alone you can get the access to the stored port information (category and port number) everywhere by using my library
+            category (str): Similarities of some ports (e.g.: 'Motor' for all motors)
+            port_number (int): The port which the category is plugged into (e.g.: category: 'Motor' ; port (of the motor): 0)
+
+        Returns:
+            None, but writes into a file
+        '''
         if not os.path.exists(self.port_file_name):
             self.file_manager.writer(self.port_file_name, 'w', '')
 
@@ -253,12 +264,51 @@ class Util:
             log(f'Successfully overwritten old entry with port name "{port_name}" to category "{category}" and port number #{port_number}')
 
 
-    def remove_port_file_entry(self, port_name: str = None, category: str = None, port_number: int = None):
-        print('@TODO')
+    def remove_port_file_entry(self, port_name: str = None, category: str = None, port_number: int = None) -> None:
+        '''
+        Remove a previously stored port entry from the file
+
+        Args:
+            port_name (str, optional): Since the name is unique, you can only use this name to remove the entry (default: None)
+            category (str, optional): If you do not remember the name, the category and port number got you covered (you need to at least know these two) (default: None)
+            port_number (str, optional): If you do not remember the name, the category and port number got you covered (you need to at least know these two) (default: None)
+
+        Returns:
+            None, but tells you if removing the entry was successful or not
+        '''
+        if not port_name and (not category or not isinstance(port_number, int)):
+            log('You need to either know the port name or at least two other parameters!', in_exception=True)
+            raise ValueError('You need to either know the port name or at least two other parameters!')
+
+        if self.exist_port_file_entry(port_name=port_name) or self.exist_port_file_entry(category=category, port_number=port_number):
+            entries = self.get_port_file_entries()  # dict
+            self.file_manager.cleaner(self.port_file_name)
+            for name, (number, cat) in entries.items():
+                if not name == port_name or not (number == port_number and cat == category):
+                    msg = cat + self.port_file_seperator + name + self.port_file_seperator + str(number) + '\n'
+                    self.file_manager.writer(self.port_file_name, 'a', msg)
+
+            if not self.exist_port_file_entry(port_name=port_name) and not self.exist_port_file_entry(category=category, port_number=port_number):
+                log(f'Successfully removed entry with port name "{port_name}".')
+            elif not self.exist_port_file_entry(port_name=port_name):
+                log(f'Failed to remove entry - category: "{category}", port number: #{port_number}', important=True)
+            else:
+                log(f'Failed to remove entry - port name: "{port_name}"', important=True)
 
 
 
-    def exist_port_file_entry(self, port_name: str = None, category: str = None, port_number: int = None):
+    def exist_port_file_entry(self, port_name: str = None, category: str = None, port_number: int = None) -> bool:
+        '''
+        Tells you, if the entry already exists or not
+
+        Args:
+            port_name (str, optional): Since the name is unique, you can only use this name to check for the entry (default: None)
+            category (str, optional): If you do not remember the name, the category and port number got you covered (you need to at least know these two) (default: None)
+            port_number (str, optional): If you do not remember the name, the category and port number got you covered (you need to at least know these two) (default: None)
+
+        Returns:
+            bool: If there was a similar entry found (True -> you can either check for the port name OR the category and port number) or not (False)
+        '''
         if not port_name and (not category or not isinstance(port_number, int)):
             log('You need to either know the port name or at least two other parameters!', in_exception=True)
             raise ValueError('You need to either know the port name or at least two other parameters!')
@@ -279,6 +329,18 @@ class Util:
 
 
     def get_port_file_entries(self, port_name: str = None, category: str = None, port_number: int = None):
+        '''
+        Receive every data connected to every parameter
+
+        Args:
+            port_name (str, optional): If the name is correct correct, you can get the other two parameters or even combine this parameter with another parameter to get the last parameter by itself (default: None)
+            category (str, optional): If there is such a category, you can get the other two parameters or even combine this parameter with another parameter to get the last parameter by itself (default: None)
+            port_number (str, optional): If existing, you can get the other two parameters or even combine this parameter with another parameter to get the last parameter by itself (default: None)
+            (HINT: if you leave all parameters empty, you will receive every entry!)
+
+        Returns:
+            Every combination of strings and integers, which are connected to the parameters
+        '''
         cat_exists = 1 if category else 0
         pname_exists = 1 if port_name else 0
         pnumber_exists = 1 if isinstance(port_number, int) else 0

@@ -413,7 +413,7 @@ class base_driver:
             None
         '''
         v = values if isinstance(values, list) else self.distance_far_values
-        m = values if isinstance(mm, list) else self.distance_far_mm
+        m = mm if isinstance(mm, list) else self.distance_far_mm
 
         try:
             with open(self.pseudo_distanceR.get_file_path(), "w") as f:
@@ -1317,25 +1317,19 @@ class Solarbotic_Wheels_two(base_driver):
             log(str(e), important=True, in_exception=True)
 
     @DriveableFunction
-    def calibrate_distance(self, start_mm: int, speed: int = None, step: float = 0.15) -> None:
+    def calibrate_distance(self, start_mm: int, step: float = 0.1) -> None:
         '''
         calibrates the values for the distance sensor. HINT: calibrate the gyro first (if you did not already do that), so it drives straight. Also it calibrates one time, make sure it is as accurate as possible.
         Both object have to be as parallel to each other as possible.
 
         Args:
             start_mm (int): measured starting distance (distance sensor needs to just reach the highest value) (e.g. 95 -> distance sensor has a distance of 95mm from the flat object)
-            speed (int, optional): constant speed (default: ds_speed)
-            step (float, optional): time between two measurements (default: 0.15)
+            step (float, optional): time between two measurements (default: 0.1)
 
 
         Returns:
             None
         '''
-        if speed is None:
-            speed = -self.ds_speed
-        else:
-            speed = -abs(speed)
-
         self.check_instance_distance_sensor()
 
         if self.mm_per_sec == 0:
@@ -1348,22 +1342,25 @@ class Solarbotic_Wheels_two(base_driver):
         self.distance_far_mm = []
 
         prev_value = None
+        speed = -self.ds_speed
+        counter = 0
+        MAX_COUNTS = 10
 
         def check_still_valid(sensor_val: int, prev_value: int):
             if prev_value is None:
                 prev_value = sensor_val  # this value will always be 1 value behind the actual (sensor_val) value
-                return (True, prev_value)
+                return (0, prev_value)
 
             if sensor_val - prev_value > 0:
-                return (False, prev_value)
+                return (1, prev_value)
             else:
                 prev_value = sensor_val
-            return (True, prev_value)
 
-        threading.Thread(target=self.drive_straight, args=(9999999, speed,)).start()  # will drive backwards!
+            return (0, prev_value)
+
+        threading.Thread(target=self.drive_straight, args=(9999999, speed,), daemon=True).start()  # will drive backwards!
 
         start_time = time.time()
-
         while True:
             elapsed = time.time() - start_time
             traveled = self.mm_per_sec * elapsed
@@ -1372,19 +1369,21 @@ class Solarbotic_Wheels_two(base_driver):
             sensor_value = self.distance_sensor.current_value()
 
             checker, prev_value = check_still_valid(sensor_value, prev_value)
+            counter += checker
 
-            if not checker:
+            if counter == MAX_COUNTS:
                 break
 
-            self.distance_far_values.append(sensor_value)
-            self.distance_far_mm.append(int(current_mm))
+            if not checker:
+                self.distance_far_values.append(sensor_value)
+                self.distance_far_mm.append(int(current_mm))
 
             time.sleep(step)
 
         self.break_all_motors()
         self.set_distances(values=self.distance_far_values, mm=self.distance_far_mm)
 
-        log(f"Calibration finished. The distance sensor should be like {self.distance_far_mm[-1]}mm away of the object.\n================= You can now STOP the program, if nothing else should happen than calibrate_distance() =================")
+        log(f"Calibration finished. The distance sensor should be like {self.distance_far_mm[-1]}mm away of the object.")
 
     # ======================== PUBLIC METHODS =======================
     @BreakableFunction

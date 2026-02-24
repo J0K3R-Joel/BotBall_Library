@@ -146,7 +146,7 @@ def main():
         # Step 3: calibrate the rest (one after the other!!!)
         #RubberWheeler.calibrate_light_sensor_distance_sec()
         #RubberWheeler.calibrate_mm_per_sec()
-        #RubberWheeler.calibrate_distane(XX)
+        #RubberWheeler.calibrate_distance(XX)
 
     except Exception as e:
         log(f'Main Exception {str(e)}', important=True, in_exception=True)

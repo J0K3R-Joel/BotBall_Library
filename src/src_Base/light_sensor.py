@@ -104,6 +104,9 @@ class LightSensor(Analog):
 
     # =========================== CHECK ===========================
     def check_bias(self):
+        if (self.val_white and self.val_black) and self.bias is None:
+            self.bias = self._calibrate_bias()
+
         if self.bias is None:
             log(f'The difference between the value of the {self.position.upper()} black- and white light sensor is too small. Please consider either dropping the sensors lower (more near to the floor) or replacing your sensors!')
             raise ValueError(f'The difference between the value of the {self.position.upper()} black- and white light sensor is too small. Please consider either dropping the sensors lower (more near to the floor) or replacing your sensors!')
@@ -127,10 +130,10 @@ class LightSensor(Analog):
         file_name = os.path.join(self.BIAS_FOLDER, f'{self.std_black_file_name + self.position}.txt')
         try:
             if os.path.exists(file_name):
-                old_val = int(self.file_manager.reader(file_name))
+                old_val = self.file_manager.reader(file_name, 'int')
                 measured_value = (old_val + measured_value) // 2
-            self.file_manager.writer(file_name, 'w', int(measured_value))
-            self.val_black = int(measured_value)
+            self.file_manager.writer(file_name, 'w', measured_value)
+            self.val_black = measured_value
         except Exception as e:
             log(str(e), in_exception=True)
 
@@ -150,10 +153,10 @@ class LightSensor(Analog):
         file_name = os.path.join(self.BIAS_FOLDER, f'{self.std_white_file_name + self.position}.txt')
         try:
             if os.path.exists(file_name):
-                old_val = int(self.file_manager.reader(file_name))
+                old_val = self.file_manager.reader(file_name, 'int')
                 measured_value = (old_val + measured_value) // 2
-            self.file_manager.writer(file_name, 'w', int(measured_value))
-            self.val_white = int(measured_value)
+            self.file_manager.writer(file_name, 'w', measured_value)
+            self.val_white = measured_value
         except Exception as e:
             log(str(e), in_exception=True)
 

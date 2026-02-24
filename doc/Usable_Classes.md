@@ -1,6 +1,6 @@
 # Classes for usage
 
-This file tells you, which files and therefor which classes are for the regular user and which for the advanced ones. 
+This file tells you, which files and therefore which classes are for the regular user and which for the advanced ones. 
 
 ## Basic User
 
@@ -21,7 +21,7 @@ Non-advanced users should only use the following files:
 - `servo.py` - ServoX
 - `util.py` - Util
 - `wheelR.py` - WheelR
-- `threadR.py` - KillableThread
+- `threadR.py` - KillableThread
 - (`ideas.py` -> not really for execution, but to get some ideas / add some ideas)
 - (`main.py` -> obviously, since you need to write in here)
 

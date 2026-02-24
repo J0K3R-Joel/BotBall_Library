@@ -1278,6 +1278,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         start_time = time.time()
         self.drive_straight(speed=speed, millis=millis)
+        self.break_all_motors()
         sec = time.time() - start_time
         mm = int(input('How many mm did the robot drive from the beginning on?: '))
 
@@ -1364,7 +1365,7 @@ class Solarbotic_Wheels_two(base_driver):
         while True:
             elapsed = time.time() - start_time
             traveled = self.mm_per_sec * elapsed
-            current_mm = max(start_mm + traveled, 0)
+            current_mm = start_mm + traveled
 
             sensor_value = self.distance_sensor.current_value()
 
@@ -2048,7 +2049,6 @@ class Solarbotic_Wheels_two(base_driver):
             else:
                 instances[0].drive(speed - adjuster * 3)
                 instances[1].drive(speed + adjuster)
-            k.msleep(1)
             theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
         self.break_all_motors()
 
@@ -2287,30 +2287,30 @@ class Solarbotic_Wheels_two(base_driver):
                 k.msleep(20)
 
         next_value = self.distance_sensor.get_estimated_mm_value(mm_to_object)
-
         def distance_stopper(positive):
-            tolerance = 0.9
+            tolerance = 0.90
 
             def is_target_distance_reached():
                 dist = self.distance_sensor.get_estimated_mm()
 
                 if str(dist) == 'inf' or dist <= self.distance_sensor.get_mm()[0]:
+                    print('1: ', dist, mm_to_object * (tolerance + (1 - tolerance) * 2), flush=True)
                     return True
                 if positive:
+                    print('2: ', dist, mm_to_object * (tolerance + (1 - tolerance) * 2), flush=True)
                     return dist <= mm_to_object * (tolerance + (1 - tolerance) * 2)
                 else:
+                    print('3: ', dist, mm_to_object * tolerance, flush=True)
                     return dist >= mm_to_object * tolerance
 
             while True:
                 if is_target_distance_reached():
                     self.isClose = True
-                    sys.exit()
                     break
 
         if speed > 0:
             if self.distance_sensor.current_value() < next_value:
                 threading.Thread(target=distance_stopper, args=(True,), daemon=True).start()
-
                 while not self.isClose:
                     if 10 > theta > -10:
                         instances[0].drive(speed)
@@ -2325,6 +2325,7 @@ class Solarbotic_Wheels_two(base_driver):
                     theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
                 self.break_all_motors()
 
+            print(mm_to_object, self.distance_sensor.get_mm()[0], flush=True)
             if mm_to_object < self.distance_sensor.get_mm()[0]:
                 counter = self.distance_sensor.get_mm()[0]
                 mult = speed / self.ds_speed
@@ -2345,7 +2346,7 @@ class Solarbotic_Wheels_two(base_driver):
                 threading.Thread(target=distance_stopper, args=(False,)).start()
 
                 while not self.isClose:
-                    if theta < 10 and theta > -10:
+                    if 10 > theta > -10:
                         instances[0].drive(speed)
                         instances[1].drive(speed)
                     elif theta < 10:
@@ -2354,7 +2355,6 @@ class Solarbotic_Wheels_two(base_driver):
                     else:
                         instances[1].drive(speed + adjuster)
                         instances[0].drive(speed - adjuster * 3)
-                    k.msleep(10)
                     theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
         self.break_all_motors()
 

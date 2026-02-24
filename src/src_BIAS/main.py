@@ -148,6 +148,9 @@ def main():
         #RubberWheeler.calibrate_mm_per_sec()
         #RubberWheeler.calibrate_distance(XX)
 
+        # Step 4: Try the distance calibration out
+        #RubberWheeler.drive_til_distance(XXX)
+
     except Exception as e:
         log(f'Main Exception {str(e)}', important=True, in_exception=True)
 

@@ -280,17 +280,40 @@ class Util:
             log('You need to either know the port name or at least two other parameters!', in_exception=True)
             raise ValueError('You need to either know the port name or at least two other parameters!')
 
-        if self.exist_port_file_entry(port_name=port_name) or self.exist_port_file_entry(category=category, port_number=port_number):
+        if port_name:
+            existing = self.exist_port_file_entry(port_name=port_name)
+
+        else:  # category and isinstance(port_number, int):  got basically checked
+            existing = self.exist_port_file_entry(category=category, port_number=port_number)
+
+        if existing:
             entries = self.get_port_file_entries()  # dict
             self.file_manager.cleaner(self.port_file_name)
             for name, (number, cat) in entries.items():
-                if not name == port_name or not (number == port_number and cat == category):
+                if port_name and name == port_name:
+                    found = True
+                elif (category and isinstance(port_number, int)) and (number == port_number and cat == category):
+                    found = True
+                else:
+                    found = False
+
+                if not found:
                     msg = cat + self.port_file_seperator + name + self.port_file_seperator + str(number) + '\n'
                     self.file_manager.writer(self.port_file_name, 'a', msg)
+                else:
+                    port_name = name
+                    category = cat
+                    port_number = number
 
-            if not self.exist_port_file_entry(port_name=port_name) and not self.exist_port_file_entry(category=category, port_number=port_number):
+            if port_name:
+                existing = self.exist_port_file_entry(port_name=port_name)
+
+            else:  # category and isinstance(port_number, int):
+                existing = self.exist_port_file_entry(category=category, port_number=port_number)
+
+            if not existing:
                 log(f'Successfully removed entry with port name "{port_name}".')
-            elif not self.exist_port_file_entry(port_name=port_name):
+            elif port_name and not self.exist_port_file_entry(port_name=port_name):
                 log(f'Failed to remove entry - category: "{category}", port number: #{port_number}', important=True)
             else:
                 log(f'Failed to remove entry - port name: "{port_name}"', important=True)
@@ -333,7 +356,7 @@ class Util:
         Receive every data connected to every parameter
 
         Args:
-            port_name (str, optional): If the name is correct correct, you can get the other two parameters or even combine this parameter with another parameter to get the last parameter by itself (default: None)
+            port_name (str, optional): If the name is correct, you can get the other two parameters or even combine this parameter with another parameter to get the last parameter by itself (default: None)
             category (str, optional): If there is such a category, you can get the other two parameters or even combine this parameter with another parameter to get the last parameter by itself (default: None)
             port_number (str, optional): If existing, you can get the other two parameters or even combine this parameter with another parameter to get the last parameter by itself (default: None)
             (HINT: if you leave all parameters empty, you will receive every entry!)
@@ -401,7 +424,16 @@ class Util:
             log(f'Port name "{port_name}" does not exist')
 
 
-    def get_port_file_categories(self):
+    def get_port_file_categories(self) -> set:
+        '''
+        Receive all categories you created
+
+        Args:
+            None
+
+        Returns:
+            set: every category there is (as strings)
+        '''
         if not os.path.exists(self.port_file_name):
             log('No entries created just yet', in_exception=True)
             raise FileNotFoundError('No entries created just yet')
@@ -417,7 +449,16 @@ class Util:
         return categories
 
 
-    def get_port_file_names(self):
+    def get_port_file_names(self) -> set:
+        '''
+        Receive all unique names that got created
+
+        Args:
+            None
+
+        Returns:
+            set: All names (as strings)
+        '''
         if not os.path.exists(self.port_file_name):
             log('No entries created just yet', in_exception=True)
             raise FileNotFoundError('No entries created just yet')
@@ -434,7 +475,26 @@ class Util:
 
 
     def shutdown_wombat(self):
+        '''
+        Shutting down the controller
+
+        Args:
+            None
+
+        Returns:
+            None
+        '''
         subprocess.run(['shutdown', '-h', 'now'])
 
     def reboot_wombat(self):
+        '''
+        Rebooting the controller
+
+        Args:
+            None
+
+        Returns:
+            None
+
+        '''
         subprocess.run(['shutdown', '-r', 'now'])

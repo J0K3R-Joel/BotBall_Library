@@ -23,10 +23,11 @@ try:
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
-
-UTIL_FOLDER = '/home/kipr/BotBall-data/util_files'
+BASE_FOLDER = '/home/kipr/BotBall-data'
+UTIL_FOLDER = BASE_FOLDER + '/util_files'
 FILE_PATH = os.path.join(sys.path[0], __file__)
 port_file_logable_function_name = None
+
 def Port_File_Logging(func):
     def wrapper(*args, **kwargs):
         global port_file_logable_function_name
@@ -62,6 +63,7 @@ class Util:
         self.file_manager = FileR()
         self.port_file_name = UTIL_FOLDER + '/port_file.txt'
         self.port_file_seperator = '{SEPERATOR}'
+        self.degree_file_name = BASE_FOLDER + '/bias_degrees.txt'
         self.isClose = False
         self.running_allowed = True
 
@@ -89,7 +91,7 @@ class Util:
 
 
         if not os.path.exists(self.port_file_name):
-            if port_file_logable_function_name == self.get_port_file_entries.__name__:
+            if port_file_logable_function_name == "get_port_file_entries":
                 log('No entries created just yet', in_exception=True)
             raise FileNotFoundError('No entries created just yet')
 
@@ -108,14 +110,14 @@ class Util:
             for name, (number, cat) in port_names.items():
                 if number == port_number and cat == category:
                     return name
-            if port_file_logable_function_name == self.get_port_file_entries.__name__:
+            if port_file_logable_function_name == "get_port_file_entries":
                 log(f'Category "{category}" with port number #{port_number}" does not exist')
 
         elif cat_exists and pname_exists:  # category and port name are given -> number is wanted
             for name, (number, cat) in port_names.items():
                 if port_name == name and cat == category:
                     return number
-            if port_file_logable_function_name == self.get_port_file_entries.__name__:
+            if port_file_logable_function_name == "get_port_file_entries":
                 log(f'Category "{category}" with port name "{port_name}" does not exist')
 
         elif cat_exists:  # category is given -> name and numbers are wanted
@@ -129,7 +131,7 @@ class Util:
             for name, (number, cat) in port_names.items():
                 if port_name == name and number == port_number:
                     return cat
-            if port_file_logable_function_name == self.get_port_file_entries.__name__:
+            if port_file_logable_function_name == "get_port_file_entries":
                 log(f'Port number #{port_number} with port name "{port_name}" does not exist')
 
         elif pnumber_exists:  # number is given -> category and port name are wanted
@@ -142,7 +144,7 @@ class Util:
         elif pname_exists:  # name is given -> category and number is wanted
             if port_name in list(port_names.keys()):
                 return port_names[port_name]
-            if port_file_logable_function_name == self.get_port_file_entries.__name__:
+            if port_file_logable_function_name == "get_port_file_entries":
                 log(f'Port name "{port_name}" does not exist')
 
 
@@ -158,7 +160,7 @@ class Util:
             set: every category there is (as strings)
         '''
         if not os.path.exists(self.port_file_name):
-            if port_file_logable_function_name == self.get_port_file_categories.__name__:
+            if port_file_logable_function_name == "get_port_file_categories":
                 log('No entries created just yet', in_exception=True)
             raise FileNotFoundError('No entries created just yet')
 
@@ -185,7 +187,7 @@ class Util:
             set: All names (as strings)
         '''
         if not os.path.exists(self.port_file_name):
-            if port_file_logable_function_name == self.get_port_file_names.__name__:
+            if port_file_logable_function_name == "get_port_file_names":
                 log('No entries created just yet', in_exception=True)
             raise FileNotFoundError('No entries created just yet')
 
@@ -403,7 +405,7 @@ class Util:
 
             log_msg = f'Successfully overwritten old entry with port name "{port_name}" to category "{category}" and port number #{port_number}'
 
-        if port_file_logable_function_name == self.create_port_file_entry.__name__:  # @TODO test these kind of if statements out
+        if port_file_logable_function_name == "create_port_file_entry":
             log(log_msg)
 
 
@@ -421,7 +423,7 @@ class Util:
             None, but tells you if removing the entry was successful or not
         '''
         if not port_name and (not category or not isinstance(port_number, int)):
-            if port_file_logable_function_name == self.remove_port_file_entry.__name__:
+            if port_file_logable_function_name == "remove_port_file_entry":
                 log('You need to either know the port name or at least two other parameters!', in_exception=True)
             raise ValueError('You need to either know the port name or at least two other parameters!')
 
@@ -457,14 +459,22 @@ class Util:
                 existing = self.exist_port_file_entry(category=category, port_number=port_number)
 
             if not existing:
-                if port_file_logable_function_name == self.remove_port_file_entry.__name__:
+                if port_file_logable_function_name == "remove_port_file_entry":
                     log(f'Successfully removed entry with port name "{port_name}".')
             elif port_name and not self.exist_port_file_entry(port_name=port_name):
-                if port_file_logable_function_name == self.remove_port_file_entry.__name__:
+                if port_file_logable_function_name == "remove_port_file_entry":
                     log(f'Failed to remove entry - category: "{category}", port number: #{port_number}', important=True)
             else:
-                if port_file_logable_function_name == self.remove_port_file_entry.__name__:
+                if port_file_logable_function_name == "remove_port_file_entry":
                     log(f'Failed to remove entry - port name: "{port_name}"', important=True)
+        else:
+            if port_file_logable_function_name == "remove_port_file_entry":
+                if port_name:
+                    log_msg = f'Entry with name "{port_name}" does not exist'
+                else:
+                    log_msg = f'Entry with category "{category}" and port number #{port_number} does not exist'
+                log(log_msg, important=True)
+
 
 
     @Port_File_Logging
@@ -481,7 +491,7 @@ class Util:
             bool: If there was a similar entry found (True -> you can either check for the port name OR the category and port number) or not (False)
         '''
         if not port_name and (not category or not isinstance(port_number, int)):
-            if port_file_logable_function_name == self.exist_port_file_entry.__name__:
+            if port_file_logable_function_name == "exist_port_file_entry":
                 log('You need to either know the port name or at least two other parameters!', in_exception=True)
             raise ValueError('You need to either know the port name or at least two other parameters!')
 

@@ -15,7 +15,7 @@ try:
     from wheelR import WheelR  # selfmade
     from light_sensor import LightSensor  # selfmade
     from digital import Digital  # selfmade
-    from util import Util
+    from util import Util  # selfmade
 except Exception as e:
     log(f'Import Exception {str(e)}', important=True, in_exception=True)
 

@@ -39,9 +39,13 @@ BIAS_FOLDER = '/home/kipr/BotBall-data/bias_files'
 os.makedirs(BIAS_FOLDER, exist_ok=True)
 FILE_PATH = os.path.join(sys.path[0], __file__)
 breakable_function_name = None
+time_begin = 0
 
 def DriveableFunction(func):
     def wrapper(*args, **kwargs):
+        #global time_begin  -> important because the wrapper takes way to long to execute (~150ms) -> need to be improved by not using "inspect" and calling the entire stack
+        #time_begin = time.time()
+        #print('drivable: ', time_begin - time.time(), flush=True)
         global breakable_function_name
         frame = inspect.stack()[1]
         module = inspect.getmodule(frame[0])
@@ -55,9 +59,10 @@ def DriveableFunction(func):
     return wrapper
 
 def BreakableFunction(func):
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs):  # @TODO -> need to be improved by not using "inspect" and calling the entire stack
         frame = inspect.stack()[1]
         if breakable_function_name == frame.function or frame.function == 'break_all_motors':
+            #print('breakable: ', time_begin - time.time(), flush=True)
             result = func(*args, **kwargs)
             return result
         return
@@ -152,9 +157,8 @@ class base_driver:
             calibrated (bool, optional): Writing to the file bias_degrees.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
 
         Returns:
-            Average of the bias_degrees.txt file (optionally with the recent calibrated bias as well)
+            Average of the bias_degrees.txt file (optionally with the recent calibrated bias as well) in seconds
         '''
-        avg = 0
         file_name = os.path.join(BIAS_FOLDER, 'bias_degrees.txt')
         try:
             temp_deg = file_Manager.reader(file_name)
@@ -1280,7 +1284,7 @@ class Solarbotic_Wheels_two(base_driver):
         self.drive_straight(speed=speed, millis=millis)
         self.break_all_motors()
         sec = time.time() - start_time
-        mm = int(input('How many mm did the robot drive from the beginning on?: '))
+        mm = int(input('===> How many mm did the robot drive from the beginning on?: '))
 
         self.set_TOTAL_mm_per_sec(mm=mm, sec=sec)
 
@@ -1345,7 +1349,7 @@ class Solarbotic_Wheels_two(base_driver):
         prev_value = None
         speed = -self.ds_speed
         counter = 0
-        MAX_COUNTS = 5
+        MAX_COUNTS = 20
 
         def check_still_valid(sensor_val: int, prev_value: int):
             if prev_value is None:
@@ -1404,6 +1408,7 @@ class Solarbotic_Wheels_two(base_driver):
         '''
         self.right_wheel.stop()
         self.left_wheel.stop()
+        #print('TIME TAKEN :', time.time() - time_begin, flush=True)
 
 
     @DriveableFunction
@@ -1451,7 +1456,7 @@ class Solarbotic_Wheels_two(base_driver):
                     instances[1].drive(speed - adjuster * 3)
                     instances[0].drive(speed + adjuster)
                 k.msleep(10)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
         self.break_all_motors()
 
         if drive_dir and hit:
@@ -1504,7 +1509,7 @@ class Solarbotic_Wheels_two(base_driver):
                 else:
                     self.left_wheel.drive(speed - adjuster*3)
                     self.right_wheel.drive(speed + adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
         self.break_all_motors()
 
         if drive_bw and hit:
@@ -1587,7 +1592,7 @@ class Solarbotic_Wheels_two(base_driver):
                     instances[1].drive(speed + adjuster)
                     instances[0].drive(speed - adjuster * 3)
                 k.msleep(10)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
         elif condition == "!=":
             while (instance.current_value() != value) and (k.seconds() - start_time < millis/1000):
                 if theta < 10 and theta > -10:
@@ -1600,7 +1605,7 @@ class Solarbotic_Wheels_two(base_driver):
                     instances[1].drive(speed + adjuster)
                     instances[0].drive(speed - adjuster * 3)
                 k.msleep(10)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
         else:
             log('Only "==" or "!=" is available for the condition!', important=True, in_exception=True)
             raise ValueError('Only "==" or "!=" is available for the condition!')
@@ -1644,7 +1649,7 @@ class Solarbotic_Wheels_two(base_driver):
                     instances[1].drive(speed + adjuster)
                     instances[0].drive(speed - adjuster * 3)
                 k.msleep(10)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
 
         elif condition == 'het' or condition == '>=':  # het -> higher or equal than
             while instance.current_value() >= value and (not instances[2].is_pressed() and not instances[3].is_pressed()) and k.seconds() - startTime < millis / 1000:
@@ -1658,7 +1663,7 @@ class Solarbotic_Wheels_two(base_driver):
                     instances[1].drive(speed + adjuster)
                     instances[0].drive(speed - adjuster * 3)
                 k.msleep(10)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
 
         elif condition == 'ht' or condition == '>':  # ht -> higher than
             while instance.current_value() > value and (not instances[2].is_pressed() and not instances[3].is_pressed()) and k.seconds() - startTime < millis / 1000:
@@ -1672,7 +1677,7 @@ class Solarbotic_Wheels_two(base_driver):
                     instances[1].drive(speed + adjuster)
                     instances[0].drive(speed - adjuster * 3)
                 k.msleep(10)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
 
         elif condition == 'lt' or condition == '<':  # lt -> less than
             while instance.current_value() < value and (not instances[2].is_pressed() and not instances[3].is_pressed()) and k.seconds() - startTime < millis / 1000:
@@ -1686,7 +1691,7 @@ class Solarbotic_Wheels_two(base_driver):
                     instances[1].drive(speed + adjuster)
                     instances[0].drive(speed - adjuster * 3)
                 k.msleep(10)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
         self.break_all_motors()
 
 
@@ -2053,7 +2058,7 @@ class Solarbotic_Wheels_two(base_driver):
             else:
                 instances[0].drive(speed - adjuster * 3)
                 instances[1].drive(speed + adjuster)
-            theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+            theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
         self.break_all_motors()
 
     @DriveableFunction
@@ -2104,6 +2109,7 @@ class Solarbotic_Wheels_two(base_driver):
         self.break_all_motors()
 
         if not light_sensors[1].sees_black():
+            print('1: ', light_sensors[1].get_position(), flush=True)
             leaning_side = 'right' if 'right' != leaning_side else 'left'
             self.turn_degrees_condition_analog(leaning_side, light_sensors[1], '<', light_sensors[1].get_value_black_bias())
             self.break_all_motors()
@@ -2113,6 +2119,7 @@ class Solarbotic_Wheels_two(base_driver):
         self.break_all_motors()
 
         if not self.light_sensor_front.sees_black():
+            print('2: ', flush=True)
             leaning_side = 'right' if 'right' != leaning_side else 'left'
             self.drive_straight_condition_analog(self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias(), speed=-self.ds_speed)
             self.turn_wheel_condition_analog(leaning_side, self.light_sensor_back, '<', self.light_sensor_back.get_value_black_bias())
@@ -2121,13 +2128,22 @@ class Solarbotic_Wheels_two(base_driver):
             self.break_all_motors()
 
         if not self.light_sensor_back.sees_black():
+            print('3: ', flush=True)
             leaning_side = 'right' if 'right' != leaning_side else 'left'
-            self.turn_wheel_condition_analog(leaning_side, self.light_sensor_back, '<', self.light_sensor_back.get_value_black_bias(), speed=-self.ds_speed)
+            startTime = k.seconds()
+            self.turn_wheel_condition_analog(leaning_side, self.light_sensor_back, '<', self.light_sensor_back.get_value_black_bias(), millis=self.NINETY_DEGREES_SECS*1000, speed=-self.ds_speed)
+            if k.seconds() - startTime > self.NINETY_DEGREES_SECS:
+                print('IT DID NOT WORRRKK', flush=True)
+                leaning_side = 'right' if 'right' != leaning_side else 'left'
+                AAA
+                #self.turn_wheel_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_back.get_value_black_bias())
+
 
         leaning_side = 'right' if 'right' != leaning_side else 'left'
         self.turn_wheel_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
 
         if turn_after:
+            print('4: ', flush=True)
             self.turn_degrees(leaning_side, 90)
             self.turn_degrees_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
             leaning_side = 'right' if 'right' != leaning_side else 'left'
@@ -2283,7 +2299,7 @@ class Solarbotic_Wheels_two(base_driver):
                 else:
                     instances[1].drive(-speed + adjuster * 3)
                     instances[0].drive(-speed - adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
             if theta != 0.0:
                 self.left_wheel.drive(speed)
                 self.right_wheel.drive(speed)
@@ -2329,7 +2345,7 @@ class Solarbotic_Wheels_two(base_driver):
                     else:
                         instances[1].drive(speed + adjuster)
                         instances[0].drive(speed - adjuster * 3)
-                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
                 self.break_all_motors()
             else:
                 self.drive_straight(500, -speed)
@@ -2348,7 +2364,7 @@ class Solarbotic_Wheels_two(base_driver):
                     else:
                         instances[1].drive(speed + adjuster)
                         instances[0].drive(speed - adjuster * 3)
-                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
         else:
             if self.distance_sensor.current_value() > next_value:
                 threading.Thread(target=distance_stopper, args=(False,), daemon=True).start()
@@ -2363,7 +2379,7 @@ class Solarbotic_Wheels_two(base_driver):
                     else:
                         instances[1].drive(speed + adjuster)
                         instances[0].drive(speed - adjuster * 3)
-                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
         self.break_all_motors()
 
     @DriveableFunction
@@ -2455,6 +2471,7 @@ class Solarbotic_Wheels_two(base_driver):
         Returns:
             None
         '''
+        # Information: the time it takes to do a normal 180 degree turn is double the amount you need for turning 180 degrees with only one wheel -> self.ONEEIGHTY_DEGREES_SECS = 90 degrees when using this function
         if speed is None:
             speed = self.ds_speed
 

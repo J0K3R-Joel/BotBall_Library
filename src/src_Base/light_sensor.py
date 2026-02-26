@@ -258,6 +258,17 @@ class LightSensor(Analog):
         self.check_bias()
         return self.bias
 
+    def get_position(self) -> str:
+        '''
+        Know which sensor you are refering to
+
+        Args:
+            None
+
+        Returns:
+            str: position on the robot
+        '''
+        return self.position
 
     # ======================== Setter =======================
     def auto_set_values(self) -> None:

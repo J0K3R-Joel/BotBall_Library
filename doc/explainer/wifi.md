@@ -95,7 +95,7 @@ mode = wc.get_mode()
 ### 3. `set_mode(new_mode: str)`
 
 ```python
-wc.set_mode('1')
+wc.set_mode(1)
 ```
 
 - **Description:** Sets the WiFi mode in the config file.

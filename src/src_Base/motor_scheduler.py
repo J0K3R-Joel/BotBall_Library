@@ -197,7 +197,7 @@ class MotorScheduler:
                         k.freeze(port)
                         break
         except Exception as e:
-            log(str(e))
+            log(str(e), in_exception=True)
 
     def stop_motor(self, port: int) -> None:
         '''
@@ -220,7 +220,7 @@ class MotorScheduler:
                     k.freeze(port)
                     break
         except Exception as e:
-            log(str(e))
+            log(str(e), in_exception=True)
 
     def _stop_all_internal(self) -> None:
         '''

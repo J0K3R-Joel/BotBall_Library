@@ -34,13 +34,13 @@ class WifiConnector:
         self.ssid = ssid
         self.password = password
         self.file_path_mode = '/home/kipr/wombat-os/configFiles/wifiConnectionMode.txt'  # this file is from kipr themselves
-        self.AP_MODE = '0'  # fixed value (by kipr)
-        self.CLIENT_MODE = '1'  # fixed value (by kipr)
+        self.AP_MODE = 0  # fixed value (by kipr)
+        self.CLIENT_MODE = 1  # fixed value (by kipr)
         self.file_manager = FileR()
 
 
     # ======================== GET METHODS ========================
-    def get_mode(self) -> str:
+    def get_mode(self) -> int:
         '''
         Lets you see in which mode the device is at the moment
 
@@ -48,13 +48,13 @@ class WifiConnector:
             None
 
         Returns:
-            If it is in AP (Access Point) or Client mode at this moment
+            int:
                 0 -> AP mode
                 1 -> Client mode
                 2 -> Event mode (just do not use it, since you can not use wifi in this mode -> no communication)
         '''
         text = self.file_manager.reader(self.file_path_mode)
-        return text[text.find('MODE ') + 5]
+        return int(text[text.find('MODE ') + 5])
 
     def get_ip_address(self) -> str:
         '''
@@ -64,7 +64,7 @@ class WifiConnector:
             None
 
         Returns:
-            The IPv4 Address of this current device
+            str: The IPv4 Address of this current device
         '''
         try:
             ip = subprocess.check_output(["hostname", "-I"]).decode().strip().split()[0]
@@ -74,12 +74,12 @@ class WifiConnector:
 
 
     # ======================== SET METHODS ========================
-    def set_mode(self, new_mode: str) -> None:
+    def set_mode(self, new_mode: int) -> None:
         '''
         Lets you overwrite in which mode the device should be set
 
         Args:
-            new_mode (str):
+            new_mode (int):
                  0 -> AP mode
                  1 -> Client mode
                  2 -> Event mode (just do not use it, since you can not use wifi in this mode -> no communication)
@@ -121,6 +121,10 @@ class WifiConnector:
             ssid=ssid,
             password=pw
         )
+
+        if instance.get_mode() != 1:
+            instance.set_mode(1)
+
         if not instance.is_connected_to_ssid():
             log(f'Wombat not connected to the wifi, trying to reconnect to SSID: {instance.ssid}')
             instance.enable_wifi_scanning()

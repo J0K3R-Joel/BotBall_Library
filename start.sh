@@ -12,3 +12,6 @@ chmod 777 -R $BASE_DIR
 
 # Execute the configurations
 bash $BASE_DIR/src/scripts/config.sh
+
+# Remove created directory (for free space)
+rm -rf $BASE_DIR

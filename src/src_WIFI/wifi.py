@@ -89,7 +89,7 @@ class WifiConnector:
         '''
         text = self.file_manager.reader(self.file_path_mode)
         mode_index = text.find('MODE ') + 5
-        new_text = text[:mode_index] + text[mode_index:].replace(text[mode_index], new_mode)
+        new_text = text[:mode_index] + text[mode_index:].replace(text[mode_index], str(new_mode))
         self.file_manager.writer(self.file_path_mode, 'w', new_text)
 
 

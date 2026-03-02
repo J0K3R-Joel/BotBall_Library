@@ -41,7 +41,7 @@ done
 for script in "$SCRIPTS_DIR"/*.sh; do
     script_filename="$(basename "$script")"
 
-    if [[ " ${PRIORITY_SCRIPTS[*]} " =~ " $script_filename " ]] || [[ "$script_filename" == "$FINAL_SCRIPT" ]] || [[ "$script_filename" == "config.sh" ]]; then
+    if [[ " ${PRIORITY_SCRIPTS[*]} " =~ " $script_filename " ]] || [[ "$script_filename" == "$FINAL_SCRIPT" ]] || [[ "$script_filename" == "config.sh" ]] || [["$script_filename" == "setup_harrogate.sh"]]; then  # for now setup_harrogate.sh -> maybe you do not need this shell script anymore
         continue
     fi
 

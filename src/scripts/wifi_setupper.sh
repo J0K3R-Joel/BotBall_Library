@@ -16,7 +16,7 @@ Type=simple
 ExecStart=/usr/bin/python3 $TARGET_PY
 WorkingDirectory=/home/kipr/Documents/KISS/WIFI/setup/bin
 User=kipr
-Restart=always
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target

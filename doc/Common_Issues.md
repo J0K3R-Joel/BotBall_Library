@@ -339,3 +339,61 @@ The issue IDs have (at least at this moment) no real purpose. The ID is only exi
 
 ---
 
+ ### Issue ID: 013
+
+- **Title:** Program will not execute after Library installation
+- **Category:** Software
+- **Affected Components:** Any auto-created user and project
+- **Description:**  
+  After installing the library and clicking the "Run" button on the controller, the program will not execute and reset the state of the "Run" button from "executing" to "idle".
+- **Symptoms / Indicators:**
+
+  - "Run" button on the controller will not do anything, even though you see that the buttons state changes from "clicked" to "idle", therefore indicating that the program should have been executed
+- **Cause:**  
+
+  - Presets for all programs not set
+- **Solution / Workaround:**  
+
+  - Get inside of the KISS IDE and compile the program, this will fix the Error
+- **Status:** Resolved
+
+---
+
+ ### Issue ID: 014
+
+- **Title:** Users and projects will not be shown inside of the KISS IDE
+
+- **Category:** Software
+
+- **Affected Components:** Every user with every project and all Programs that come along them
+
+- **Description:**  
+  No user and no project will be shown except the Wombat Factory users and projects after installing the library. 
+
+- **Symptoms / Indicators:**
+
+  - Getting in the KISS IDE will only show the two base users and projects that exist on every wombat. The same error occurs on the controller itself.
+
+- **Cause:**  
+
+  - Wrong syntax inside of the `/home/kipr/Documents/KISS/users.json` file. This is because there is another version for the image file (`.img`) and therefore kipr changed the structure of the users file.
+
+- **Solution / Workaround:**  
+
+  1. Get inside of the `/home/kipr/Documents/KISS/users.json` file
+
+  2. Look for the first non-factory wombat user
+
+  3. Remove or add the comma after the last factory-wombat-user. Correct Syntax is as follows and this is how it needs to look like:
+
+     - {"username_1":{"mode":"Simpel"},"username_2":{"mode":"Simpel"}}
+
+     the wrong syntaxes can be one of these (difference are the amount of commas):
+
+     - {"username_1":{"mode":"Simpel"},,"username_2":{"mode":"Simpel"}}
+     - {"username_1":{"mode":"Simpel"}"username_2":{"mode":"Simpel"}}
+
+- **Status:** Resolved
+
+---
+

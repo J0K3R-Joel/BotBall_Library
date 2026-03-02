@@ -598,7 +598,6 @@ class base_driver:
         Calibrates all necessary bias
 
         Args:
-            on_line (bool): If it is already perfectly aligned in the middle of a black line (True) or if it still has to align itself (False, default)
             output (bool): If it should make an output, that it is done calibrating (True, default) or not (False)
 
         Returns:
@@ -845,7 +844,7 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             Instance_distance_sensor (DistanceSensor): the instance of the distance sensor
 
-       Returns:
+        Returns:
             None
         '''
         self.distance_sensor = Instance_distance_sensor
@@ -861,7 +860,7 @@ class Solarbotic_Wheels_two(base_driver):
             Instance_light_sensor_back (LightSensor): the instance of the back light sensor
             Instance_light_sensor_side (LightSensor):  the instance of the side light sensor
 
-       Returns:
+        Returns:
             None
         '''
         self.light_sensor_front = Instance_light_sensor_front
@@ -875,7 +874,7 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             Instance_light_sensor_front (LightSensor): the instance of the front light sensor
 
-       Returns:
+        Returns:
             None
         '''
         self.light_sensor_front = Instance_light_sensor_front
@@ -887,7 +886,7 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             Instance_light_sensor_back (LightSensor): the instance of the back light sensor
 
-       Returns:
+        Returns:
             None
         '''
         self.light_sensor_back = Instance_light_sensor_back
@@ -899,7 +898,7 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             Instance_light_sensor_side (LightSensor):  the instance of the side light sensor
 
-       Returns:
+        Returns:
             None
         '''
         self.light_sensor_side = Instance_light_sensor_side
@@ -915,7 +914,7 @@ class Solarbotic_Wheels_two(base_driver):
             Instance_button_back_left (Digital):  the instance of the back left button
             Instance_button_back_right (Digital):  the instance of the back right button
 
-       Returns:
+        Returns:
             None
         '''
         self.button_fl = Instance_button_front_left
@@ -942,7 +941,7 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             Instance_button_front_right (Digital): the instance of the front right button
 
-       Returns:
+        Returns:
             None
         '''
         self.button_fr = Instance_button_front_right
@@ -954,7 +953,7 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             Instance_button_back_left (Digital):  the instance of the back left button
 
-       Returns:
+        Returns:
             None
         '''
         self.button_bl = Instance_button_back_left
@@ -1182,7 +1181,7 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             None
 
-       Returns:
+        Returns:
             if there is an instance of all buttons in existence
         '''
         if not isinstance(self.button_fl, Digital):
@@ -1243,15 +1242,11 @@ class Solarbotic_Wheels_two(base_driver):
             t_back.start()
 
             while not front_found and not back_found:
-                #self.left_wheel.drive_dfw(-self.left_wheel.get_default_speed())
-                #self.right_wheel.drive_dbw(+self.right_wheel.get_default_speed())
                 self.left_wheel.drive_dfw()
                 self.right_wheel.drive_dbw()
 
 
         while k.seconds() - startTime < turning_time:
-            #self.left_wheel.drive_dfw(-self.left_wheel.get_default_speed())
-            #self.right_wheel.drive_dbw(+self.right_wheel.get_default_speed())
             self.left_wheel.drive_dfw()
             self.right_wheel.drive_dbw()
 
@@ -1698,16 +1693,16 @@ class Solarbotic_Wheels_two(base_driver):
     @DriveableFunction
     def turn_to_black_line(self, direction: str, millis: int = 0, speed: int = None) -> None:
         '''
-       Turn as long as the light sensor (front or back, depends if the speed is positive or negative) sees the black line
+        Turn as long as the light sensor (front or back, depends if the speed is positive or negative) sees the black line
 
-       Args:
+        Args:
            direction (str): "right" or "left" - depends on where you want to go
            millis (int, optional): how long (in milliseconds) to drive until the sensor gets checked (no threading is used) (default: 0)
            speed (int, optional): how fast it should turn. Note: with negative speed it will also look at the brightness sensor on the back (default: ds_speed)
 
-       Returns:
+        Returns:
            None
-       '''
+        '''
         if speed is None:
             speed = self.max_speed
         self.check_instance_light_sensors_middle()
@@ -2113,11 +2108,16 @@ class Solarbotic_Wheels_two(base_driver):
             print('1: ', light_sensors[1].get_position(), flush=True)
             leaning_side = 'right' if 'right' != leaning_side else 'left'
             startTime = k.seconds()
-            self.turn_degrees_condition_analog(leaning_side, light_sensors[1], '<', light_sensors[1].get_value_black_bias(), millis=self.ONEEIGHTY_DEGREES_SECS*1000)
-            if k.seconds() - startTime >= self.ONEEIGHTY_DEGREES_SECS:
-                self.drive_straight_condition_analog(self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
-                self.drive_straight_condition_analog(self.light_sensor_front, '>', self.light_sensor_front.get_value_black_bias())
+            self.turn_degrees_condition_analog(leaning_side, light_sensors[1], '<', light_sensors[1].get_value_black_bias(), millis=self.ONEEIGHTY_DEGREES_SECS*1000 * 1.5)
+            if k.seconds() - startTime >= self.ONEEIGHTY_DEGREES_SECS * 1.5:
+                self.break_all_motors()
+                self.drive_straight_condition_analog(self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias(), millis=int(self.get_light_sensor_distance_sec() * 1000)//2)  # front, since you will always (with wheels at the front) reach from the back, but maybe never from the front
+                self.drive_straight_condition_analog(self.light_sensor_front, '>', self.light_sensor_front.get_value_black_bias(), millis=int(self.get_light_sensor_distance_sec() * 1000)//2)  # front, since you will always (with wheels at the front) reach from the back, but maybe never from the front
+                print('here', flush=True)
+                self.turn_wheel_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_white_bias(), speed=-self.ds_speed)
+
             self.break_all_motors()
+
             print('finished 1', flush=True)
 
         leaning_side = 'right' if 'right' != leaning_side else 'left'
@@ -2129,24 +2129,30 @@ class Solarbotic_Wheels_two(base_driver):
             leaning_side = 'right' if 'right' != leaning_side else 'left'
             startTime = k.seconds()
             self.drive_straight_condition_analog(self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias(), speed=-self.ds_speed)
+            print('S', flush=True)
             end_drive_backwards = (k.seconds() - startTime) * 1000
-            self.turn_wheel_condition_analog(leaning_side, self.light_sensor_back, '<', self.light_sensor_back.get_value_black_bias())
+            self.turn_wheel_condition_analog(leaning_side, light_sensors[0], '<', light_sensors[0].get_value_black_bias(), speed=-self.ds_speed)
+            print('Here', flush=True)
             leaning_side = 'right' if 'right' != leaning_side else 'left'
-            self.turn_wheel_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
+            self.turn_wheel_condition_analog(leaning_side, light_sensors[1], '<', light_sensors[1].get_value_black_bias())
+            leaning_side = 'right' if 'right' != leaning_side else 'left'
+            self.turn_wheel_condition_analog(leaning_side, light_sensors[1], '>', light_sensors[1].get_value_black_bias(), speed=-speed)
+            self.turn_wheel_condition_analog(leaning_side, light_sensors[1], '>', light_sensors[1].get_value_black_bias(), speed=speed)
             self.break_all_motors()
 
-        if not self.light_sensor_back.sees_black():
+        if not light_sensors[0].sees_black():
             print('3: ', flush=True)
             leaning_side = 'right' if 'right' != leaning_side else 'left'
             startTime = k.seconds()
-            self.turn_wheel_condition_analog(leaning_side, self.light_sensor_back, '<', self.light_sensor_back.get_value_black_bias(), millis=self.NINETY_DEGREES_SECS*1000, speed=-self.ds_speed)
+            self.turn_wheel_condition_analog(leaning_side, light_sensors[0], '<', light_sensors[0].get_value_black_bias(), millis=self.NINETY_DEGREES_SECS*1000, speed=speed)  # turn for 45 degrees
             if k.seconds() - startTime > self.NINETY_DEGREES_SECS:
+                print('ninety', flush=True)
                 leaning_side = 'right' if 'right' != leaning_side else 'left'
-                self.turn_wheel_condition_analog(leaning_side, self.light_sensor_front, '>', self.light_sensor_front.get_value_black_bias(), millis=self.NINETY_DEGREES_SECS*1000*1.5)  # *1.5 to get 67.5 degrees -> this is because you can off by a little more than 45 degrees
+                self.turn_wheel_condition_analog(leaning_side, light_sensors[1], '>', light_sensors[1].get_value_black_bias(), millis=self.NINETY_DEGREES_SECS*1000*1.5)  # *1.5 to get 67.5 degrees -> this is because you can off by a little more than 45 degrees
                 leaning_side = 'right' if 'right' != leaning_side else 'left'
-                self.turn_wheel_condition_analog(leaning_side, self.light_sensor_back, '<', self.light_sensor_front.get_value_white_bias(), millis=self.NINETY_DEGREES_SECS*1000*2.5)  # *2.5 since you first rotate 45 degrees and afterwards 67.5 degrees -> 112.5 degrees in total -> when turning with one wheel you rotate half the degrees for the same amount of time -> you actually need to rotate for 225 degrees -> 250% more than 90 degrees
-                print('finished 3', flush=True)
-                leaning_side = 'right' if 'right' != leaning_side else 'left'
+                self.turn_wheel_condition_analog(leaning_side, light_sensors[0], '<', light_sensors[0].get_value_white_bias(), millis=self.NINETY_DEGREES_SECS*1000*2.5)  # *2.5 since you first rotate 45 degrees and afterwards 67.5 degrees -> 112.5 degrees in total -> when turning with one wheel you rotate half the degrees for the same amount of time -> you actually need to rotate for 225 degrees -> 250% more than 90 degrees
+            print('finished 3', flush=True)
+            leaning_side = 'right' if 'right' != leaning_side else 'left'
 
 
         leaning_side = 'right' if 'right' != leaning_side else 'left'
@@ -2164,8 +2170,10 @@ class Solarbotic_Wheels_two(base_driver):
         if end_drive_backwards:
             print('5: ', flush=True)
             self.drive_straight_condition_analog(self.light_sensor_front, '>', self.light_sensor_front.get_value_black_bias(), millis=end_drive_backwards, speed=-self.ds_speed)
-            if self.light_sensor_front.sees_white():
+            if not self.light_sensor_front.sees_black():
                 self.drive_straight_condition_analog(self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias(), speed=speed)
+            if not self.light_sensor_front.sees_black():
+                print('================= HELP ==================')
 
         self.break_all_motors()
         return True
@@ -3190,7 +3198,6 @@ class Mecanum_Wheels_four(base_driver):
         drive to the side until a black line was found and then slowly turn 180 degrees to know how long it takes to make one 180B0 turn
 
         Args:
-            on_line (bool): If it is already perfectly aligned in the middle of a black line (True) or if it still has to align itself (False, default)
             output (bool): If it should make an output, that it is done calibrating (True, default) or not (False)
 
         Returns:

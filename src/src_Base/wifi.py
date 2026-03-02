@@ -271,7 +271,7 @@ class WifiConnector:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
-            log(f'Successfully connected with {self.ssid} .')
+            log(f'Successfully connected with {name} .')
         except subprocess.CalledProcessError as e:
             log(f'Wifi connection failed: {e.stderr.decode()}', important=True, in_exception=True)
 

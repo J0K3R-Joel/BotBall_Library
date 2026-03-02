@@ -216,21 +216,24 @@ def setup(at_competition: bool) -> None:
         tryout()
     k.cmpc(PORT_MOTOR_CLAW)
 
-def align_on_black_line(self, crossing: bool, direction: str = 'vertical', leaning_side: str = None) -> None:
+
+@DriveableFunction
+def align_on_black_line(self, crossing: bool, direction: str = 'vertical', leaning_side: str = None,
+                        precise: bool = False) -> None:
+    # hint: do not face the black line (?)
     '''
-   Align yourself on the black line. If there is a crossing you can choose on which line you want to get onto by switching the direction parameter. You need to be somewhere on top of the black line to let this function work!
+    Align yourself on the black line. If there is a crossing you can choose on which line you want to get onto by switching the direction parameter. You need to be somewhere on top of the black line to let this function work!
 
-   Args:
-       crossing (bool): are there two overlapping black lines (True) or not (False)
-       direction (str, optional): "vertical" (default) or "horizontal" - depends on where you want to go
-       leaning_side (str, optional): "left" or "right" - helps the roboter to turn in the right direction (-> faster)
-       precise (bool, optional): if True, then it takes longer, but is slightly better aligned on the black line. If False, it takes less time but the bias is therefor more forgiving
+    Args:
+        crossing (bool): are there two overlapping black lines (True) or not (False)
+        direction (str, optional): "vertical" (default) or "horizontal" - depends on where you want to go
+        leaning_side (str, optional): "left" or "right" - helps the roboter to turn in the right direction (-> faster)
+        precise (bool, optional): if True, then it takes longer, but is slightly better aligned on the black line. If False, it takes less time but the bias is therefor more forgiving
 
-   Returns:
-       None
+    Returns:
+        None
    '''
     self.check_instance_light_sensors_middle()
-    motor_id = self._manage_motor_stopper(True)
     try:
         if direction != 'vertical' and direction != 'horizontal':
             log('Only "vertical" or "horizontal" are valid options for the "direction" parameter',
@@ -244,98 +247,82 @@ def align_on_black_line(self, crossing: bool, direction: str = 'vertical', leani
             raise ValueError(
                 'align_on_black_line() Exception: Only "right", "left" or None / nothing are valid options for the "leaning_side" parameter')
 
+        align_back_timer = TimeR()
+        align_back_timer.start_timer_sec()
+
         if not crossing:
-            log('no crossing')
             if not leaning_side or leaning_side == 'right':
-                ports = self.port_wheel_left, self.port_wheel_right
+                instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
             else:
-                ports = self.port_wheel_right, self.port_wheel_left
-            startTime = k.seconds()
-            while self.light_sensor_back.sees_white() and self.light_sensor_front.sees_white() and self.is_motor_active(motor_id):
-                if k.seconds() - startTime < self.NINETY_DEGREES_SECS:
-                    k.mav(ports[0], self.ds_speed)
-                    k.mav(ports[1], -self.ds_speed)
+                instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
+            adjuster = self.ds_speed
+            if precise:
+                adjuster = self.ds_speed
+
+            while self.light_sensor_back.sees_white() and self.light_sensor_front.sees_white():
+                if align_back_timer.stop_timer(False) < self.NINETY_DEGREES_SECS:
+                    instances[0].drive_dfw()
+                    instances[1].drive_dbw()
+                    instances[2].drive_dfw()
+                    instances[3].drive_dbw()
                 else:
-                    k.mav(ports[0], -self.ds_speed)
-                    k.mav(ports[1], self.ds_speed // 2)
-                    k.msleep(1)
+                    instances[0].drive_dbw()
+                    instances[1].drive_dfw()
+                    instances[2].drive_dbw()
 
-            self.break_all_motors()
+            if not self.light_sensor_back.sees_white():
+                while self.light_sensor_front.sees_white():
+                    instances[0].drive(-adjuster)
+                    instances[1].drive(adjuster)
 
-            if not self.light_sensor_back.sees_white():  # hinten ist oben
-                while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                    k.mav(ports[0], -self.ds_speed)
-                    k.mav(ports[1], -self.ds_speed)
-                self.break_all_motors()
-                while self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                    k.mav(ports[0], 1500)
-                self.break_all_motors()
-                while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                    k.mav(ports[1], 1500)
-                self.break_all_motors()
-                while self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                    k.mav(ports[1], 1500)
-                self.break_all_motors()
-                while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                    k.mav(ports[1], -1500)
-                    k.mav(ports[0], -200)
-                self.break_all_motors()
+            if not self.light_sensor_front.sees_white():
+                while self.light_sensor_back.sees_white():
+                    instances[2].drive(-adjuster)
+                    instances[3].drive(adjuster)
 
-            elif not self.light_sensor_front.sees_white():  # vorne ist oben
-                while not self.light_sensor_back.sees_black() and self.is_motor_active(motor_id):
-                    k.mav(ports[0], self.ds_speed)
-                    k.mav(ports[1], self.ds_speed)
-                while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                    k.mav(ports[0], -1500)
-                    k.mav(ports[1], 1500)
+            k.ao()
+            k.msleep(50)
+            if self.light_sensor_front.sees_white():
+                while self.light_sensor_front.sees_white():
+                    instances[0].drive(-adjuster)
+                    instances[1].drive(adjuster)
 
-            self.break_all_motors()
-
-            if not self.light_sensor_front.sees_black():
-                self.break_all_motors()
-                while not self.light_sensor_front.sees_white() and self.is_motor_active(motor_id):
-                    k.mav(ports[1], 1500)
-
-                while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                    k.mav(ports[1], 1500)
-
-            if not self.light_sensor_back.sees_black():
-                while self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                    k.mav(ports[1], 1500)
-                while self.light_sensor_back.sees_white() and self.is_motor_active(motor_id):
-                    k.mav(ports[1], -1500)
-                    k.mav(ports[0], 1500)
-
-            self.break_all_motors()
+            k.ao()
+            k.msleep(10)
+            if not self.light_sensor_back.sees_black() and not self.light_sensor_front.sees_black():
+                self.drive_side_condition_analog('left', self.light_sensor_front, '<',
+                                                 self.light_sensor_front.get_value_black() - self.light_sensor_front.get_bias())
 
         else:
-            ports = self.port_wheel_left, self.port_wheel_right
+            instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
             on_line = False
             first_line_hit = None
             line_counter = 0
             line_timer = 0
             line_timer_collector = []
 
-            startTime_front = k.seconds()
-            while k.seconds() - startTime_front < self.ONEEIGHTY_DEGREES_SECS * 2 + 0.2  and self.is_motor_active(motor_id):  # +0.2 is a kind of bias
-                while self.light_sensor_front.sees_black()  and self.is_motor_active(motor_id):
+            while align_back_timer.stop_timer(False) < self.ONEEIGHTY_DEGREES_SECS * 2 + 0.2:  # +0.2 is just a bias
+                while self.light_sensor_front.sees_black():
                     on_line = True
                     line_timer += 1
-                    k.mav(ports[0], -self.ds_speed)
-                    k.mav(ports[1], self.ds_speed)
+                    instances[0].drive_dbw()
+                    instances[1].drive_dfw()
+                    instances[2].drive_dbw()
+                    instances[3].drive_dfw()
                 if on_line:
                     if not first_line_hit:
-                        first_line_hit = k.seconds() - startTime_front
+                        first_line_hit = align_back_timer.stop_timer(False)
                     on_line = False
                     line_counter += 1
                     line_timer_collector.append(line_timer)
                     line_timer = 0
-                k.mav(ports[0], -self.ds_speed)
-                k.mav(ports[1], self.ds_speed)
+                instances[0].drive_dbw()
+                instances[1].drive_dfw()
+                instances[2].drive_dbw()
+                instances[3].drive_dfw()
 
             if line_counter > 4:
                 line_counter = 4
-
             on_line = False
             direct = 'right', 'left'
             dir_picker = self.NINETY_DEGREES_SECS / 1.4, first_line_hit
@@ -354,86 +341,108 @@ def align_on_black_line(self, crossing: bool, direction: str = 'vertical', leani
             if line_counter == 4:
                 if dir_picker[0] < dir_picker[1]:
                     d = direct[0]
-                    while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                        k.mav(ports[0], self.ds_speed)
-                        k.mav(ports[1], -self.ds_speed)
-                    self.break_all_motors()
-                    while not self.light_sensor_back.sees_black() and self.is_motor_active(motor_id):
-                        k.mav(ports[0], self.ds_speed)
-                        k.mav(ports[1], self.ds_speed)
-                    while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                        k.mav(ports[0], self.ds_speed)
-                        k.mav(ports[1], -self.ds_speed)
-                    self.break_all_motors()
+                    while not self.light_sensor_front.sees_black():
+                        instances[0].drive_dfw()
+                        instances[1].drive_dbw()
+                        instances[2].drive_dfw()
+                        instances[3].drive_dbw()
+
+                    while not self.light_sensor_back.sees_black():
+                        instances[0].drive_dfw()
+                        instances[1].drive_dfw()
+                        instances[2].drive_dbw()
+                        instances[3].drive_dfw()
+                    while not self.light_sensor_front.sees_black():
+                        instances[0].drive_dfw()
+                        instances[1].drive_dbw()
+
                 else:
                     d = direct[1]
-                    while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                        k.mav(ports[0], -self.ds_speed)
-                        k.mav(ports[1], self.ds_speed)
-                    self.break_all_motors()
-                    while not self.light_sensor_back.sees_black() and self.is_motor_active(motor_id):
-                        k.mav(ports[0], self.ds_speed)
-                        k.mav(ports[1], self.ds_speed)
-                    self.break_all_motors()
-                    while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                        k.mav(ports[0], -self.ds_speed)
-                        k.mav(ports[1], self.ds_speed)
-                    self.break_all_motors()
+                    while not self.light_sensor_front.sees_black():
+                        instances[0].drive_dbw()
+                        instances[1].drive_dfw()
+                        instances[2].drive_dbw()
+                        instances[3].drive_dfw()
+
+                    while not self.light_sensor_back.sees_black():
+                        instances[0].drive_dfw()
+                        instances[1].drive_dfw()
+                        instances[2].drive_dfw()
+                        instances[3].drive_dbw()
+
+                    while not self.light_sensor_front.sees_black():
+                        instances[0].drive_dbw()
+                        instances[1].drive_dfw()
+
+                self.drive_side(d, 5)
 
             elif line_counter == 3:
                 if dir_picker[0] > dir_picker[1]:
                     d = direct[0]
-                    while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                        k.mav(ports[0], self.ds_speed)
-                        k.mav(ports[1], -self.ds_speed)
-                    self.break_all_motors()
-                    while not self.light_sensor_back.sees_black() and self.is_motor_active(motor_id):
-                        k.mav(ports[0], self.ds_speed)
-                        k.mav(ports[1], self.ds_speed)
-                    self.break_all_motors()
+                    while not self.light_sensor_front.sees_black():
+                        instances[0].drive_dfw()
+                        instances[1].drive_dbw()
+                        instances[2].drive_dfw()
+                        instances[3].drive_dbw()
+
+                    while not self.light_sensor_back.sees_black():
+                        instances[0].drive_dfw()
+                        instances[1].drive_dfw()
+                        instances[2].drive_dbw()
+                        instances[3].drive_dfw()
+
                     if not self.light_sensor_front.sees_black():
-                        while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                            k.mav(ports[0], -self.ds_speed)
-                            k.mav(ports[1], self.ds_speed)
-                        self.break_all_motors()
+                        while not self.light_sensor_front.sees_black():
+                            instances[0].drive_dbw()
+                            instances[1].drive_dfw()
+
                 else:
                     d = direct[1]
-                    while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                        k.mav(ports[0], -self.ds_speed)
-                        k.mav(ports[1], self.ds_speed)
-                    self.break_all_motors()
-                    while not self.light_sensor_back.sees_black() and self.is_motor_active(motor_id):
-                        k.mav(ports[0], self.ds_speed)
-                        k.mav(ports[1], self.ds_speed)
-                    self.break_all_motors()
+                    while not self.light_sensor_front.sees_black():
+                        instances[0].drive_dbw()
+                        instances[1].drive_dfw()
+                        instances[2].drive_dbw()
+                        instances[3].drive_dfw()
+
+                    while not self.light_sensor_back.sees_black():
+                        instances[0].drive_dfw()
+                        instances[1].drive_dfw()
+                        instances[2].drive_dfw()
+                        instances[3].drive_dbw()
+
                     if not self.light_sensor_front.sees_black():
-                        while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                            k.mav(ports[0], -self.ds_speed)
-                            k.mav(ports[1], self.ds_speed)
-                        self.break_all_motors()
+                        while not self.light_sensor_front.sees_black():
+                            instances[0].drive_dbw()
+                            instances[1].drive_dfw()
+
+                self.drive_side(d, 5)
 
             else:  # line_counter == 2
                 if dir_picker[0] < dir_picker[1]:
                     d = direct[0]
-                    while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                        k.mav(ports[0], self.ds_speed)
-                        k.mav(ports[1], -self.ds_speed)
-                    self.break_all_motors()
-                    while not self.light_sensor_back.sees_black() and self.is_motor_active(motor_id):
-                        k.mav(ports[0], self.ds_speed)
-                        k.mav(ports[1], self.ds_speed)
-                    self.break_all_motors()
+                    while not self.light_sensor_front.sees_black():
+                        instances[0].drive_dfw()
+                        instances[1].drive_dbw()
+                        instances[2].drive_dfw()
+                        instances[3].drive_dbw()
+
+                    while not self.light_sensor_back.sees_black():
+                        instances[0].drive_dfw()
+                        instances[1].drive_dfw()
+                        instances[2].drive_dbw()
+                        instances[3].drive_dfw()
+
                 else:
                     d = direct[1]
-                    while not self.light_sensor_front.sees_black() and self.is_motor_active(motor_id):
-                        k.mav(ports[0], -self.ds_speed)
-                        k.mav(ports[1], self.ds_speed)
-                    self.break_all_motors()
+                    while not self.light_sensor_front.sees_black():
+                        instances[0].drive_dbw()
+                        instances[1].drive_dfw()
+                        instances[2].drive_dbw()
+                        instances[3].drive_dfw()
 
-            #self.next_to_onto_line(d)
+                self.break_all_motors()
+                self.drive_side(d, 5)
         self.break_all_motors()
-        self._manage_motor_stopper(False)
-
 
     except Exception as e:
         log(str(e), important=True, in_exception=True)

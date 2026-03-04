@@ -397,3 +397,20 @@ The issue IDs have (at least at this moment) no real purpose. The ID is only exi
 
 ---
 
+ ### Issue ID: 015
+
+- **Title:** Touchscreen not working
+- **Category:** Controller
+- **Affected Components:** Everything concerning the click functionality of the controller 
+- **Description:**  
+  Tipping on the screen will either not do anything or the mouse cursor get in a complete different location
+- **Symptoms / Indicators:**
+  - Mouse cursor location does not equal the location where you tipped 
+- **Cause:**  
+  - Unknown, but I guess that in the background are too many threads that interfere with the background mouse thread
+- **Solution / Workaround:**  
+  - Reflashing the image of the controller (system re-wipe)
+- **Status:** Unknown
+
+---
+

@@ -264,7 +264,7 @@ class WifiConnector:
             self.set_mode(self.CLIENT_MODE)
 
         try:
-            print(f'Trying to connect to {ssid}...', flush=True)
+            print(f'Trying to connect to {name}...', flush=True)
             subprocess.run(
                 ['sudo', 'nmcli', 'dev', 'wifi', 'connect', name, 'password', passw],
                 check=True,

@@ -27,7 +27,7 @@ chmod 777 $NEW_DATA_DIR
 for script_name in "${PRIORITY_SCRIPTS[@]}"; do
     script_path="$SCRIPTS_DIR/$script_name"
     if [ -f "$script_path" ]; then
-        echo "Executing (priority): $script_path"
+        echo "--> Executing (priority): $script_path"
         chmod +x "$script_path"
         "$script_path"
         echo "Finished: $script_path"
@@ -40,13 +40,14 @@ done
 # Step 2: Run other scripts (excluding priority + final)
 for script in "$SCRIPTS_DIR"/*.sh; do
     script_filename="$(basename "$script")"
+    echo "===> NAME: $script_file_name"
 
     if [[ " ${PRIORITY_SCRIPTS[*]} " =~ " $script_filename " ]] || [[ "$script_filename" == "$FINAL_SCRIPT" ]] || [[ "$script_filename" == "config.sh" ]] || [["$script_filename" == "setup_harrogate.sh"]]; then  # for now setup_harrogate.sh -> maybe you do not need this shell script anymore
         continue
     fi
 
     if [ -f "$script" ]; then
-        echo "Executing (other): $script"
+        echo "--> Executing (other): $script"
         chmod +x "$script"
         "$script"
         echo "Finished: $script"
@@ -56,7 +57,7 @@ done
 
 # Step 3: Run the final script
 if [ -f "$FINAL_SCRIPT_PATH" ]; then
-    echo "Executing (final): $FINAL_SCRIPT_PATH"
+    echo "--> Executing (final): $FINAL_SCRIPT_PATH"
     chmod +x "$FINAL_SCRIPT_PATH"
     "$FINAL_SCRIPT_PATH"
     echo "Finished: $FINAL_SCRIPT_PATH"

@@ -134,7 +134,7 @@ def main():
         print('uncomment to start. Do not forget to change the invalid params (like XX)', flush=True)
 
         # Step 0: Create the global instances
-        #Instance_Setup()
+        #Instance_Setup()  # you will need this all the time, so do not comment this line out!
 
         # Step 1: basic calibrations (turning, driving straight and brightness sensors)
         #register_light_values()

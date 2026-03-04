@@ -127,7 +127,7 @@ class TimeR:
             self.begin_time = None
             self.current_timer_type = None
 
-    def stop_timer(self, reset_timer: bool = True) -> float:
+    def stop_timer(self, reset_timer: bool = True):
         '''
         Stop the current running timer
 
@@ -135,7 +135,9 @@ class TimeR:
             reset_timer (bool, optional): If the timer should reset after stopping (True) or not (False) (default: True)
 
         Returns:
-            float: The difference between the started time and the current time in the time format at which you started the timer
+            either:
+                - float: The difference between the started time and the current time in the time format at which you started the timer (in seconds)
+                - int: The difference between the started time and the current time in the time format at which you started the timer (in milliseconds)
         '''
         if not self.begin_time or not self.current_timer_type:
             log('Timer is not set. Please set it first, before stopping it!', in_exception=True)
@@ -150,7 +152,7 @@ class TimeR:
                 difference = end_time - self.begin_time
 
             elif self.current_timer_type == self.timer_type_millis:
-                difference = (end_time - self.begin_time) * 1000
+                difference = int((end_time - self.begin_time) * 1000)
 
         if reset_timer:
             self.reset_timer()

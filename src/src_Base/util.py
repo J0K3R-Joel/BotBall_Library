@@ -355,7 +355,7 @@ class Util:
 
         '''
         std_msg = ''
-        file_name = UTIL_FOLDER + 'local_test_variable.txt'
+        file_name = UTIL_FOLDER + '/local_test_variable.txt'
         if not os.path.exists(file_name):
             self.file_manager.writer(file_name, 'w', std_msg)
             return std_msg

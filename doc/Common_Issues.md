@@ -4,6 +4,13 @@ This file tells you many issues that occurred, how they occurred, why they occur
 
 The issue IDs have (at least at this moment) no real purpose. The ID is only existing so you can communicate with others better. Other teams, which do not know this library / files do not know the IDs (since I came up with this idea and this does not exist in other teams the same way).
 
+**Status explanation**: 
+
+- <u>Resolved</u>: Does not exist anymore
+- <u>User Dependant</u>: System works, but the user needs to not do something specific wrong
+- <u>Existing</u>: Issue still exists
+- <u>Unknown</u>: Issue still exists, but many informations are unknown (e.g. why it occurs, if it still exists OR how to solve it, ...)
+
 ---
 
 ### Issue ID: 001
@@ -27,7 +34,7 @@ The issue IDs have (at least at this moment) no real purpose. The ID is only exi
 - **Solution / Workaround:**  
   Make sure that every Port where the motors for driving are plugged in is getting a positive value when driving straight 
 
-- **Status:** Resolved
+- **Status:** User Dependant
 
 ---
 
@@ -52,7 +59,7 @@ The issue IDs have (at least at this moment) no real purpose. The ID is only exi
 - **Solution / Workaround:**  
   You need to write your entire code with the same type of indentation. If the code is prewritten, then you need to use the same indentations. If you get this error, then you need to remove all indentations of the line(s) where this error occures and replace them with the same indentation type, so the entire code has the same spacing type
 
-- **Status:** Resolved
+- **Status:** Existing / User Dependant
 
 ---
 
@@ -77,7 +84,7 @@ The issue IDs have (at least at this moment) no real purpose. The ID is only exi
 - **Solution / Workaround:**  
   Make sure that the IPv4 Adress is right. Also make sure that the robot is in the desired WIFI 
 
-- **Status:** Resolved
+- **Status:** User Dependant
 
 ---
 
@@ -104,7 +111,7 @@ The issue IDs have (at least at this moment) no real purpose. The ID is only exi
   
   If this is not the case, then you need to wait for a while, since the IPv4 Address is reserved for a while. After some time, the IPv4 Address will be able for use again.
 
-- **Status:** Resolved
+- **Status:** Exists / User Dependant
 
 ---
 
@@ -144,7 +151,7 @@ The issue IDs have (at least at this moment) no real purpose. The ID is only exi
      5. Compile and you are good to go! 
      6. If the issue keeps reappearing, then you either got the wrong loop changed or there are multiple problematic loops.  
   
-- **Status:** Resolved
+- **Status:** Exists
 
 ---
 
@@ -159,7 +166,7 @@ The issue IDs have (at least at this moment) no real purpose. The ID is only exi
   - You are not able to `chmod` a file on the USB-stick
   - Many `Permission denied` errors after running `sudo bash start.sh` in the terminal
 - **Cause:**  
-  - Unknown, since the error only occurs on some USB-sticks.
+  - As far as I know, Raspberry Pis cannot execute files (or modify their permissions) on some FAT32 storage types, therefore giving you a `Permission denied` error.
 - **Solution / Workaround:**  
   1. Plug the USB-Stick containing the BotBall_Library into the controller
   2. Get into the BotBall_Library folder on your USB-stick
@@ -205,14 +212,14 @@ The issue IDs have (at least at this moment) no real purpose. The ID is only exi
 - **Cause:**  
   - There is no secure connection (until now - 23.11.2025) available
 - **Solution / Workaround:**  
-  - before the IP-Address and Port (eg. `192.168.1.1:8888`) type `http://`, so you specifically tell it to use it the unsecure connection (your browser-search should look like this: `http://192.168.1.1:8888`)
-- **Status:** Resolved
+  - before the IP-Address and Port (eg. `192.168.1.1:8888`) type `http://`, so you specifically tell it to use it the unsecure connection (your browser-search should look like this (using the example address and port): `http://192.168.1.1:8888`)
+- **Status:** Exists
 
 ---
 
 ### Issue ID: 009
 
-- **Title:** No changed getting applied / not being able to compile or run the code
+- **Title:** No change being applied / not being able to compile or run the code / not being able to switch files
 - **Category:** Connection
 - **Affected Components:** KISS IDE
 - **Description:**  
@@ -229,9 +236,10 @@ The issue IDs have (at least at this moment) no real purpose. The ID is only exi
 - **Solution / Workaround:**  
   - Make sure that the controller's battery is charged (and is connected to the battery)
   - Controller is turned on
-  - Make sure that you AND the controller are connected with the right WIFI
+  - Make sure that you AND the controller are connected in the same WIFI
   - Make sure you entered the right IP-Address and port
-- **Status:** Resolved
+  - If the (four) points above are validated, then reload the browser window (f5 on the keyboard or CTRL + R or clicking the reload button or creating just an entire new browser tab) 
+- **Status:** Exists
 
 ---
 
@@ -258,39 +266,11 @@ The issue IDs have (at least at this moment) no real purpose. The ID is only exi
   - Look at every comment for some odd characters
   - If you notice nothing odd then replace / remove every comment and try it again. Afterwards - if the error still accurs - you need to do the same with every string 
   
-- **Status:** Resolved
+- **Status:** User Dependant
 
 ---
 
  ### Issue ID: 011
-
-- **Title:** KISS IDE widgets do not update
-
-- **Category:** Connection
-
-- **Affected Components:** KISS IDE
-
-- **Description:**  
-  When trying to compile / run the code / switch tabs / switch user / switch project, just anything inside the KISS IDE, nothing on the GUI gets updated
-
-- **Symptoms / Indicators:**
-  - GUI does not update 
-
-- **Cause:**  
-  - battery has no charge / had no charge (a few moments ago)
-  - controller connects to another WIFI
-  - controller connects was not in you WIFI, but now it got reconnected with your WIFI 
-
-- **Solution / Workaround:**  
-  - Make sure, that the controller has charge
-  - Make sure that it is connected to the WIFI you are connected to
-  - If the (two) points above are validated, then reload the browser window (f5 on the keyboard or CTRL + R or clicking the reload button or creating just an entire new browser tab) 
-
-- **Status:** Resolved
-
----
-
- ### Issue ID: 012
 
 - **Title:** Servo not working
 
@@ -335,11 +315,11 @@ The issue IDs have (at least at this moment) no real purpose. The ID is only exi
 
        - If the servo now works intentionally then it would indicate, that one broken port damaged other ones ever so slightly as well (or if you the problem only occured on one port, then only this port is damaged and the other ones work fine)
 
-- **Status:** Resolved
+- **Status:** Exists / User Dependant
 
 ---
 
- ### Issue ID: 013
+ ### Issue ID: 012
 
 - **Title:** Program will not execute after Library installation
 - **Category:** Software
@@ -355,11 +335,11 @@ The issue IDs have (at least at this moment) no real purpose. The ID is only exi
 - **Solution / Workaround:**  
 
   - Get inside of the KISS IDE and compile the program, this will fix the Error
-- **Status:** Resolved
+- **Status:** Exists
 
 ---
 
- ### Issue ID: 014
+ ### Issue ID: 013
 
 - **Title:** Users and projects will not be shown inside of the KISS IDE
 
@@ -393,11 +373,11 @@ The issue IDs have (at least at this moment) no real purpose. The ID is only exi
      - {"username_1":{"mode":"Simpel"},,"username_2":{"mode":"Simpel"}}
      - {"username_1":{"mode":"Simpel"}"username_2":{"mode":"Simpel"}}
 
-- **Status:** Resolved
+- **Status:** Exists (version dependant)
 
 ---
 
- ### Issue ID: 015
+ ### Issue ID: 014
 
 - **Title:** Touchscreen not working
 - **Category:** Controller

@@ -43,17 +43,13 @@ breakable_function_name = None
 time_begin = 0
 
 def DriveableFunction(func):
-
+    global time_begin  # -> important because the wrapper takes way to long to execute (~150ms) -> need to be improved by not using "inspect" and calling the entire stack
+    time_begin = time.time()
     def wrapper(*args, **kwargs):
-        #global time_begin  -> important because the wrapper takes way to long to execute (~150ms) -> need to be improved by not using "inspect" and calling the entire stack
-        #time_begin = time.time()
-        #print('drivable: ', time_begin - time.time(), flush=True)
         global breakable_function_name
-        frame = inspect.stack()[1]
+        calling_file = sys._getframe().f_back.f_code.co_filename
 
-        module = inspect.getmodule(frame[0])
-
-        if FILE_PATH != module.__file__:
+        if FILE_PATH != calling_file:
             breakable_function_name = func.__name__
 
         result = func(*args, **kwargs)
@@ -63,9 +59,8 @@ def DriveableFunction(func):
 
 def BreakableFunction(func):
     def wrapper(*args, **kwargs):  # @TODO -> need to be improved by not using "inspect" and calling the entire stack
-        frame = inspect.stack()[1]
-        if breakable_function_name == frame.function or frame.function == 'break_all_motors':
-            #print('breakable: ', time_begin - time.time(), flush=True)
+        calling_function = sys._getframe().f_back.f_code.co_name
+        if calling_function == breakable_function_name:
             result = func(*args, **kwargs)
             return result
         return
@@ -1409,7 +1404,6 @@ class Solarbotic_Wheels_two(base_driver):
         '''
         self.right_wheel.stop()
         self.left_wheel.stop()
-        #print('TIME TAKEN :', time.time() - time_begin, flush=True)
 
 
     @DriveableFunction
@@ -1920,7 +1914,7 @@ class Solarbotic_Wheels_two(base_driver):
         self.break_all_motors()
 
     @DriveableFunction
-    def line_time_turner(self, millis: int = None, speed: int = None, leaning_side: str = None) -> None:
+    def line_time_turner(self, millis: int = None, speed: int = None, leaning_side: str = None) -> bool:
         '''
         If you are on the line, then it will turn as long as you wish and look for the line. If the line was not found in the time given, then it will turn the other way
 
@@ -1930,18 +1924,19 @@ class Solarbotic_Wheels_two(base_driver):
             leaning_side (str, optional): the side ("right" or "left") where the wombat has to get to (default: None)
 
         Returns:
-            None
+            bool: If anything got found along the way (True) or if there was nothing and stopping, where you were in the beginning of the call (False)
         '''
         if speed is None:
             speed = self.ds_speed
         line_turner_timer = TimeR()
-        line_turner_timer.start_timer_sec()
-        maxDuration = millis/1000 if millis is not None else self.NINETY_DEGREES_SECS
+        line_turner_timer.start_timer_millis()
+        maxDuration = millis if millis is not None else int(self.NINETY_DEGREES_SECS*1000)
         instances = self.right_wheel, self.left_wheel, self.button_fl, self.button_fr, self.light_sensor_front
         direction = 'left', 'right'
         if speed < 0:
             instances = self.left_wheel, self.right_wheel, self.button_bl, self.button_br, self.light_sensor_back
             direction = 'right', 'left'
+        found = True
 
         if leaning_side == 'left' or leaning_side == 'right':
             direction = leaning_side, 'right' if leaning_side != 'right' else 'left'
@@ -1957,7 +1952,10 @@ class Solarbotic_Wheels_two(base_driver):
                 instances[1].drive(speed)
 
             if line_turner_timer.stop_timer(False) > maxDuration:
-                self.turn_degrees_condition_analog(direction[1], instances[4], '<', instances[4].get_value_black_bias(), speed=speed)
+                self.turn_degrees_condition_analog(direction[1], instances[4], '<', instances[4].get_value_black_bias(), speed=speed, millis=int(self.ONEEIGHTY_DEGREES_SECS*1000*2)+maxDuration)  # Since you are somewhere more on one side, but you did not find any line in (maxDuration) time, you need to make a full circle to look for any line. If there is no line at all (after 360 degrees) you need to turn for (maxDuration) time again, to face the direction in which you looked beforehand
+                if line_turner_timer.stop_timer() >= int(self.ONEEIGHTY_DEGREES_SECS*1000*2)+maxDuration:
+                    log('Nothing found', important=True)
+                    found = False
                 break
             if instances[2].is_pressed() or instances[3].is_pressed():
                 break
@@ -1967,8 +1965,8 @@ class Solarbotic_Wheels_two(base_driver):
         #if counter_drive and adjust_wanted:  #@TODO some kind of drift function here so the rear moves but the front stays still -> drift
          #   self.turn_degrees(direction[1], 2)
             #self.turn_to_black_line(direction[1], speed=-speed)
-
         self.break_all_motors()
+        return found
 
     @DriveableFunction
     def black_line(self, millis: int, distance_over_time: bool, speed: int = None, pre_aligned: bool = False) -> None:
@@ -2000,24 +1998,29 @@ class Solarbotic_Wheels_two(base_driver):
         black_line_timer.start_timer_sec()
 
         while black_line_timer.stop_timer(False)*1000 < millis and (not ports[0].is_pressed() and not ports[1].is_pressed()):  # checking if the buttons are not pressed, since otherwise you drive into a wall - at this point you just should stop driving. If only one is pressed, then it most likely is an obstacle.
-            self.drive_straight_condition_analog(ports[2], '>=', ports[2].get_value_white_bias(), speed=speed, millis=200)
+            self.drive_straight_condition_analog(ports[2], '>=', ports[2].get_value_black_bias(), speed=speed, millis=200)
 
             if not ports[2].sees_black():
                 if distance_over_time:
                     time_end = black_line_timer.stop_timer()
                 else:
                     time_end = black_line_timer.stop_timer(False)
+                test_timer = TimeR()
+                test_timer.start_timer_sec()
 
                 if first_run:
                     slowness = 2
                     if time_end < self.get_light_sensor_distance_sec()/2 and not pre_aligned:
                         self.line_time_turner(speed=speed)
+                        self.break_all_motors()
+                        print('===> ', test_timer.stop_timer()-time_end, self.NINETY_DEGREES_SECS, flush=True)
                     else:
-                        self.line_time_turner(millis=(self.NINETY_DEGREES_SECS * 1000) // 2, speed=speed // slowness)  # (self.NINETY_DEGREES_SECS*1000)//4 to get the time for XX degrees in milliseconds
+                        self.line_time_turner(millis=(self.NINETY_DEGREES_SECS * 1000)//2, speed=speed)  # (self.NINETY_DEGREES_SECS*1000)//4 to get the time for XX degrees in milliseconds
+                        self.break_all_motors()
                     first_run = False
                 else:
-                    self.line_time_turner(millis=(self.NINETY_DEGREES_SECS*1000) // 2, speed=speed//slowness) # (self.NINETY_DEGREES_SECS*1000)//4 to get the time for XX degrees in milliseconds
-                self.break_all_motors()
+                    self.line_time_turner(millis=(self.NINETY_DEGREES_SECS*1000)//2, speed=speed) # (self.NINETY_DEGREES_SECS*1000)//4 to get the time for XX degrees in milliseconds
+                    self.break_all_motors()
 
                 if distance_over_time:
                     black_line_timer.start_timer_sec(time_end)

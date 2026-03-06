@@ -10,6 +10,8 @@ from logger import *  # selfmade
 # Date of creation: 2025-09-17
 
 try:
+    from timer import TimeR  # selfmade
+    from threadR import KillableThread  # selfmade
     from camera_manager import CameraManager  # selfmade
     from brightness_detector import CameraBrightnessDetector  # selfmade
     from object_detector import CameraObjectDetector  # selfmade

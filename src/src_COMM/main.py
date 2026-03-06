@@ -8,6 +8,8 @@ try:
 	import threading
 	from fake import FakeR  # selfmade
 	from RoboComm import RobotCommunicator  # selfmade
+	from timer import TimeR  # selfmade
+	from threadR import KillableThread  # selfmade
 	import time
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)

@@ -14,6 +14,8 @@ try:
     import time
     import threading
     import subprocess
+    from timer import TimeR  # selfmade
+    from threadR import KillableThread  # selfmade
     from wheelR import WheelR  # selfmade
     from wifi import WifiConnector  # selfmade
     from RoboComm import RobotCommunicator  # selfmade

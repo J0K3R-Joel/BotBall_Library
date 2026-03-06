@@ -11,6 +11,8 @@ from logger import *  # selfmade
 
 try:
     from wifi import WifiConnector  # selfmade
+    from timer import TimeR  # selfmade
+    from threadR import KillableThread  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 

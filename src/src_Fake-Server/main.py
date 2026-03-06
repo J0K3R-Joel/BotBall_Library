@@ -18,6 +18,8 @@ try:
     from RoboComm import RobotCommunicator  # selfmade
     from digital import Digital  # selfmade
     from fake import FakeR  # selfmade
+    from timer import TimeR  # selfmade
+    from threadR import KillableThread  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 

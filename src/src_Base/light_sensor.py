@@ -93,11 +93,12 @@ class LightSensor(Analog):
             return None  # You can not raise an Exception here, since if you did not calibrate in the beginning, then you will always receive an exception
 
         diff = self.get_value_black() - self.get_value_white()
+        lowest_diff = 400
         if diff < 0:
-            log('Black value needs to be higher than the white value. Since this is not the case, this means that you did something wrong in setting the light values!', important=True)
+            log(f'The {self.position.upper()} black value needs to be higher than the white value. Since this is not the case, this means that you did something wrong in setting the light values!', important=True)
             return None
-        elif diff < 400:
-            log('The difference between the value of the black- and white light sensor is too small. Please consider either dropping the sensors lower (more near to the floor) or replacing your sensors!', important=True)
+        elif diff < lowest_diff:
+            log(f'The difference between the value of the {self.position.upper()} black- and white ({diff}, needs to be at >={lowest_diff})light sensor is too small. Please consider either dropping the sensors lower (more near to the floor) or replacing your sensors!', important=True)
             return None
 
         return int(155.5 * math.log(diff) - 782)  # value between ~150 and ~500

@@ -12,6 +12,8 @@ from logger import *  # selfmade
 try:
     import time
     from driveR import *  # selfmade
+    from timer import TimeR  # selfmade
+    from threadR import KillableThread  # selfmade
     from wheelR import WheelR  # selfmade
     from light_sensor import LightSensor  # selfmade
     from digital import Digital  # selfmade

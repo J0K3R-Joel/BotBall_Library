@@ -2167,6 +2167,7 @@ class Solarbotic_Wheels_two(base_driver):
             else:
                 wheels = self.right_wheel, self.left_wheel
             align_line_timer = TimeR()
+            turn_after = False
             align_line_timer.start_timer_sec()
 
             while not self.light_sensor_back.sees_black() and not self.light_sensor_front.sees_black():
@@ -2178,10 +2179,34 @@ class Solarbotic_Wheels_two(base_driver):
                     log('align_on_black_line error: line not found -> there is no line to align yourself onto!', important=True)
                     return False
 
-            # einf mit black line machen -> wenn vorne, dann speed > 0, wenn hinten zuerst, dann speed < 0 (vorne/hinten = licht sensoren)
+            if self.light_sensor_front.sees_black() and self.light_sensor_back.sees_black():
+                return True
 
-            print(leaning_side)
+            if align_line_timer.stop_timer() > self.ONEEIGHTY_DEGREES_SECS * 0.75:  # longer than 135 degrees -> did not hit the line because one side was too far (location of the wheels determines how it turns)
+                leaning_side = 'right' if 'right' != leaning_side else 'left'
+                print('=== here ===', flush=True)
+
+            if self.light_sensor_back.sees_black():
+                leaning_side = 'right' if 'right' != leaning_side else 'left'
+                align_line_timer.start_timer_millis()
+                self.turn_degrees_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias(), millis=int(self.ONEEIGHTY_DEGREES_SECS*1000))
+                if align_line_timer.stop_timer() >= int(self.ONEEIGHTY_DEGREES_SECS*1000):  # check this, since this might cause the issue
+                    align_line_timer.start_timer_millis()
+                    self.drive_straight_condition_analog(self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias(), millis=int(self.get_light_sensor_distance_sec()*1000))
+                    print(leaning_side, flush=True)
+                    turn_after = align_line_timer.stop_timer()
+
+            self.black_line(1000, True, pre_aligned=False)
+            self.black_line(1000, False, speed=-self.ds_speed, pre_aligned=True)
+            if turn_after:
+                print('turning...', flush=True)
+                leaning_side = 'right' if 'right' != leaning_side else 'left'
+                self.turn_degrees(leaning_side, 90)
+                self.turn_degrees_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
+                self.black_line(500, True, pre_aligned=False)
+                self.black_line(500+turn_after, True, speed=self.ds_speed, pre_aligned=True)
             self.break_all_motors()
+            
 
 
         except Exception as e:

@@ -6,6 +6,8 @@ This file will tell you things to consider and important stuff. This is very imp
 
 #### Overall
 
+- You can connect to the controller via SSH. The username for the connection is "kipr" with password "botball"
+
 - You can call `help({function_name})` or `help({class_name.function_name})` on any function I made to view its signature and doc-string
 
 - You will find the `ideas.py` file inside the [../src/src_Base/](../src/src_Base/ideas.py) folder. This file is meant to collect ideas on how to handle certain tasks or provide potentially useful snippets. It is not intended for direct execution, but rather as a reference to help with situational problems or concepts that didn’t fit neatly into any class

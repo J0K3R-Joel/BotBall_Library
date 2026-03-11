@@ -2107,7 +2107,7 @@ class Solarbotic_Wheels_two(base_driver):
             self.drive_straight_condition_analog(self.light_sensor_back, '>', self.light_sensor_back.get_value_black_bias(), speed=-self.ds_speed)
             leaning_side = 'right' if 'right' != leaning_side else 'left'
             onto_line_timer.start_timer_sec()
-            self.turn_degrees_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias(), millis=int(self.ONEEIGHTY_DEGREES_SECS*1000))  # 1.25 to create a full 180 degree turn and a 45 degree turn (225 degrees in total)
+            self.turn_degrees_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias(), millis=int(self.ONEEIGHTY_DEGREES_SECS*1000))
             if onto_line_timer.stop_timer() >= self.ONEEIGHTY_DEGREES_SECS:
                 self.drive_straight_condition_analog(self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
             self.break_all_motors()
@@ -2168,9 +2168,10 @@ class Solarbotic_Wheels_two(base_driver):
                 wheels = self.right_wheel, self.left_wheel
             align_line_timer = TimeR()
             turn_after = False
+            direction = self.ds_speed
             align_line_timer.start_timer_sec()
 
-            while not self.light_sensor_back.sees_black() and not self.light_sensor_front.sees_black():
+            while not self.light_sensor_front.sees_black():
                 if align_line_timer.stop_timer(False) < self.ONEEIGHTY_DEGREES_SECS * 2:  # 360 degree turn so that you at least look at the same direction
                     wheels[0].drive_dfw()
                     wheels[1].drive_dbw()
@@ -2178,36 +2179,24 @@ class Solarbotic_Wheels_two(base_driver):
                     self.break_all_motors()
                     log('align_on_black_line error: line not found -> there is no line to align yourself onto!', important=True)
                     return False
+            self.break_all_motors()
 
-            if self.light_sensor_front.sees_black() and self.light_sensor_back.sees_black():
-                return True
-
-            if align_line_timer.stop_timer() > self.ONEEIGHTY_DEGREES_SECS * 0.75:  # longer than 135 degrees -> did not hit the line because one side was too far (location of the wheels determines how it turns)
+            if align_line_timer.stop_timer() > self.NINETY_DEGREES_SECS + self.get_light_sensor_distance_sec()/8:  # longer than 90 degrees + approximetly the bias it can be misaligned -> tenth of the length between the distance sensors
                 leaning_side = 'right' if 'right' != leaning_side else 'left'
-                print('=== here ===', flush=True)
+                turn_after = True
+                direction = -self.ds_speed
 
-            if self.light_sensor_back.sees_black():
-                leaning_side = 'right' if 'right' != leaning_side else 'left'
-                align_line_timer.start_timer_millis()
-                self.turn_degrees_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias(), millis=int(self.ONEEIGHTY_DEGREES_SECS*1000))
-                if align_line_timer.stop_timer() >= int(self.ONEEIGHTY_DEGREES_SECS*1000):  # check this, since this might cause the issue
-                    align_line_timer.start_timer_millis()
-                    self.drive_straight_condition_analog(self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias(), millis=int(self.get_light_sensor_distance_sec()*1000))
-                    print(leaning_side, flush=True)
-                    turn_after = align_line_timer.stop_timer()
-
-            self.black_line(1000, True, pre_aligned=False)
-            self.black_line(1000, False, speed=-self.ds_speed, pre_aligned=True)
+            self.black_line(500, True, pre_aligned=False)
+            self.black_line(500, False, speed=-self.ds_speed, pre_aligned=True)
             if turn_after:
-                print('turning...', flush=True)
                 leaning_side = 'right' if 'right' != leaning_side else 'left'
                 self.turn_degrees(leaning_side, 90)
                 self.turn_degrees_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
-                self.black_line(500, True, pre_aligned=False)
-                self.black_line(500+turn_after, True, speed=self.ds_speed, pre_aligned=True)
+                self.black_line(100, True, pre_aligned=False)
+                self.turn_degrees_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
+                self.black_line(100, True, speed=direction, pre_aligned=False)
+                self.black_line(100, True, pre_aligned=True)
             self.break_all_motors()
-            
-
 
         except Exception as e:
             log(str(e), important=True, in_exception=True)
@@ -2781,7 +2770,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             Instance_distance_sensor (DistanceSensor): the instance of the distance sensor
 
-       Returns:
+        Returns:
             None
         '''
         self.distance_sensor = Instance_distance_sensor
@@ -2797,7 +2786,7 @@ class Mecanum_Wheels_four(base_driver):
             Instance_light_sensor_back (LightSensor): the instance of the back light sensor
             Instance_light_sensor_side (LightSensor):  the instance of the side light sensor
 
-       Returns:
+        Returns:
             None
         '''
         self.light_sensor_front = Instance_light_sensor_front
@@ -2811,7 +2800,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             Instance_light_sensor_front (LightSensor): the instance of the front light sensor
 
-       Returns:
+        Returns:
             None
         '''
         self.light_sensor_front = Instance_light_sensor_front
@@ -2823,7 +2812,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             Instance_light_sensor_back (LightSensor): the instance of the back light sensor
 
-       Returns:
+        Returns:
             None
         '''
         self.light_sensor_back = Instance_light_sensor_back
@@ -2835,7 +2824,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             Instance_light_sensor_side (LightSensor):  the instance of the side light sensor
 
-       Returns:
+        Returns:
             None
         '''
         self.light_sensor_side = Instance_light_sensor_side
@@ -2851,7 +2840,7 @@ class Mecanum_Wheels_four(base_driver):
             Instance_button_back_left (Digital):  the instance of the back left button
             Instance_button_back_right (Digital):  the instance of the back right button
 
-       Returns:
+        Returns:
             None
         '''
         self.button_fl = Instance_button_front_left
@@ -2866,7 +2855,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             Instance_button_front_left (Digital): the instance of the front left button
 
-       Returns:
+        Returns:
             None
         '''
         self.button_fl = Instance_button_front_left
@@ -2878,7 +2867,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             Instance_button_front_right (Digital): the instance of the front right button
 
-       Returns:
+        Returns:
             None
         '''
         self.button_fr = Instance_button_front_right
@@ -2890,7 +2879,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             Instance_button_back_left (Digital):  the instance of the back left button
 
-       Returns:
+        Returns:
             None
         '''
         self.button_bl = Instance_button_back_left
@@ -2902,7 +2891,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             Instance_button_back_right (Digital):  the instance of the back right button
 
-       Returns:
+        Returns:
             None
         '''
         self.button_br = Instance_button_back_right
@@ -2916,7 +2905,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             None
 
-       Returns:
+        Returns:
             if there is an instance of all light sensor in existence
         '''
         if not isinstance(self.light_sensor_front, LightSensor):
@@ -2939,7 +2928,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             None
 
-       Returns:
+        Returns:
             if there is an instance of the middle light sensors in existence
         '''
         if not isinstance(self.light_sensor_front, LightSensor):
@@ -2958,7 +2947,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             None
 
-       Returns:
+        Returns:
             if there is an instance of the front light sensor in existence
         '''
         if not isinstance(self.light_sensor_front, LightSensor):
@@ -2973,7 +2962,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             None
 
-       Returns:
+        Returns:
             if there is an instance of the back light sensor in existence
         '''
         if not isinstance(self.light_sensor_back, LightSensor):
@@ -2988,7 +2977,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             None
 
-       Returns:
+        Returns:
             if there is an instance of the side light sensor in existence
         '''
         if not isinstance(self.light_sensor_side, LightSensor):
@@ -3003,7 +2992,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             None
 
-       Returns:
+        Returns:
             if there is an instance of the distance sensor in existence
         '''
         if not isinstance(self.distance_sensor, DistanceSensor):
@@ -3018,7 +3007,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             None
 
-       Returns:
+        Returns:
             if there is an instance of the front left button in existence
         '''
         if not isinstance(self.button_fl, Digital):
@@ -3033,7 +3022,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             None
 
-       Returns:
+        Returns:
             if there is an instance of the front right button in existence
         '''
         if not isinstance(self.button_fr, Digital):
@@ -3048,7 +3037,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             None
 
-       Returns:
+        Returns:
             if there is an instance of the back left button in existence
         '''
         if not isinstance(self.button_bl, Digital):
@@ -3063,7 +3052,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             None
 
-       Returns:
+        Returns:
             if there is an instance of the back right button in existence
         '''
         if not isinstance(self.button_br, Digital):
@@ -3078,7 +3067,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             None
 
-       Returns:
+        Returns:
             if there is an instance of the front buttons in existence
         '''
         if not isinstance(self.button_fl, Digital):
@@ -3098,7 +3087,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             None
 
-       Returns:
+        Returns:
             if there is an instance of the back buttons in existence
         '''
         if not isinstance(self.button_bl, Digital):
@@ -3118,7 +3107,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             None
 
-       Returns:
+        Returns:
             if there is an instance of all buttons in existence
         '''
         if not isinstance(self.button_fl, Digital):

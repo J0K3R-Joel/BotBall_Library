@@ -1239,15 +1239,11 @@ class Solarbotic_Wheels_two(base_driver):
             t_back.start()
 
             while not front_found and not back_found:
-                #self.left_wheel.drive_dfw(-self.left_wheel.get_default_speed())
-                #self.right_wheel.drive_dbw(+self.right_wheel.get_default_speed())
                 self.left_wheel.drive_dfw()
                 self.right_wheel.drive_dbw()
 
 
         while k.seconds() - startTime < turning_time:
-            #self.left_wheel.drive_dfw(-self.left_wheel.get_default_speed())
-            #self.right_wheel.drive_dbw(+self.right_wheel.get_default_speed())
             self.left_wheel.drive_dfw()
             self.right_wheel.drive_dbw()
 
@@ -3157,41 +3153,49 @@ class Mecanum_Wheels_four(base_driver):
             None (but sets a class variable)
         '''
         self.check_instance_light_sensors_middle()
+        startTime = time.time()
+        turning_time = self.ONEEIGHTY_DEGREES_SECS / 2 if self.ONEEIGHTY_DEGREES_SECS else 1
 
         def sensor_checker():
+            global front_found, back_found
+            front_found = False
+            back_found = False
+
             def white_front_valid():
-                while self.light_sensor_front.sees_white():
-                    continue
+                global front_found
+                while not front_found:
+                    if self.light_sensor_front.sees_black():
+                        front_found = True
 
             def white_back_valid():
-                while self.light_sensor_back.sees_white():
-                    continue
+                global back_found
+                while not back_found:
+                    if self.light_sensor_back.sees_black():
+                        back_found = True
 
-
-            t_front = threading.Thread(target=white_front_valid, daemon=True)
-            t_rear = threading.Thread(target=white_back_valid, daemon=True)
+            t_front = KillableThread(target=white_front_valid)
+            t_back = KillableThread(target=white_back_valid)
             t_front.start()
-            t_rear.start()
+            t_back.start()
 
-            while t_front.is_alive() or t_rear.is_alive():
+            while not front_found and not back_found:
                 self.fl_wheel.drive_dfw()
                 self.fr_wheel.drive_dbw()
                 self.bl_wheel.drive_dfw()
                 self.br_wheel.drive_dbw()
 
-
-        startTime = time.time()
-        while k.seconds() - startTime < 1200 / 1000:
+        while k.seconds() - startTime < turning_time:
             self.fl_wheel.drive_dfw()
             self.fr_wheel.drive_dbw()
             self.bl_wheel.drive_dfw()
             self.br_wheel.drive_dbw()
-        sensor_checker()  # @TODO test this out
 
+        sensor_checker()
         endTime = time.time()
+        self.break_all_motors()
         self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime)
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
-        self.break_all_motors()
+
         if output:
             log('DEGREES CALIBRATED')
 

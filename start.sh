@@ -5,7 +5,7 @@ BASE_DIR="/bin/BotBall_Library"
 mkdir $BASE_DIR
 
 # Clone everything from the Library to the base directory
-echo "Copying files into new directory"
+echo "Copying files into new directory..."
 cp -R ./ $BASE_DIR
 
 # Set permissions of the base directory and every file + folder in it

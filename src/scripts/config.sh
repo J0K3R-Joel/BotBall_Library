@@ -40,9 +40,8 @@ done
 # Step 2: Run other scripts (excluding priority + final)
 for script in "$SCRIPTS_DIR"/*.sh; do
     script_filename="$(basename "$script")"
-    echo "===> NAME: $script_file_name"
 
-    if [[ " ${PRIORITY_SCRIPTS[*]} " =~ " $script_filename " ]] || [[ "$script_filename" == "$FINAL_SCRIPT" ]] || [[ "$script_filename" == "config.sh" ]] || [["$script_filename" == "setup_harrogate.sh"]]; then  # for now setup_harrogate.sh -> maybe you do not need this shell script anymore
+    if [[ " ${PRIORITY_SCRIPTS[*]} " =~ " $script_filename " ]] || [[ "$script_filename" == "$FINAL_SCRIPT" ]] || [[ "$script_filename" == "config.sh" ]]; then
         continue
     fi
 

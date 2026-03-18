@@ -49,6 +49,8 @@ def DriveableFunction(func):
         if FILE_PATH != calling_file:
             breakable_function_name = func.__name__
 
+        wrapper.__name__ = f'{func.__name__}#' + wrapper.__name__
+
         result = func(*args, **kwargs)
         return result
 
@@ -58,6 +60,8 @@ def BreakableFunction(func):
     def wrapper(*args, **kwargs):
         calling_function = sys._getframe().f_back.f_code.co_name
         if calling_function == breakable_function_name:
+            wrapper.__name__ = f'{func.__name__}#' + wrapper.__name__
+
             result = func(*args, **kwargs)
             return result
         return
@@ -547,9 +551,8 @@ class base_driver:
         Returns:
             None, but writes the calibrated distance (in seconds) into the file
         '''
-        log(f'You need to create a "{self.calibrate_light_sensor_distance_sec.__name__}" method in your own class!', in_exception=True)
-        raise NotImplementedError(
-            f'You need to create a "{self.calibrate_light_sensor_distance_sec.__name__}" method in your own class!')
+        log(f'You need to create a "{self.calibrate_light_sensor_distance_sec.__name__.split("#")[0]}" method in your own class!', in_exception=True)
+        raise NotImplementedError(f'You need to create a "{self.calibrate_light_sensor_distance_sec.__name__.split("#")[0]}" method in your own class!')
 
 
 
@@ -564,9 +567,9 @@ class base_driver:
         Returns:
             None
         '''
-        log(f'You need to create a "{self.calibrate_degrees.__name__}" method in your own class!', in_exception=True)
+        log(f'You need to create a "{self.calibrate_degrees.__name__.split("#")[0]}" method in your own class!', in_exception=True)
         raise NotImplementedError(
-            f'You need to create a "{self.calibrate_degrees.__name__}" method in your own class!')
+            f'You need to create a "{self.calibrate_degrees.__name__.split("#")[0]}" method in your own class!')
 
     @DriveableFunction
     def auto_calibration(self, times: int, output: bool = False) -> None:
@@ -760,9 +763,9 @@ class base_driver:
         Returns:
             None
         '''
-        log(f'You need to create a "{self.break_all_motors.__name__}" method in your own class!', in_exception=True)
+        log(f'You need to create a "{self.break_all_motors.__name__.split("#")[0]}" method in your own class!', in_exception=True)
         raise NotImplementedError(
-            f'You need to create a "{self.break_all_motors.__name__}" method in your own class!')
+            f'You need to create a "{self.break_all_motors.__name__.split("#")[0]}" method in your own class!')
 
 
 
@@ -2281,7 +2284,6 @@ class Solarbotic_Wheels_two(base_driver):
 
         if speed > 0:
             self.drive_straight(500, speed)
-            print(self.distance_sensor.current_value(), next_value, flush=True)
             if self.distance_sensor.current_value() < next_value:
                 threading.Thread(target=distance_stopper, args=(True,), daemon=True).start()
                 while not self.isClose:
@@ -3129,56 +3131,98 @@ class Mecanum_Wheels_four(base_driver):
         return True
 
     # ===================== CALIBRATE BIAS =====================
-    @DriveableFunction
     def calibrate_degrees(self, output:bool = True) -> None:
         '''
         drive to the side until a black line was found and then slowly turn 180 degrees to know how long it takes to make one 180B0 turn
 
         Args:
+            on_line (bool): If it is already perfectly aligned in the middle of a black line (True) or if it still has to align itself (False, default)
             output (bool): If it should make an output, that it is done calibrating (True, default) or not (False)
 
         Returns:
             None (but sets a class variable)
         '''
         self.check_instance_light_sensors_middle()
+        startTime = time.time()
+        turning_time = self.ONEEIGHTY_DEGREES_SECS / 2 if self.ONEEIGHTY_DEGREES_SECS else 1
 
         def sensor_checker():
+            global front_found, back_found
+            front_found = False
+            back_found = False
+
             def white_front_valid():
-                while self.light_sensor_front.sees_white():
-                    continue
+                global front_found
+                while not front_found:
+                    if self.light_sensor_front.sees_black():
+                        front_found = True
 
             def white_back_valid():
-                while self.light_sensor_back.sees_white():
-                    continue
+                global back_found
+                while not back_found:
+                    if self.light_sensor_back.sees_black():
+                        back_found = True
 
-
-            t_front = threading.Thread(target=white_front_valid, daemon=True)
-            t_rear = threading.Thread(target=white_back_valid, daemon=True)
+            t_front = KillableThread(target=white_front_valid)
+            t_back = KillableThread(target=white_back_valid)
             t_front.start()
-            t_rear.start()
+            t_back.start()
 
-            while t_front.is_alive() or t_rear.is_alive():
+            while not front_found and not back_found:
                 self.fl_wheel.drive_dfw()
                 self.fr_wheel.drive_dbw()
                 self.bl_wheel.drive_dfw()
                 self.br_wheel.drive_dbw()
 
-
-        degrees_timer = TimeR()
-        degrees_timer.start_timer_sec()
-        while degrees_timer.stop_timer(False) < 1.2:
+        while k.seconds() - startTime < turning_time:
             self.fl_wheel.drive_dfw()
             self.fr_wheel.drive_dbw()
             self.bl_wheel.drive_dfw()
             self.br_wheel.drive_dbw()
-        sensor_checker()  # @TODO test this out
 
-
-        self.ONEEIGHTY_DEGREES_SECS = degrees_timer.stop_timer()
-        self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
+        sensor_checker()
+        endTime = time.time()
         self.break_all_motors()
+        self.ONEEIGHTY_DEGREES_SECS = (endTime - startTime)
+        self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
+
         if output:
             log('DEGREES CALIBRATED')
+
+    @DriveableFunction
+    def calibrate_light_sensor_distance_sec(self):
+        '''
+        Calibrates the distance between the very front and rear light / brightness sensor in seconds
+
+        Args:
+            None
+
+        Returns:
+            None, but writes into a bias file
+        '''
+        self.check_instance_light_sensors_middle()
+        self.drive_straight_condition_analog(self.light_sensor_front, '<',
+                                             self.light_sensor_front.get_value_black_bias())
+        light_sensor_distance_timer = TimeR()
+        light_sensor_distance_timer.start_timer_sec()
+        self.drive_straight_condition_analog(self.light_sensor_back, '<', self.light_sensor_back.get_value_black_bias())
+        self.light_sensor_distance_sec = light_sensor_distance_timer.stop_timer()
+        self.break_all_motors()
+
+        file_name = os.path.join(BIAS_FOLDER, 'light_sensor_distance_sec.txt')
+        try:
+            distance_sec = file_Manager.reader(file_name)
+            if distance_sec != '0':
+                distance_sec = self.get_light_sensor_distance_sec()
+                avg = (distance_sec + self.light_sensor_distance_sec) / 2
+                msg = str(self.ds_speed) + ' ' + str(avg)
+            else:
+                msg = str(self.ds_speed) + ' ' + str(self.light_sensor_distance_sec)
+            file_Manager.writer(file_name, 'w', msg)
+
+
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
 
     @DriveableFunction
     def calibrate_mm_per_sec(self, millis: int = 5000, speed: int = None) -> None:
@@ -3204,7 +3248,7 @@ class Mecanum_Wheels_four(base_driver):
         self.set_TOTAL_mm_per_sec(mm=mm, sec=sec)
 
     @DriveableFunction
-    def calibrate_distance(self, start_mm: int, speed: int = None, step: float = 0.15) -> None:
+    def calibrate_distance(self, start_mm: int, step: float = 0.15) -> None:
         '''
         calibrates the values for the distance sensor. HINT: calibrate the gyro first (if you did not already do that), so it drives straight. Also it calibrates one time, make sure it is as accurate as possible.
         Both object have to be as parallel to each other as possible.
@@ -3218,11 +3262,6 @@ class Mecanum_Wheels_four(base_driver):
         Returns:
             None
         '''
-        if speed is None:
-            speed = -self.ds_speed
-        else:
-            speed = -abs(speed)
-
         self.check_instance_distance_sensor()
 
         if self.mm_per_sec == 0:
@@ -3235,44 +3274,52 @@ class Mecanum_Wheels_four(base_driver):
         self.distance_far_mm = []
 
         prev_value = None
+        speed = -self.ds_speed
+        counter = 0
+        MAX_COUNTS = 20
 
         def check_still_valid(sensor_val: int, prev_value: int):
             if prev_value is None:
                 prev_value = sensor_val  # this value will always be 1 value behind the actual (sensor_val) value
-                return (True, prev_value)
+                return (0, prev_value)
 
-            if sensor_val - prev_value >= 0:
-                return (False, prev_value)
+            if sensor_val - prev_value > 0:
+                return (1, prev_value)
             else:
                 prev_value = sensor_val
-            return (True, prev_value)
 
-        threading.Thread(target=self.drive_straight, args=(9999999, speed,)).start()  # will drive backwards!
+            return (0, prev_value)
+
+        tkill = KillableThread(target=self.drive_straight, args=(9999999, speed,), daemon=True)  # will drive backwards!
+        tkill.start()
 
         distance_timer = TimeR()
         distance_timer.start_timer_sec()
-
         while True:
             elapsed = distance_timer.stop_timer(False)
             traveled = self.mm_per_sec * elapsed
-            current_mm = max(start_mm + traveled, 0)
+            current_mm = start_mm + traveled
 
             sensor_value = self.distance_sensor.current_value()
 
             checker, prev_value = check_still_valid(sensor_value, prev_value)
+            counter += checker
 
-            if not checker:
+            if counter == MAX_COUNTS:
                 break
 
-            self.distance_far_values.append(sensor_value)
-            self.distance_far_mm.append(int(current_mm))
+            if not checker:
+                self.distance_far_values.append(sensor_value)
+                self.distance_far_mm.append(int(current_mm))
+                time.sleep(step)
+            else:
+                prev_value = self.distance_far_values[-1] if self.distance_far_values[-1] else sensor_value
 
-            time.sleep(step)
-
+        tkill.kill()
         self.break_all_motors()
         self.set_distances(values=self.distance_far_values, mm=self.distance_far_mm)
 
-        log(f"Calibration finished. The distance sensor should be like {self.distance_far_mm[-1]}mm away of the object.\n================= You can now STOP the program, if nothing else should happen than calibrate_distance() =================")
+        log(f"Calibration finished. The distance sensor should be like {self.distance_far_mm[-1]}mm away of the object.")
 
     # ======================== PUBLIC METHODS =======================
     @BreakableFunction
@@ -3396,27 +3443,37 @@ class Mecanum_Wheels_four(base_driver):
         if speed is None:
             speed = self.ds_speed
 
+        if millis < 0:
+            log('millis parameter can not be negative!', important=True)
+            raise ValueError('millis parameter can not be negative!')
+
         straight_timer = TimeR()
         straight_timer.start_timer_millis()
         theta = 0
         adjuster = int(speed/15)  # 15 is just a value that worked the best
+        instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
+
+        if speed < 0:
+            instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
+
+
         while straight_timer.stop_timer(False) < millis:
-            if 1000 > theta > -1000:
-                self.fl_wheel.drive(speed)
-                self.fr_wheel.drive(speed)
-                self.bl_wheel.drive(speed)
-                self.br_wheel.drive(speed)
-            elif theta > 1000:
-                self.fl_wheel.drive(speed - adjuster)
-                self.fr_wheel.drive(speed + adjuster)
-                self.bl_wheel.drive(speed - adjuster)
-                self.br_wheel.drive(speed + adjuster)
+            if 10 > theta > -10:
+                instances[0].drive(speed)
+                instances[1].drive(speed)
+                instances[2].drive(speed)
+                instances[3].drive(speed)
+            elif theta > 10:
+                instances[0].drive(speed - adjuster)
+                instances[1].drive(speed + adjuster)
+                instances[2].drive(speed - adjuster)
+                instances[3].drive(speed + adjuster)
             else:
-                self.fl_wheel.drive(speed + adjuster)
-                self.fr_wheel.drive(speed - adjuster)
-                self.bl_wheel.drive(speed + adjuster)
-                self.br_wheel.drive(speed - adjuster)
-            theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
+                instances[0].drive(speed + adjuster)
+                instances[1].drive(speed - adjuster)
+                instances[2].drive(speed + adjuster)
+                instances[3].drive(speed - adjuster)
+            theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
         self.break_all_motors()
 
     @DriveableFunction
@@ -4028,50 +4085,60 @@ class Mecanum_Wheels_four(base_driver):
         if speed is None:
             speed = self.ds_speed
         if mm_to_object > self.distance_sensor.get_mm()[-1] or mm_to_object < 10:
-            log(f'You can only put a value in range of 10 - {self.distance_sensor.get_mm()[-1]} for the distance parameter!', in_exception=True)
+            log(f'You can only put a value in range of 10 - {self.distance_sensor.get_mm()[-1]} for the distance parameter!',
+                in_exception=True)
             raise ValueError(
-                f'You can only put a value in range of 10 - {self.distance_sensor.get_mm()[-1]} for the distance parameter!')
+                f'Exception: You can only put a value in range of 10 - {self.distance_sensor.get_mm()[-1]} for the distance parameter!')
+
+        self.check_instances_buttons_back()
+        self.check_instance_distance_sensor()
+
         if self.distance_sensor.get_values() == 0 and self.distance_sensor.get_mm() == 0:
             log('You need to calibrate the distance using the calibrate_distance function first!', in_exception=True)
             raise ValueError('You need to calibrate the distance using the calibrate_distance function first!')
 
-        self.check_instances_buttons_back()
-        self.check_instance_distance_sensor()
         self.isClose = False
         theta = 0.0
-        adjuster = int(speed/15)  # 15 is just a value that worked the best
+        adjuster = int(speed / 15)  # 15 is just a value that worked the best
+        instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
+
+        if speed < 0:
+            instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
+
+
         if self.distance_sensor.current_value() > 1800:
             while self.distance_sensor.current_value() > 1800 and (
                     not self.button_bl.is_pressed() and not self.button_br.is_pressed()):  # this is because if it is already too close, it will back out a little bit to get the best result
-                if 1000 > theta > -1000:  # left
-                    self.fl_wheel.drive(-speed)
-                    self.fr_wheel.drive(-speed)
-                    self.bl_wheel.drive(-speed)
-                    self.br_wheel.drive(-speed)
-                elif theta > 1000:  # right
-                    self.fl_wheel.drive(-speed - adjuster)
-                    self.fr_wheel.drive(-speed + adjuster)
-                    self.bl_wheel.drive(-speed - adjuster)
-                    self.br_wheel.drive(-speed + adjuster)
+                if 10 > theta > -10:
+                    instances[0].drive(-speed)
+                    instances[1].drive(-speed)
+                    instances[2].drive(-speed)
+                    instances[3].drive(-speed)
+                elif theta > 10:
+                    instances[0].drive(-speed - adjuster)
+                    instances[1].drive(-speed + adjuster)
+                    instances[2].drive(-speed - adjuster)
+                    instances[3].drive(-speed + adjuster)
                 else:
-                    self.fl_wheel.drive(-speed + adjuster)
-                    self.fr_wheel.drive(-speed - adjuster)
-                    self.bl_wheel.drive(-speed + adjuster)
-                    self.br_wheel.drive(-speed - adjuster)
-                k.msleep(10)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
+                    instances[0].drive(-speed + adjuster)
+                    instances[1].drive(-speed - adjuster)
+                    instances[2].drive(-speed + adjuster)
+                    instances[3].drive(-speed - adjuster)
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
             if theta != 0.0:
-                self.fl_wheel.drive(speed)
-                self.fr_wheel.drive(speed)
-                self.bl_wheel.drive(speed)
-                self.br_wheel.drive(speed)
+                instances[0].drive(speed)
+                instances[1].drive(speed)
+                instances[2].drive(speed)
+                instances[3].drive(speed)
                 k.msleep(20)
             self.break_all_motors()
 
         next_value = self.distance_sensor.get_estimated_mm_value(mm_to_object)
 
         def distance_stopper(positive):
-            tolerance = 0.9
+            tolerance = 0.90
+            points = 0
+            MAX_POINTS = 5
 
             def is_target_distance_reached():
                 dist = self.distance_sensor.get_estimated_mm()
@@ -4085,55 +4152,81 @@ class Mecanum_Wheels_four(base_driver):
 
             while True:
                 if is_target_distance_reached():
+                    points += 1
+
+                if points == MAX_POINTS:
                     self.isClose = True
-                    sys.exit()
                     break
+                k.msleep(10)
 
-        if self.distance_sensor.current_value() < next_value:
-            threading.Thread(target=distance_stopper).start()
+        if speed > 0:
+            self.drive_straight(500, speed)
+            if self.distance_sensor.current_value() < next_value:
+                threading.Thread(target=distance_stopper, args=(True,), daemon=True).start()
+                while not self.isClose:
+                    if 10 > theta > -10:
+                        instances[0].drive(-speed)
+                        instances[1].drive(-speed)
+                        instances[2].drive(-speed)
+                        instances[3].drive(-speed)
+                    elif theta > 10:
+                        instances[0].drive(-speed - adjuster)
+                        instances[1].drive(-speed + adjuster)
+                        instances[2].drive(-speed - adjuster)
+                        instances[3].drive(-speed + adjuster)
+                    else:
+                        instances[0].drive(-speed + adjuster)
+                        instances[1].drive(-speed - adjuster)
+                        instances[2].drive(-speed + adjuster)
+                        instances[3].drive(-speed - adjuster)
+                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                self.break_all_motors()
+            else:
+                self.drive_straight(500, -speed)
 
-            while not self.isClose:
-                if 1000 > theta > -1000:  # left
-                    self.fl_wheel.drive(speed)
-                    self.fr_wheel.drive(speed)
-                    self.bl_wheel.drive(speed)
-                    self.br_wheel.drive(speed)
-                elif theta > 1000:  # right
-                    self.fl_wheel.drive(speed - adjuster)
-                    self.fr_wheel.drive(speed + adjuster)
-                    self.bl_wheel.drive(speed - adjuster)
-                    self.br_wheel.drive(speed + adjuster)
-                else:
-                    self.fl_wheel.drive(speed + adjuster)
-                    self.fr_wheel.drive(speed - adjuster)
-                    self.bl_wheel.drive(speed + adjuster)
-                    self.br_wheel.drive(speed - adjuster)
+            if mm_to_object < self.distance_sensor.get_mm()[0]:
+                counter = self.distance_sensor.get_mm()[0]
+                mult = speed / self.ds_speed
+                while counter > mm_to_object:
+                    counter -= (2 * mult)
+                    if 10 > theta > -10:
+                        instances[0].drive(-speed)
+                        instances[1].drive(-speed)
+                        instances[2].drive(-speed)
+                        instances[3].drive(-speed)
+                    elif theta > 10:
+                        instances[0].drive(-speed - adjuster)
+                        instances[1].drive(-speed + adjuster)
+                        instances[2].drive(-speed - adjuster)
+                        instances[3].drive(-speed + adjuster)
+                    else:
+                        instances[0].drive(-speed + adjuster)
+                        instances[1].drive(-speed - adjuster)
+                        instances[2].drive(-speed + adjuster)
+                        instances[3].drive(-speed - adjuster)
+                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+        else:
+            if self.distance_sensor.current_value() > next_value:
+                threading.Thread(target=distance_stopper, args=(False,), daemon=True).start()
 
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
-            self.break_all_motors()
-
-        if mm_to_object < self.distance_sensor.get_mm()[0]:
-            counter = self.distance_sensor.get_mm()[0]
-            mult = speed / self.ds_speed
-            while counter > mm_to_object:
-                counter -= (2 * mult)
-                if 1000 > theta > -1000:  # left
-                    self.fl_wheel.drive(speed)
-                    self.fr_wheel.drive(speed)
-                    self.bl_wheel.drive(speed)
-                    self.br_wheel.drive(speed)
-                elif theta > 1000:  # right
-                    self.fl_wheel.drive(speed - adjuster)
-                    self.fr_wheel.drive(speed + adjuster)
-                    self.bl_wheel.drive(speed - adjuster)
-                    self.br_wheel.drive(speed + adjuster)
-                else:
-                    self.fl_wheel.drive(speed + adjuster)
-                    self.fr_wheel.drive(speed - adjuster)
-                    self.bl_wheel.drive(speed + adjuster)
-                    self.br_wheel.drive(speed - adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
-            self.break_all_motors()
+                while not self.isClose:
+                    if 10 > theta > -10:
+                        instances[0].drive(-speed)
+                        instances[1].drive(-speed)
+                        instances[2].drive(-speed)
+                        instances[3].drive(-speed)
+                    elif theta > 10:
+                        instances[0].drive(-speed - adjuster)
+                        instances[1].drive(-speed + adjuster)
+                        instances[2].drive(-speed - adjuster)
+                        instances[3].drive(-speed + adjuster)
+                    else:
+                        instances[0].drive(-speed + adjuster)
+                        instances[1].drive(-speed - adjuster)
+                        instances[2].drive(-speed + adjuster)
+                        instances[3].drive(-speed - adjuster)
+                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+        self.break_all_motors()
 
     @DriveableFunction
     def shake_side(self, times: int, millis: int = 90) -> None:
@@ -4261,12 +4354,12 @@ class Mecanum_Wheels_four(base_driver):
 
         if condition == "==":
             while (instance.current_value() == value) and (straight_timer.stop_timer(False) < millis):
-                if 1000 > theta > -1000:
+                if 10 > theta > -10:
                     self.fl_wheel.drive(speed)
                     self.fr_wheel.drive(speed)
                     self.bl_wheel.drive(speed)
                     self.br_wheel.drive(speed)
-                elif theta > 1000:
+                elif theta > 10:
                     self.fl_wheel.drive(speed - adjuster)
                     self.fr_wheel.drive(speed + adjuster)
                     self.bl_wheel.drive(speed - adjuster)
@@ -4276,15 +4369,15 @@ class Mecanum_Wheels_four(base_driver):
                     self.fr_wheel.drive(speed - adjuster)
                     self.bl_wheel.drive(speed + adjuster)
                     self.br_wheel.drive(speed - adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
         elif condition == "!=":
             while (instance.current_value() != value) and (straight_timer.stop_timer(False) < millis):
-                if 1000 > theta > -1000:
+                if 10 > theta > -10:
                     self.fl_wheel.drive(speed)
                     self.fr_wheel.drive(speed)
                     self.bl_wheel.drive(speed)
                     self.br_wheel.drive(speed)
-                elif theta > 1000:
+                elif theta > 10:
                     self.fl_wheel.drive(speed - adjuster)
                     self.fr_wheel.drive(speed + adjuster)
                     self.bl_wheel.drive(speed - adjuster)
@@ -4294,7 +4387,7 @@ class Mecanum_Wheels_four(base_driver):
                     self.fr_wheel.drive(speed - adjuster)
                     self.bl_wheel.drive(speed + adjuster)
                     self.br_wheel.drive(speed - adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
         else:
             log('Only "==" or "!=" is available for the condition!', important=True, in_exception=True)
             raise ValueError('Only "==" or "!=" is available for the condition!')
@@ -4351,12 +4444,10 @@ class Mecanum_Wheels_four(base_driver):
                         self.bl_wheel.drive(-speed + adjuster)
                         self.br_wheel.drive(speed + adjuster)
                     elif theta < -higher_theta:
-                        k.ao()
                         self.fr_wheel.drive_mfw()
                         self.br_wheel.drive_mbw()
                         theta = 0
                     elif theta > higher_theta:
-                        k.ao()
                         self.fl_wheel.drive_mbw()
                         self.bl_wheel.drive_mbw()
                         theta = 0
@@ -4379,12 +4470,10 @@ class Mecanum_Wheels_four(base_driver):
                         self.bl_wheel.drive(speed - adjuster)
                         self.br_wheel.drive(-speed - adjuster)
                     elif theta < -higher_theta:
-                        k.ao()
                         self.fr_wheel.drive_mbw()
                         self.br_wheel.drive_mfw()
                         theta = 0
                     elif theta > higher_theta:
-                        k.ao()
                         self.fl_wheel.drive_mfw()
                         self.bl_wheel.drive_mfw()
                         theta = 0
@@ -4410,12 +4499,10 @@ class Mecanum_Wheels_four(base_driver):
                         self.bl_wheel.drive(-speed + adjuster)
                         self.br_wheel.drive(speed + adjuster)
                     elif theta < -higher_theta:
-                        k.ao()
                         self.fr_wheel.drive_mfw()
                         self.br_wheel.drive_mbw()
                         theta = 0
                     elif theta > higher_theta:
-                        k.ao()
                         self.fl_wheel.drive_mbw()
                         self.bl_wheel.drive_mbw()
                         theta = 0
@@ -4439,12 +4526,10 @@ class Mecanum_Wheels_four(base_driver):
                         self.bl_wheel.drive(speed - adjuster)
                         self.br_wheel.drive(-speed - adjuster)
                     elif theta < -higher_theta:
-                        k.ao()
                         self.fr_wheel.drive_mbw()
                         self.br_wheel.drive_mfw()
                         theta = 0
                     elif theta > higher_theta:
-                        k.ao()
                         self.fl_wheel.drive_mfw()
                         self.bl_wheel.drive_mfw()
                         theta = 0
@@ -4469,12 +4554,10 @@ class Mecanum_Wheels_four(base_driver):
                         self.bl_wheel.drive(-speed + adjuster)
                         self.br_wheel.drive(speed + adjuster)
                     elif theta < -higher_theta:
-                        k.ao()
                         self.fr_wheel.drive_mfw()
                         self.br_wheel.drive_mbw()
                         theta = 0
                     elif theta > higher_theta:
-                        k.ao()
                         self.fl_wheel.drive_mbw()
                         self.bl_wheel.drive_mbw()
                         theta = 0
@@ -4498,12 +4581,10 @@ class Mecanum_Wheels_four(base_driver):
                         self.bl_wheel.drive(speed - adjuster)
                         self.br_wheel.drive(-speed - adjuster)
                     elif theta < -higher_theta:
-                        k.ao()
                         self.fr_wheel.drive_mbw()
                         self.br_wheel.drive_mfw()
                         theta = 0
                     elif theta > higher_theta:
-                        k.ao()
                         self.fl_wheel.drive_mfw()
                         self.bl_wheel.drive_mfw()
                         theta = 0
@@ -4527,15 +4608,11 @@ class Mecanum_Wheels_four(base_driver):
                     self.bl_wheel.drive(-speed + adjuster)
                     self.br_wheel.drive(speed + adjuster)
                 elif theta < -higher_theta:
-                    k.ao()
                     self.fr_wheel.drive_mfw()
                     self.br_wheel.drive_mbw()
-                    theta = 0
                 elif theta > higher_theta:
-                    k.ao()
                     self.fl_wheel.drive_mbw()
                     self.bl_wheel.drive_mbw()
-                    theta = 0
                     theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
 
 
@@ -4556,16 +4633,162 @@ class Mecanum_Wheels_four(base_driver):
                         self.bl_wheel.drive(speed - adjuster)
                         self.br_wheel.drive(-speed - adjuster)
                     elif theta < -higher_theta:
-                        k.ao()
                         self.fr_wheel.drive_mbw()
                         self.br_wheel.drive_mfw()
                         theta = 0
                     elif theta > higher_theta:
-                        k.ao()
                         self.fl_wheel.drive_mfw()
                         self.bl_wheel.drive_mfw()
                         theta = 0
                     theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
+        self.break_all_motors()
+
+    @DriveableFunction
+    def drive_side_condition_digital(self, direction: str, instance: Digital, condition: str, value: int,
+                                    millis: int = 9999999,
+                                    speed: int = None) -> None:
+        '''
+        drive sideways until an analog value gets reached for the desired instance
+
+        Args:
+            direction (str): "left" or "right" - depends on where you want to go
+            instance (Digital): just has to be from something digital such as a button
+            condition (str): ("let" / "<=") or ("get" / ">=") or ("ht" / ">") or ("lt" / "<") are valid. Notice: l -> less | h -> higher | e -> equal | t -> than. (The parentheses should be left out, as well as the slash, only choose one argument Example: ">=")
+            value (int): The value that the current value gets compared to and has to be reached
+            millis (int, optional): The maximum amount of time (in milliseconds) which can be taken (default: 9999999)
+            speed (int, optional): The speed it drives sideways (default: ds_speed)
+
+        Returns:
+            None
+        '''
+        if speed is None:
+            speed = self.ds_speed
+        if direction != 'right' and direction != 'left':
+            log('Only "right" or "left" are valid arguments for the direction parameter!', in_exception=True)
+            raise ValueError(
+                'drive_side_condition_analog() Exception: Only "right" or "left" are valid arguments for the direction parameter! ')
+
+        side_timer = TimeR()
+        side_timer.start_timer_millis()
+        theta = 0
+        adjuster = int(speed / 15)  # 15 is just a value that worked the best
+        lower_theta = 500
+        higher_theta = 3000
+        speed = abs(speed)
+
+        if condition == '==':
+            while (instance.current_value() == value) and (side_timer.stop_timer(False) < millis):
+                if direction == 'right':
+                    if lower_theta > theta > -lower_theta:
+                        self.fl_wheel.drive(speed)
+                        self.fr_wheel.drive(-speed)
+                        self.bl_wheel.drive(-speed)
+                        self.br_wheel.drive(speed)
+                    elif -lower_theta > theta > -higher_theta:
+                        self.fl_wheel.drive(speed - adjuster)
+                        self.fr_wheel.drive(-speed - adjuster)
+                        self.bl_wheel.drive(-speed + adjuster)
+                        self.br_wheel.drive(speed - adjuster)
+                    elif lower_theta < theta < higher_theta:
+                        self.fl_wheel.drive(speed + adjuster)
+                        self.fr_wheel.drive(-speed - adjuster)
+                        self.bl_wheel.drive(-speed + adjuster)
+                        self.br_wheel.drive(speed + adjuster)
+                    elif theta < -higher_theta:
+                        self.fr_wheel.drive_mfw()
+                        self.br_wheel.drive_mbw()
+                        theta = 0
+                    elif theta > higher_theta:
+                        self.fl_wheel.drive_mbw()
+                        self.bl_wheel.drive_mbw()
+                        theta = 0
+                    theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
+
+                elif direction == 'left':
+                    if lower_theta > theta > -lower_theta:
+                        self.fl_wheel.drive(-speed)
+                        self.fr_wheel.drive(speed)
+                        self.bl_wheel.drive(speed)
+                        self.br_wheel.drive(-speed)
+                    elif -lower_theta > theta > -higher_theta:
+                        self.fl_wheel.drive(-speed + adjuster)
+                        self.fr_wheel.drive(speed + adjuster)
+                        self.bl_wheel.drive(speed - adjuster)
+                        self.br_wheel.drive(-speed + adjuster)
+                    elif lower_theta < theta < higher_theta:
+                        self.fl_wheel.drive(-speed - adjuster)
+                        self.fr_wheel.drive(speed + adjuster)
+                        self.bl_wheel.drive(speed - adjuster)
+                        self.br_wheel.drive(-speed - adjuster)
+                    elif theta < -higher_theta:
+                        self.fr_wheel.drive_mbw()
+                        self.br_wheel.drive_mfw()
+                        theta = 0
+                    elif theta > higher_theta:
+                        self.fl_wheel.drive_mfw()
+                        self.bl_wheel.drive_mfw()
+                        theta = 0
+                    theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
+
+
+        elif condition == '!=':
+            while (instance.current_value() != value) and (side_timer.stop_timer(False) < millis):
+                if direction == 'right':
+                    if lower_theta > theta > -lower_theta:
+                        self.fl_wheel.drive(speed)
+                        self.fr_wheel.drive(-speed)
+                        self.bl_wheel.drive(-speed)
+                        self.br_wheel.drive(speed)
+                    elif -lower_theta > theta > -higher_theta:
+                        self.fl_wheel.drive(speed - adjuster)
+                        self.fr_wheel.drive(-speed - adjuster)
+                        self.bl_wheel.drive(-speed + adjuster)
+                        self.br_wheel.drive(speed - adjuster)
+                    elif lower_theta < theta < higher_theta:
+                        self.fl_wheel.drive(speed + adjuster)
+                        self.fr_wheel.drive(-speed - adjuster)
+                        self.bl_wheel.drive(-speed + adjuster)
+                        self.br_wheel.drive(speed + adjuster)
+                    elif theta < -higher_theta:
+                        self.fr_wheel.drive_mfw()
+                        self.br_wheel.drive_mbw()
+                        theta = 0
+                    elif theta > higher_theta:
+                        self.fl_wheel.drive_mbw()
+                        self.bl_wheel.drive_mbw()
+                        theta = 0
+                    theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
+
+
+                elif direction == 'left':
+                    if lower_theta > theta > -lower_theta:
+                        self.fl_wheel.drive(-speed)
+                        self.fr_wheel.drive(speed)
+                        self.bl_wheel.drive(speed)
+                        self.br_wheel.drive(-speed)
+                    elif -lower_theta > theta > -higher_theta:
+                        self.fl_wheel.drive(-speed + adjuster)
+                        self.fr_wheel.drive(speed + adjuster)
+                        self.bl_wheel.drive(speed - adjuster)
+                        self.br_wheel.drive(-speed + adjuster)
+                    elif lower_theta < theta < higher_theta:
+                        self.fl_wheel.drive(-speed - adjuster)
+                        self.fr_wheel.drive(speed + adjuster)
+                        self.bl_wheel.drive(speed - adjuster)
+                        self.br_wheel.drive(-speed - adjuster)
+                    elif theta < -higher_theta:
+                        self.fr_wheel.drive_mbw()
+                        self.br_wheel.drive_mfw()
+                        theta = 0
+                    elif theta > higher_theta:
+                        self.fl_wheel.drive_mfw()
+                        self.bl_wheel.drive_mfw()
+                        theta = 0
+                    theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
+        else:
+            log('Only "==" or "!=" is available for the condition!', important=True, in_exception=True)
+            raise ValueError('Only "==" or "!=" is available for the condition!')
+
         self.break_all_motors()
 
 
@@ -4599,12 +4822,12 @@ class Mecanum_Wheels_four(base_driver):
         if condition == 'let' or condition == '<=':  # let -> less or equal than
             while (instance.current_value() <= value) and (not ports[0].is_pressed() and not ports[
                 1].is_pressed()) and straight_timer.stop_timer(False) < millis:
-                if 1000 > theta > -1000:
+                if 10 > theta > -10:
                     self.fl_wheel.drive(speed)
                     self.fr_wheel.drive(speed)
                     self.bl_wheel.drive(speed)
                     self.br_wheel.drive(speed)
-                elif theta > 1000:
+                elif theta > 10:
                     self.fl_wheel.drive(speed - adjuster)
                     self.fr_wheel.drive(speed + adjuster)
                     self.bl_wheel.drive(speed - adjuster)
@@ -4614,17 +4837,17 @@ class Mecanum_Wheels_four(base_driver):
                     self.fr_wheel.drive(speed - adjuster)
                     self.bl_wheel.drive(speed + adjuster)
                     self.br_wheel.drive(speed - adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
 
         elif condition == 'het' or condition == '>=':  # het -> higher or equal than
             while (instance.current_value() >= value) and (not ports[0].is_pressed() and not ports[
                 1].is_pressed()) and straight_timer.stop_timer(False) < millis:
-                if 1000 > theta > -1000:
+                if 10 > theta > -10:
                     self.fl_wheel.drive(speed)
                     self.fr_wheel.drive(speed)
                     self.bl_wheel.drive(speed)
                     self.br_wheel.drive(speed)
-                elif theta > 1000:
+                elif theta > 10:
                     self.fl_wheel.drive(speed - adjuster)
                     self.fr_wheel.drive(speed + adjuster)
                     self.bl_wheel.drive(speed - adjuster)
@@ -4634,17 +4857,17 @@ class Mecanum_Wheels_four(base_driver):
                     self.fr_wheel.drive(speed - adjuster)
                     self.bl_wheel.drive(speed + adjuster)
                     self.br_wheel.drive(speed - adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
 
         elif condition == 'ht' or condition == '>':  # ht -> higher than
             while (instance.current_value() > value) and (not ports[0].is_pressed() and not ports[
                 1].is_pressed()) and straight_timer.stop_timer(False) < millis:
-                if 1000 > theta > -1000:
+                if 10 > theta > -10:
                     self.fl_wheel.drive(speed)
                     self.fr_wheel.drive(speed)
                     self.bl_wheel.drive(speed)
                     self.br_wheel.drive(speed)
-                elif theta > 1000:
+                elif theta > 10:
                     self.fl_wheel.drive(speed - adjuster)
                     self.fr_wheel.drive(speed + adjuster)
                     self.bl_wheel.drive(speed - adjuster)
@@ -4654,17 +4877,17 @@ class Mecanum_Wheels_four(base_driver):
                     self.fr_wheel.drive(speed - adjuster)
                     self.bl_wheel.drive(speed + adjuster)
                     self.br_wheel.drive(speed - adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
 
         elif condition == 'lt' or condition == '<':  # lt -> less than
             while (instance.current_value() < value) and (not ports[0].is_pressed() and not ports[
                 1].is_pressed()) and straight_timer.stop_timer(False) < millis:
-                if 1000 > theta > -1000:
+                if 10 > theta > -10:
                     self.fl_wheel.drive(speed)
                     self.fr_wheel.drive(speed)
                     self.bl_wheel.drive(speed)
                     self.br_wheel.drive(speed)
-                elif theta > 1000:
+                elif theta > 10:
                     self.fl_wheel.drive(speed - adjuster)
                     self.fr_wheel.drive(speed + adjuster)
                     self.bl_wheel.drive(speed - adjuster)
@@ -4674,7 +4897,7 @@ class Mecanum_Wheels_four(base_driver):
                     self.fr_wheel.drive(speed - adjuster)
                     self.bl_wheel.drive(speed + adjuster)
                     self.br_wheel.drive(speed - adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
         self.break_all_motors()
 
 

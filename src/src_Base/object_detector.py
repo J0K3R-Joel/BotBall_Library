@@ -466,6 +466,41 @@ class CameraObjectDetector:
         except Exception as e:
             log(str(e), in_exception=True)
         return last_frame
+    
+    def _pick_color(self, event, x, y, flags, param):
+        '''
+        Listens for mouse clicks to grab the color or exit the window.
+        
+        Args:
+            event: The type of mouse event (e.g., click)
+            x: The x-coordinate of the mouse event
+            y: The y-coordinate of the mouse event
+            flags: Any relevant flags passed by OpenCV
+            param: A dictionary to store the HSV color range and exit signal
+            
+        Returns:
+            None, but updates the param dictionary with the color range or exit signal
+        '''
+        
+        if event == cv2.EVENT_LBUTTONDOWN:
+            # Check if the click was inside our "DONE" button (top-left corner, 60x30 pixels)
+            if 10 <= x <= 70 and 10 <= y <= 40:
+                param['exit_requested'] = True  # Signal the main loop to quit
+                return
+
+            # If they clicked anywhere else on the frame, calculate the new color bounds
+            if param['hsv_frame'] is not None:
+                pixel_hsv = param['hsv_frame'][y, x]
+                h, s, v = int(pixel_hsv[0]), int(pixel_hsv[1]), int(pixel_hsv[2])
+                
+                # Calculate a buffer around the clicked color
+                h_min, h_max = max(0, h - 10), min(179, h + 10)
+                s_min, s_max = max(0, s - 60), min(255, s + 60)
+                v_min, v_max = max(0, v - 60), min(255, v + 60)
+                
+                # Save bounds to the state dictionary
+                param['lower'] = np.array([h_min, s_min, v_min])
+                param['upper'] = np.array([h_max, s_max, v_max])
 
     # ======================== PUBLIC METHODS ========================
     def create_new_background(self) -> None:
@@ -483,7 +518,76 @@ class CameraObjectDetector:
         self.bias = self._compute_lighting_bias()
         self._save_corrected_background()
         self._build_object_dict()
+        
+    def create_color_range_from_object(self):
+        '''
+        must be run from the command line on the wombat, since opencv can't open a window otherwise.
+        
+        opens a cv2 window where the user can click on a colored item and
+        the hsv color range of the item will be returned after clicking "done".
+        
+        Args:
+            None
+            
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: The lower and upper HSV color ranges
+        '''
+        
+        self.camera_manager.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 160)
+        self.camera_manager.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 120)
+        
+        state = {
+            'hsv_frame': None,
+            'lower': None,
+            'upper': None,
+            'exit_requested': False
+        }
+        
+        window_name = 'Wombat Tap-to-Track'
+        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+        cv2.setMouseCallback(window_name, self._pick_color, param=state)
+        
+        kernel = np.ones((3, 3), np.uint8)
+        
+        while True:
+            ret, frame = self.camera_manager.cap.read()
+            if not ret:
+                log("Failed to read frame", important=True)
+                break
 
+            state['hsv_frame'] = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+            # only attempt to find contours if the screen was touched at least once
+            if state['lower'] is not None and state['upper'] is not None:
+                mask = cv2.inRange(state['hsv_frame'], state['lower'], state['upper'])
+                mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+
+                contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                
+                if contours:
+                    largest_contour = max(contours, key=cv2.contourArea)
+                    area = cv2.contourArea(largest_contour)
+                    if area > 200: 
+                        x, y, w, h = cv2.boundingRect(largest_contour)
+                        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3)
+
+            # draw "done" button
+            cv2.rectangle(frame, (10, 10), (70, 40), (0, 0, 255), -1)
+            cv2.putText(frame, "DONE", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+
+            # Show the single, updated window
+            cv2.imshow(window_name, frame)
+
+            # Break if 'q' is pressed OR if our on-screen button was tapped
+            if (cv2.waitKey(1) & 0xFF == ord('q')) or state['exit_requested']:
+                break
+            
+        cv2.destroyAllWindows()
+        
+        self.camera_manager.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        self.camera_manager.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        
+        return state['lower'], state['upper']
 
     # x----------x find methods x------------x
 
@@ -682,6 +786,62 @@ class CameraObjectDetector:
             self._save_result(frame, f"shape_{shape_name}_color_{color_name}", mode="find", status="NOT_FOUND")
 
         return found
+
+    def find_color_rect(self, lower_color, upper_color):
+        frame = self.camera_manager.get_frame()
+        
+        # Assuming you already grabbed 'frame' from your camera_manager:
+        height, width, _ = frame.shape
+
+        # 1. Convert to HSV (with the correct BGR conversion!)
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+        # 2. Find the center pixel coordinates
+        center_x = width // 2
+        center_y = height // 2
+
+        # 3. Get the HSV values of that exact pixel
+        # Note: OpenCV arrays are accessed by [y, x]
+        pixel_hsv = hsv[center_y, center_x]
+        hue = pixel_hsv[0]
+        sat = pixel_hsv[1]
+        val = pixel_hsv[2]
+
+        print(f"--- CENTER PIXEL HSV ---")
+        print(f"Hue: {hue}, Saturation: {sat}, Value: {val}")
+        print(f"------------------------")
+
+        # 4. Draw a small box around the center and save it so you can verify aim!
+        cv2.rectangle(frame, (center_x - 10, center_y - 10), (center_x + 10, center_y + 10), (0, 255, 0), 2)
+        cv2.imwrite("/home/kipr/Desktop/aim_check.png", frame)
+        
+        cv2.imwrite("/home/kipr/Desktop/image1.png", frame)
+        cv2.imwrite("/home/kipr/Desktop/image1_hsv.png", hsv)
+        
+        # create binary mask
+        mask = cv2.inRange(hsv, lower_color, upper_color)
+        cv2.imwrite("/home/kipr/Desktop/mask_debug.png", mask)
+        
+        kernel = np.ones((5, 5), np.uint8)
+        # remove noise
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        #print(contours)
+        
+        #if contours:
+        largest_contour = max(contours, key=cv2.contourArea)
+        for contour in contours:
+            bounding_rect = cv2.boundingRect(contour)
+            frame = cv2.rectangle(frame, (bounding_rect[0], bounding_rect[1]), (bounding_rect[0] + bounding_rect[2], bounding_rect[1] + bounding_rect[3]), (0, 255, 0), 2)
+            print(bounding_rect)
+        
+        cv2.imwrite("/home/kipr/Desktop/image2.png", frame)
+        
+        return cv2.boundingRect(largest_contour)
+        #else:
+         #   return None
 
     # x----------x wait methods x------------x
     def wait_for_object(self, object_name: str, interval: float=0.25, min_matches: int =35, max_hue_diff: int=10, max_secs: float=999999.0) -> bool:

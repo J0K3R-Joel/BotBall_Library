@@ -267,7 +267,7 @@ Note that all of this is **ONLY NECESSARY** if you are driving in thread1, getti
 
 ##### Explanation
 
-Sometimes you are driving in a thread and want to exit it earlier (you were still longer inside of the thread than 500 milliseconds) than you told the driver to return to the main thread. Afterwards you need to keep care about the very next function after you exit the thread. If there is no call of a drive function (or for stopping the motor), then the function will keep running in the background until either the time gets reached when you told it to end or until the next call of another driving function. 
+Sometimes you are driving in a thread and want to exit it earlier (you were longer inside of the thread than 500 milliseconds) than you told the driver to return to the main thread. Afterwards you need to keep care about the very next function after you exit the thread. If there is no call of a drive function (or for stopping the motor), then the function will keep running in the background until either the time gets reached when you told it to end or until the next call of another driving function. 
 
 ##### Example
 
@@ -279,13 +279,13 @@ more specifically here:
 
 ![](./img/avoid_wrong_usage_command2.png)
 
-Then there is a chance that the button you want to reach a certain value is already on the wanted value. If this occurs, then the robot will not drive, resulting in the last command still executing. If you were in a thread the last time, then it will still execute the drive command of the thread. Most of the times this is very bad, so you have to come up with an idea of how to avoid this problem. There are two ways to avoid this.
+Then there is a chance that the button you want to reach a certain value is already on the wanted value. If this occurs, then the robot will not drive, resulting in the last command still executing. If you were in a thread the last time, then it will still execute the drive command of the thread. Most of the times this is very bad, so you have to come up with an idea of how to avoid this problem. There are two ways to avoid this:
 
 1. At the time you want to exit a thread and you want to overwrite the last command, simply do anything that you know for sure make the robot drive. For example writing `{driveR_instance}.drive_straight(10)`, this makes it so it will definitely drive, resulting in the last (in thread) command ending / getting overwritten
 
 2. All of **my own created functions** have a line like this: ![](./img/avoid_wrong_usage_command3.png)
 
-   this makes it so t will force the program to overwrite the last command, even without actual driving (speed 0 means stand still). Therefor the last function i showed you now looks like this:
+   this makes it so it will force the program to overwrite the last command, even without actual driving (speed 0 means stand still). Therefore the last function i showed you now looks like this:
 
    ![](./img/avoid_wrong_usage_command4.png)
 

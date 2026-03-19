@@ -1402,8 +1402,8 @@ class Solarbotic_Wheels_two(base_driver):
         Returns:
             None
         '''
-        self.right_wheel.stop()
-        self.left_wheel.stop()
+        self.right_wheel.stop_all() # @TODO test this out, if this is faster than executing both stops
+        #self.left_wheel.stop()
 
 
     @DriveableFunction
@@ -3333,10 +3333,10 @@ class Mecanum_Wheels_four(base_driver):
         Returns:
             None
         '''
-        self.fr_wheel.stop()
-        self.fl_wheel.stop()
-        self.br_wheel.stop()
-        self.bl_wheel.stop()
+        self.fr_wheel.stop_all()
+        # self.fl_wheel.stop()
+        # self.br_wheel.stop()
+        # self.bl_wheel.stop()
 
 
     @DriveableFunction
@@ -3352,81 +3352,125 @@ class Mecanum_Wheels_four(base_driver):
         Returns:
             None
         '''
+
+        if direction != 'right' and direction != 'left':
+            log('direction parameter needs to be either "right" or "left"', in_exception=True)
+            raise ValueError('direction parameter needs to be either "right" or "left"')
+
         if speed is None:
             speed = self.ds_speed
 
+        speed = abs(speed)
         side_timer = TimeR()
         side_timer.start_timer_millis()
-        theta = 0
-        t = 10
-        adjuster = int(speed/15)  # 15 is just a value that worked the best
-        lower_theta = 500
-        higher_theta = 3000
+        theta_side = 0
+        theta_front = 0
+        theta_total = 0
+        adjuster = int(speed/14)  # 15 is just a value that worked the best
+        instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
+
+        if direction == 'left':
+            instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
+            adjuster = -adjuster
+
+        while side_timer.stop_timer(False) < millis:
+            theta_side += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
+
+            if 100 >= theta_side >= -100:
+                instances[0].drive(speed)
+                instances[1].drive(-speed)
+                instances[2].drive(-speed)
+                instances[3].drive(speed)
+            elif theta_side < -100:
+                instances[0].drive(speed + adjuster)
+                instances[1].drive(-speed + adjuster)
+                instances[2].drive(-speed - adjuster)
+                instances[3].drive(speed - adjuster)
+            elif theta_side > 100:
+                instances[0].drive(speed - adjuster)
+                instances[1].drive(-speed - adjuster)
+                instances[2].drive(-speed + adjuster)
+                instances[3].drive(speed + adjuster)
+
+        self.break_all_motors()
+        print('s: ', theta_side, flush=True)
+        print('f: ', theta_front, flush=True)
+        print('t: ', theta_total, flush=True)
+
+    @DriveableFunction
+    def drive_side_t(self, direction: str, millis: int, speed: int = None) -> None:
+        '''
+        drive sideways for as long as you want to (in millis)
+
+        Args:
+            direction (str): "left" or "right", depending on where you want to go
+            millis (int): for how long you want to drive sideways
+            speed (int, optional): the speed it is going to drive sideways (default: ds_speed)
+
+        Returns:
+            None
+        '''
+
+        if direction != 'right' and direction != 'left':
+            log('direction parameter needs to be either "right" or "left"', in_exception=True)
+            raise ValueError('direction parameter needs to be either "right" or "left"')
+
+        if speed is None:
+            speed = self.ds_speed
+
         speed = abs(speed)
-        if direction == 'right':
-            while side_timer.stop_timer(False) < millis:
-                if lower_theta > theta > -lower_theta:
-                    self.fl_wheel.drive(speed)
-                    self.fr_wheel.drive(-speed)
-                    self.bl_wheel.drive(-speed)
-                    self.br_wheel.drive(speed)
-                elif -lower_theta > theta > -higher_theta:
-                    self.fl_wheel.drive(speed - adjuster)
-                    self.fr_wheel.drive(-speed - adjuster)
-                    self.bl_wheel.drive(-speed + adjuster)
-                    self.br_wheel.drive(speed - adjuster)
-                elif lower_theta < theta < higher_theta:
-                    self.fl_wheel.drive(speed + adjuster)
-                    self.fr_wheel.drive(-speed - adjuster)
-                    self.bl_wheel.drive(-speed + adjuster)
-                    self.br_wheel.drive(speed + adjuster)
-                elif theta < -higher_theta:
-                    k.ao()
-                    self.fr_wheel.drive_mfw()
-                    self.br_wheel.drive_mbw()
-                    theta = 0
-                elif theta > higher_theta:
-                    k.ao()
-                    self.fl_wheel.drive_mbw()
-                    self.bl_wheel.drive_mbw()
-                    theta = 0
+        side_timer = TimeR()
+        side_timer.start_timer_millis()
+        theta_side = 0
+        theta_front = 0
+        adjuster = int(speed / 15)  # 15 is just a value that worked the best
+        instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
 
-                k.msleep(t)
-                theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
+        if direction == 'left':
+            instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
+            adjuster = -adjuster
 
-        elif direction == 'left':
-            while side_timer.stop_timer(False) < millis:
-                if lower_theta > theta > -lower_theta:
-                    self.fl_wheel.drive(-speed)
-                    self.fr_wheel.drive(speed)
-                    self.bl_wheel.drive(speed)
-                    self.br_wheel.drive(-speed)
-                elif -lower_theta > theta > -higher_theta:
-                    self.fl_wheel.drive(-speed + adjuster)
-                    self.fr_wheel.drive(speed + adjuster)
-                    self.bl_wheel.drive(speed - adjuster)
-                    self.br_wheel.drive(-speed + adjuster)
-                elif lower_theta < theta < higher_theta:
-                    self.fl_wheel.drive(-speed - adjuster)
-                    self.fr_wheel.drive(speed + adjuster)
-                    self.bl_wheel.drive(speed - adjuster)
-                    self.br_wheel.drive(-speed - adjuster)
-                elif theta < -higher_theta:
-                    k.ao()
-                    self.fr_wheel.drive_mbw()
-                    self.br_wheel.drive_mfw()
-                    theta = 0
-                elif theta > higher_theta:
-                    k.ao()
-                    self.fl_wheel.drive_mfw()
-                    self.bl_wheel.drive_mfw()
-                    theta = 0
+        while side_timer.stop_timer(False) < millis:
 
-                k.msleep(t)
-                theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
-        else:
-            log('Only "right" and "left" are valid commands for the direction!', in_exception=True)
-            raise ValueError('drive_side() Exception: Only "right" and "left" are valid commands for the direction!')
+            theta_front += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+
+            if 10 >= theta_side >= -10:
+                instances[0].drive(speed)
+                instances[1].drive(-speed)
+                instances[2].drive(-speed)
+                instances[3].drive(speed)
+            elif theta_side < -10:
+                instances[0].drive(speed + adjuster)
+                instances[1].drive(-speed + adjuster)
+                instances[2].drive(-speed - adjuster)
+                instances[3].drive(speed + adjuster)
+            elif theta_side > 10:
+                instances[0].drive(speed - adjuster)
+                instances[1].drive(-speed + adjuster)
+                instances[2].drive(-speed - adjuster)
+                instances[3].drive(speed - adjuster)
+
+            theta_side += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
+
+            if 10 >= theta_front >= -10:
+                instances[0].drive(speed)
+                instances[1].drive(-speed)
+                instances[2].drive(-speed)
+                instances[3].drive(speed)
+            elif theta_front < -10:
+                instances[0].drive(speed - adjuster)
+                instances[1].drive(-speed - adjuster)
+                instances[2].drive(-speed - adjuster)
+                instances[3].drive(speed - adjuster)
+            elif theta_front > 10:
+                instances[0].drive(speed + adjuster)
+                instances[1].drive(-speed + adjuster)
+                instances[2].drive(-speed + adjuster)
+                instances[3].drive(speed + adjuster)
+
+        self.break_all_motors()
+        print(theta_front, flush=True)
+        print(theta_side, flush=True)
 
     @DriveableFunction
     def drive_straight(self, millis: int, speed: int = None) -> None:

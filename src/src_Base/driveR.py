@@ -3364,9 +3364,7 @@ class Mecanum_Wheels_four(base_driver):
         side_timer = TimeR()
         side_timer.start_timer_millis()
         theta_side = 0
-        theta_front = 0
-        theta_total = 0
-        adjuster = int(speed/14)  # 15 is just a value that worked the best
+        adjuster = int(speed/14)  # 14 is just a value that worked the best
         instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
 
         if direction == 'left':
@@ -3382,95 +3380,17 @@ class Mecanum_Wheels_four(base_driver):
                 instances[2].drive(-speed)
                 instances[3].drive(speed)
             elif theta_side < -100:
-                instances[0].drive(speed + adjuster)
+                instances[0].drive(speed - adjuster)
                 instances[1].drive(-speed + adjuster)
-                instances[2].drive(-speed - adjuster)
+                instances[2].drive(-speed + adjuster)
                 instances[3].drive(speed - adjuster)
             elif theta_side > 100:
-                instances[0].drive(speed - adjuster)
+                instances[0].drive(speed + adjuster)
                 instances[1].drive(-speed - adjuster)
-                instances[2].drive(-speed + adjuster)
+                instances[2].drive(-speed - adjuster)
                 instances[3].drive(speed + adjuster)
 
         self.break_all_motors()
-        print('s: ', theta_side, flush=True)
-        print('f: ', theta_front, flush=True)
-        print('t: ', theta_total, flush=True)
-
-    @DriveableFunction
-    def drive_side_t(self, direction: str, millis: int, speed: int = None) -> None:
-        '''
-        drive sideways for as long as you want to (in millis)
-
-        Args:
-            direction (str): "left" or "right", depending on where you want to go
-            millis (int): for how long you want to drive sideways
-            speed (int, optional): the speed it is going to drive sideways (default: ds_speed)
-
-        Returns:
-            None
-        '''
-
-        if direction != 'right' and direction != 'left':
-            log('direction parameter needs to be either "right" or "left"', in_exception=True)
-            raise ValueError('direction parameter needs to be either "right" or "left"')
-
-        if speed is None:
-            speed = self.ds_speed
-
-        speed = abs(speed)
-        side_timer = TimeR()
-        side_timer.start_timer_millis()
-        theta_side = 0
-        theta_front = 0
-        adjuster = int(speed / 15)  # 15 is just a value that worked the best
-        instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
-
-        if direction == 'left':
-            instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
-            adjuster = -adjuster
-
-        while side_timer.stop_timer(False) < millis:
-
-            theta_front += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
-
-            if 10 >= theta_side >= -10:
-                instances[0].drive(speed)
-                instances[1].drive(-speed)
-                instances[2].drive(-speed)
-                instances[3].drive(speed)
-            elif theta_side < -10:
-                instances[0].drive(speed + adjuster)
-                instances[1].drive(-speed + adjuster)
-                instances[2].drive(-speed - adjuster)
-                instances[3].drive(speed + adjuster)
-            elif theta_side > 10:
-                instances[0].drive(speed - adjuster)
-                instances[1].drive(-speed + adjuster)
-                instances[2].drive(-speed - adjuster)
-                instances[3].drive(speed - adjuster)
-
-            theta_side += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
-
-            if 10 >= theta_front >= -10:
-                instances[0].drive(speed)
-                instances[1].drive(-speed)
-                instances[2].drive(-speed)
-                instances[3].drive(speed)
-            elif theta_front < -10:
-                instances[0].drive(speed - adjuster)
-                instances[1].drive(-speed - adjuster)
-                instances[2].drive(-speed - adjuster)
-                instances[3].drive(speed - adjuster)
-            elif theta_front > 10:
-                instances[0].drive(speed + adjuster)
-                instances[1].drive(-speed + adjuster)
-                instances[2].drive(-speed + adjuster)
-                instances[3].drive(speed + adjuster)
-
-        self.break_all_motors()
-        print(theta_front, flush=True)
-        print(theta_side, flush=True)
 
     @DriveableFunction
     def drive_straight(self, millis: int, speed: int = None) -> None:
@@ -3522,8 +3442,6 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def drive_diagonal(self, end: str, side: str, millis: int, speed: int = None) -> None:
-        # side -> left + right
-        # end -> front + back
         '''
         drive diagonal for as long as you want to (in millis)
 
@@ -3620,7 +3538,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Args:
             direction (str): "left" or "right", depending on where you want to go
-            degree (int): the amount of degrees (B0) to turn from the current point (only values from 0 - 180 allowed for maximum efficiency)
+            degree (int): the amount of degrees to turn from the current point (only values from 0 - 180 allowed for maximum efficiency)
 
         Returns:
             None

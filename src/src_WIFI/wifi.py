@@ -264,14 +264,14 @@ class WifiConnector:
             self.set_mode(self.CLIENT_MODE)
 
         try:
-            print(f'Trying to connect to {ssid}...', flush=True)
+            print(f'Trying to connect to {name}...', flush=True)
             subprocess.run(
                 ['sudo', 'nmcli', 'dev', 'wifi', 'connect', name, 'password', passw],
                 check=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
-            log(f'Successfully connected with {self.ssid} .')
+            log(f'Successfully connected with {name} .')
         except subprocess.CalledProcessError as e:
             log(f'Wifi connection failed: {e.stderr.decode()}', important=True, in_exception=True)
 

@@ -41,6 +41,7 @@ class MotorScheduler:
         self._tid_counter = 0
         self.id_dict = {}
         self.id_set = set()
+        self.skip_next_time_refresh = False
         self._setup_loop()
 
 
@@ -120,7 +121,6 @@ class MotorScheduler:
                         continue
 
                     k.mav(port, data['speed'])
-                k.msleep(1)
 
                 if self.last_activity and time.time() - self.last_activity > self.AUTO_SHUTDOWN_TIMEOUT:
                     self.shutdown()
@@ -152,7 +152,11 @@ class MotorScheduler:
                     self._setup_loop()
 
                 key = (port, func_id)
-                self.last_activity = now
+
+                if not self.skip_next_time_refresh:
+                    self.last_activity = now
+                else:
+                    self.skip_next_time_refresh = False
 
                 if key in self._commands:
                     self._commands[key].update({
@@ -162,7 +166,6 @@ class MotorScheduler:
                     return
                 for old_key, data in list(self._commands.items()):
                     if data['port'] == port and (data['speed'] != 0 or speed != 0):
-                        print('cleared')
                         self.clear_list_internal()
                         break
 
@@ -194,7 +197,7 @@ class MotorScheduler:
                         k.freeze(port)
                         break
         except Exception as e:
-            log(str(e))
+            log(str(e), in_exception=True)
 
     def stop_motor(self, port: int) -> None:
         '''
@@ -212,11 +215,12 @@ class MotorScheduler:
 
             for key, data in list(commands_copy.items()):
                 if data['port'] == port:
-                    self.set_speed(data['port'], 0)
+                    with self._lock:
+                        self._commands[key]['speed'] = 0
                     k.freeze(port)
                     break
         except Exception as e:
-            log(str(e))
+            log(str(e), in_exception=True)
 
     def _stop_all_internal(self) -> None:
         '''
@@ -249,6 +253,7 @@ class MotorScheduler:
         try:
             with self._lock:
                 for key, data in list(self._commands.items()):
+                    self.skip_next_time_refresh = True
                     self.set_speed(data['port'], 0)
                     k.freeze(data['port'])
         except Exception as e:

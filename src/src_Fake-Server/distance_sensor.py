@@ -155,7 +155,7 @@ class DistanceSensor(Analog):
         Returns:
             int: closest value to the millimeters which got saved
         '''
-        if millimeters < self.mm[0] or millimeters > self.mm[-1]:
+        if millimeters < self.get_mm()[0] or millimeters > self.get_mm()[-1]:
             log(f'You can only get millimeters between {self.mm[0]} and {self.mm[-1]}!', in_exception=True)
             raise ValueError(f'You can only get millimeters between {self.mm[0]} and {self.mm[-1]}!')
 

@@ -93,17 +93,21 @@ class LightSensor(Analog):
             return None  # You can not raise an Exception here, since if you did not calibrate in the beginning, then you will always receive an exception
 
         diff = self.get_value_black() - self.get_value_white()
+        lowest_diff = 400
         if diff < 0:
-            log('Black value needs to be higher than the white value. Since this is not the case, this means that you did something wrong in setting the light values!', important=True)
+            log(f'The {self.position.upper()} black value needs to be higher than the white value. Since this is not the case, this means that you did something wrong in setting the light values!', important=True)
             return None
-        elif diff < 400:
-            log('The difference between the value of the black- and white light sensor is too small. Please consider either dropping the sensors lower (more near to the floor) or replacing your sensors!', important=True)
+        elif diff < lowest_diff:
+            log(f'The difference between the value of the {self.position.upper()} black- and white ({diff}, needs to be at >={lowest_diff})light sensor is too small. Please consider either dropping the sensors lower (more near to the floor) or replacing your sensors!', important=True)
             return None
 
         return int(155.5 * math.log(diff) - 782)  # value between ~150 and ~500
 
     # =========================== CHECK ===========================
     def check_bias(self):
+        if (self.val_white and self.val_black) and self.bias is None:
+            self.bias = self._calibrate_bias()
+
         if self.bias is None:
             log(f'The difference between the value of the {self.position.upper()} black- and white light sensor is too small. Please consider either dropping the sensors lower (more near to the floor) or replacing your sensors!')
             raise ValueError(f'The difference between the value of the {self.position.upper()} black- and white light sensor is too small. Please consider either dropping the sensors lower (more near to the floor) or replacing your sensors!')
@@ -127,10 +131,10 @@ class LightSensor(Analog):
         file_name = os.path.join(self.BIAS_FOLDER, f'{self.std_black_file_name + self.position}.txt')
         try:
             if os.path.exists(file_name):
-                old_val = int(self.file_manager.reader(file_name))
+                old_val = self.file_manager.reader(file_name, 'int')
                 measured_value = (old_val + measured_value) // 2
-            self.file_manager.writer(file_name, 'w', int(measured_value))
-            self.val_black = int(measured_value)
+            self.file_manager.writer(file_name, 'w', measured_value)
+            self.val_black = measured_value
         except Exception as e:
             log(str(e), in_exception=True)
 
@@ -150,10 +154,10 @@ class LightSensor(Analog):
         file_name = os.path.join(self.BIAS_FOLDER, f'{self.std_white_file_name + self.position}.txt')
         try:
             if os.path.exists(file_name):
-                old_val = int(self.file_manager.reader(file_name))
+                old_val = self.file_manager.reader(file_name, 'int')
                 measured_value = (old_val + measured_value) // 2
-            self.file_manager.writer(file_name, 'w', int(measured_value))
-            self.val_white = int(measured_value)
+            self.file_manager.writer(file_name, 'w', measured_value)
+            self.val_white = measured_value
         except Exception as e:
             log(str(e), in_exception=True)
 
@@ -255,6 +259,17 @@ class LightSensor(Analog):
         self.check_bias()
         return self.bias
 
+    def get_position(self) -> str:
+        '''
+        Know which sensor you are refering to
+
+        Args:
+            None
+
+        Returns:
+            str: position on the robot
+        '''
+        return self.position
 
     # ======================== Setter =======================
     def auto_set_values(self) -> None:

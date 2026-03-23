@@ -3389,15 +3389,15 @@ class Mecanum_Wheels_four(base_driver):
                 instances[2].drive(-speed)
                 instances[3].drive(speed)
             elif theta_side < -100:
-                instances[0].drive(speed - adjuster)
-                instances[1].drive(-speed + adjuster)
-                instances[2].drive(-speed + adjuster)
-                instances[3].drive(speed - adjuster)
-            elif theta_side > 100:
                 instances[0].drive(speed + adjuster)
                 instances[1].drive(-speed - adjuster)
                 instances[2].drive(-speed - adjuster)
                 instances[3].drive(speed + adjuster)
+            elif theta_side > 100:
+                instances[0].drive(speed - adjuster)
+                instances[1].drive(-speed + adjuster)
+                instances[2].drive(-speed + adjuster)
+                instances[3].drive(speed - adjuster)
 
         self.break_all_motors()
 
@@ -3906,7 +3906,6 @@ class Mecanum_Wheels_four(base_driver):
         self.break_all_motors()
 
         turn_timer.change_current_type('Seconds')
-        print(found, flush=True)
         if found and turn_timer.stop_timer(False) < self.ONEEIGHTY_DEGREES_SECS:  # if it was found in the right amount of time
             turning_divisor = self.ONEEIGHTY_DEGREES_SECS / turn_timer.stop_timer()
             return 180 // turning_divisor
@@ -4299,70 +4298,6 @@ class Mecanum_Wheels_four(base_driver):
             self.break_all_motors()
 
     @DriveableFunction
-    def drive_straight_condition_digital(self, instance: Digital, condition: str, value: int, millis: int = 9999999, speed: int = None):
-        # @TODO -> test this out
-        '''
-        drive straight until an digital value gets reached for the desired instance
-
-        Args:
-            instance (Digital): just has to be from something digital (buttons)
-            condition (str): should it match "==" or not "!="
-            value (int): The value that the current value gets compared to and has to be reached / not matched
-            millis (int, optional): The maximum amount of time (in milliseconds) which can be taken (default: 9999999)
-            speed (int, optional): The speed it drives straight (default: ds_speed)
-
-        Returns:
-            None
-        '''
-        if speed is None:
-            speed = self.ds_speed
-        theta = 0
-        adjuster = int(speed/15)  # 15 is just a value that worked the best
-        straight_timer = TimeR()
-        straight_timer.start_timer_millis()
-
-        if condition == "==":
-            while (instance.current_value() == value) and (straight_timer.stop_timer(False) < millis):
-                if 10 > theta > -10:
-                    self.fl_wheel.drive(speed)
-                    self.fr_wheel.drive(speed)
-                    self.bl_wheel.drive(speed)
-                    self.br_wheel.drive(speed)
-                elif theta > 10:
-                    self.fl_wheel.drive(speed - adjuster)
-                    self.fr_wheel.drive(speed + adjuster)
-                    self.bl_wheel.drive(speed - adjuster)
-                    self.br_wheel.drive(speed + adjuster)
-                else:
-                    self.fl_wheel.drive(speed + adjuster)
-                    self.fr_wheel.drive(speed - adjuster)
-                    self.bl_wheel.drive(speed + adjuster)
-                    self.br_wheel.drive(speed - adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
-        elif condition == "!=":
-            while (instance.current_value() != value) and (straight_timer.stop_timer(False) < millis):
-                if 10 > theta > -10:
-                    self.fl_wheel.drive(speed)
-                    self.fr_wheel.drive(speed)
-                    self.bl_wheel.drive(speed)
-                    self.br_wheel.drive(speed)
-                elif theta > 10:
-                    self.fl_wheel.drive(speed - adjuster)
-                    self.fr_wheel.drive(speed + adjuster)
-                    self.bl_wheel.drive(speed - adjuster)
-                    self.br_wheel.drive(speed + adjuster)
-                else:
-                    self.fl_wheel.drive(speed + adjuster)
-                    self.fr_wheel.drive(speed - adjuster)
-                    self.bl_wheel.drive(speed + adjuster)
-                    self.br_wheel.drive(speed - adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
-        else:
-            log('Only "==" or "!=" is available for the condition!', important=True, in_exception=True)
-            raise ValueError('Only "==" or "!=" is available for the condition!')
-        self.break_all_motors()
-
-    @DriveableFunction
     def drive_side_condition_analog(self, direction: str, instance: Analog, condition: str, value: int, millis: int = 9999999,
                                     speed: int = None) -> None:
         '''
@@ -4404,15 +4339,15 @@ class Mecanum_Wheels_four(base_driver):
                 instances[2].drive(-speed)
                 instances[3].drive(speed)
             elif theta_side < -100:
-                instances[0].drive(speed - adjuster)
-                instances[1].drive(-speed + adjuster)
-                instances[2].drive(-speed + adjuster)
-                instances[3].drive(speed - adjuster)
-            elif theta_side > 100:
                 instances[0].drive(speed + adjuster)
                 instances[1].drive(-speed - adjuster)
                 instances[2].drive(-speed - adjuster)
                 instances[3].drive(speed + adjuster)
+            elif theta_side > 100:
+                instances[0].drive(speed - adjuster)
+                instances[1].drive(-speed + adjuster)
+                instances[2].drive(-speed + adjuster)
+                instances[3].drive(speed - adjuster)
 
         if condition == 'let' or condition == '<=':  # let -> less or equal than
             while (instance.current_value() <= value) and (side_timer.stop_timer(False) < millis):
@@ -4489,15 +4424,15 @@ class Mecanum_Wheels_four(base_driver):
                 instances[2].drive(-speed)
                 instances[3].drive(speed)
             elif theta_side < -100:
-                instances[0].drive(speed - adjuster)
-                instances[1].drive(-speed + adjuster)
-                instances[2].drive(-speed + adjuster)
-                instances[3].drive(speed - adjuster)
-            elif theta_side > 100:
                 instances[0].drive(speed + adjuster)
                 instances[1].drive(-speed - adjuster)
                 instances[2].drive(-speed - adjuster)
                 instances[3].drive(speed + adjuster)
+            elif theta_side > 100:
+                instances[0].drive(speed - adjuster)
+                instances[1].drive(-speed + adjuster)
+                instances[2].drive(-speed + adjuster)
+                instances[3].drive(speed - adjuster)
 
         if condition == '==':
             while (instance.current_value() == value) and (side_timer.stop_timer(False) < millis):
@@ -4537,93 +4472,161 @@ class Mecanum_Wheels_four(base_driver):
             speed = self.ds_speed
         self.check_instances_buttons()
         theta = 0.0
-        ports = self.button_fl, self.button_fr
-
         straight_timer = TimeR()
-        straight_timer.start_timer_millis()
-        adjuster = int(speed/15)  # 15 is just a value that worked the best
-        if speed < 0:
-            ports = self.button_bl, self.button_br
+        instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
+        adjuster = int(speed / 14)  # 14 is just a value that worked the best
 
+        if speed < 0:
+            instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
+
+        straight_timer.start_timer_millis()
         if condition == 'let' or condition == '<=':  # let -> less or equal than
-            while (instance.current_value() <= value) and (not ports[0].is_pressed() and not ports[
-                1].is_pressed()) and straight_timer.stop_timer(False) < millis:
+            while (instance.current_value() <= value) and straight_timer.stop_timer(False) < millis:
                 if 10 > theta > -10:
-                    self.fl_wheel.drive(speed)
-                    self.fr_wheel.drive(speed)
-                    self.bl_wheel.drive(speed)
-                    self.br_wheel.drive(speed)
+                    instances[0].drive(speed)
+                    instances[1].drive(speed)
+                    instances[2].drive(speed)
+                    instances[3].drive(speed)
                 elif theta > 10:
-                    self.fl_wheel.drive(speed - adjuster)
-                    self.fr_wheel.drive(speed + adjuster)
-                    self.bl_wheel.drive(speed - adjuster)
-                    self.br_wheel.drive(speed + adjuster)
+                    instances[0].drive(speed - adjuster)
+                    instances[1].drive(speed + adjuster)
+                    instances[2].drive(speed - adjuster)
+                    instances[3].drive(speed + adjuster)
                 else:
-                    self.fl_wheel.drive(speed + adjuster)
-                    self.fr_wheel.drive(speed - adjuster)
-                    self.bl_wheel.drive(speed + adjuster)
-                    self.br_wheel.drive(speed - adjuster)
+                    instances[0].drive(speed + adjuster)
+                    instances[1].drive(speed - adjuster)
+                    instances[2].drive(speed + adjuster)
+                    instances[3].drive(speed - adjuster)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
 
         elif condition == 'het' or condition == '>=':  # het -> higher or equal than
-            while (instance.current_value() >= value) and (not ports[0].is_pressed() and not ports[
-                1].is_pressed()) and straight_timer.stop_timer(False) < millis:
+            while (instance.current_value() >= value) and straight_timer.stop_timer(False) < millis:
                 if 10 > theta > -10:
-                    self.fl_wheel.drive(speed)
-                    self.fr_wheel.drive(speed)
-                    self.bl_wheel.drive(speed)
-                    self.br_wheel.drive(speed)
+                    instances[0].drive(speed)
+                    instances[1].drive(speed)
+                    instances[2].drive(speed)
+                    instances[3].drive(speed)
                 elif theta > 10:
-                    self.fl_wheel.drive(speed - adjuster)
-                    self.fr_wheel.drive(speed + adjuster)
-                    self.bl_wheel.drive(speed - adjuster)
-                    self.br_wheel.drive(speed + adjuster)
+                    instances[0].drive(speed - adjuster)
+                    instances[1].drive(speed + adjuster)
+                    instances[2].drive(speed - adjuster)
+                    instances[3].drive(speed + adjuster)
                 else:
-                    self.fl_wheel.drive(speed + adjuster)
-                    self.fr_wheel.drive(speed - adjuster)
-                    self.bl_wheel.drive(speed + adjuster)
-                    self.br_wheel.drive(speed - adjuster)
+                    instances[0].drive(speed + adjuster)
+                    instances[1].drive(speed - adjuster)
+                    instances[2].drive(speed + adjuster)
+                    instances[3].drive(speed - adjuster)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
 
         elif condition == 'ht' or condition == '>':  # ht -> higher than
-            while (instance.current_value() > value) and (not ports[0].is_pressed() and not ports[
-                1].is_pressed()) and straight_timer.stop_timer(False) < millis:
+            while (instance.current_value() > value) and straight_timer.stop_timer(False) < millis:
                 if 10 > theta > -10:
-                    self.fl_wheel.drive(speed)
-                    self.fr_wheel.drive(speed)
-                    self.bl_wheel.drive(speed)
-                    self.br_wheel.drive(speed)
+                    instances[0].drive(speed)
+                    instances[1].drive(speed)
+                    instances[2].drive(speed)
+                    instances[3].drive(speed)
                 elif theta > 10:
-                    self.fl_wheel.drive(speed - adjuster)
-                    self.fr_wheel.drive(speed + adjuster)
-                    self.bl_wheel.drive(speed - adjuster)
-                    self.br_wheel.drive(speed + adjuster)
+                    instances[0].drive(speed - adjuster)
+                    instances[1].drive(speed + adjuster)
+                    instances[2].drive(speed - adjuster)
+                    instances[3].drive(speed + adjuster)
                 else:
-                    self.fl_wheel.drive(speed + adjuster)
-                    self.fr_wheel.drive(speed - adjuster)
-                    self.bl_wheel.drive(speed + adjuster)
-                    self.br_wheel.drive(speed - adjuster)
+                    instances[0].drive(speed + adjuster)
+                    instances[1].drive(speed - adjuster)
+                    instances[2].drive(speed + adjuster)
+                    instances[3].drive(speed - adjuster)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
 
         elif condition == 'lt' or condition == '<':  # lt -> less than
-            while (instance.current_value() < value) and (not ports[0].is_pressed() and not ports[
-                1].is_pressed()) and straight_timer.stop_timer(False) < millis:
+            while (instance.current_value() < value) and straight_timer.stop_timer(False) < millis:
                 if 10 > theta > -10:
-                    self.fl_wheel.drive(speed)
-                    self.fr_wheel.drive(speed)
-                    self.bl_wheel.drive(speed)
-                    self.br_wheel.drive(speed)
+                    instances[0].drive(speed)
+                    instances[1].drive(speed)
+                    instances[2].drive(speed)
+                    instances[3].drive(speed)
                 elif theta > 10:
-                    self.fl_wheel.drive(speed - adjuster)
-                    self.fr_wheel.drive(speed + adjuster)
-                    self.bl_wheel.drive(speed - adjuster)
-                    self.br_wheel.drive(speed + adjuster)
+                    instances[0].drive(speed - adjuster)
+                    instances[1].drive(speed + adjuster)
+                    instances[2].drive(speed - adjuster)
+                    instances[3].drive(speed + adjuster)
                 else:
-                    self.fl_wheel.drive(speed + adjuster)
-                    self.fr_wheel.drive(speed - adjuster)
-                    self.bl_wheel.drive(speed + adjuster)
-                    self.br_wheel.drive(speed - adjuster)
+                    instances[0].drive(speed + adjuster)
+                    instances[1].drive(speed - adjuster)
+                    instances[2].drive(speed + adjuster)
+                    instances[3].drive(speed - adjuster)
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+
+        else:
+            log('the "condition" parameter has to be either "<" / "lt" ; ">" / "ht" ; "<=" / "het" ; ">=" / "let"')
+            raise ValueError('the "condition" parameter has to be either "<" / "lt" ; ">" / "ht" ; "<=" / "het" ; ">=" / "let"')
+        self.break_all_motors()
+
+    @DriveableFunction
+    def drive_straight_condition_digital(self, instance: Digital, condition: str, value: int, millis: int = 9999999,
+                                         speed: int = None):
+        '''
+        drive straight until an digital value gets reached for the desired instance
+
+        Args:
+            instance (Digital): just has to be from something digital (buttons)
+            condition (str): should it match "==" or not "!="
+            value (int): The value that the current value gets compared to and has to be reached / not matched
+            millis (int, optional): The maximum amount of time (in milliseconds) which can be taken (default: 9999999)
+            speed (int, optional): The speed it drives straight (default: ds_speed)
+
+        Returns:
+            None
+        '''
+        if speed is None:
+            speed = self.ds_speed
+        theta = 0
+        adjuster = int(speed / 14)  # 15 is just a value that worked the best
+        straight_timer = TimeR()
+        straight_timer.start_timer_millis()
+        instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
+
+        if speed < 0:
+            instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
+
+        if condition == "==":
+            while (instance.current_value() == value) and (straight_timer.stop_timer(False) < millis):
+                if 10 > theta > -10:
+                    instances[0].drive(speed)
+                    instances[1].drive(speed)
+                    instances[2].drive(speed)
+                    instances[3].drive(speed)
+                elif theta > 10:
+                    instances[0].drive(speed - adjuster)
+                    instances[1].drive(speed + adjuster)
+                    instances[2].drive(speed - adjuster)
+                    instances[3].drive(speed + adjuster)
+                else:
+                    instances[0].drive(speed + adjuster)
+                    instances[1].drive(speed - adjuster)
+                    instances[2].drive(speed + adjuster)
+                    instances[3].drive(speed - adjuster)
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+        elif condition == "!=":
+            while (instance.current_value() != value) and (straight_timer.stop_timer(False) < millis):
+                if 10 > theta > -10:
+                    instances[0].drive(speed)
+                    instances[1].drive(speed)
+                    instances[2].drive(speed)
+                    instances[3].drive(speed)
+                elif theta > 10:
+                    instances[0].drive(speed - adjuster)
+                    instances[1].drive(speed + adjuster)
+                    instances[2].drive(speed - adjuster)
+                    instances[3].drive(speed + adjuster)
+                else:
+                    instances[0].drive(speed + adjuster)
+                    instances[1].drive(speed - adjuster)
+                    instances[2].drive(speed + adjuster)
+                    instances[3].drive(speed - adjuster)
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+        else:
+            log('Only "==" or "!=" is available for the condition!', important=True, in_exception=True)
+            raise ValueError('Only "==" or "!=" is available for the condition!')
         self.break_all_motors()
 
 

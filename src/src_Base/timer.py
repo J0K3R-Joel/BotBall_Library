@@ -72,9 +72,9 @@ class TimeR:
 
         t = new_type.upper()
         with self._timer_lock:
-            if t == self.timer_type_secs.upper() or t == 'SECOND' or t == 'SECS' or t == 'SEC' or t == 'S':
+            if t == self.timer_type_secs.upper() or t == 'SECONDS' or t == 'SECOND' or t == 'SECS' or t == 'SEC' or t == 'S':
                 self.current_timer_type = self.timer_type_secs
-            elif t == self.timer_type_millis.upper() or t == 'MILLISECOND' or t == 'MILLIS' or t == 'MILLI' or t == 'MS':
+            elif t == self.timer_type_millis.upper() or t == 'MILLISECONDS' or t == 'MILLISECOND' or t == 'MILLIS' or t == 'MILLI' or t == 'MS':
                 self.current_timer_type = self.timer_type_millis
             else:
                 log('Timer type does not exist! Please look at the existing types!')

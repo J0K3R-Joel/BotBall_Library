@@ -59,11 +59,20 @@ def DriveableFunction(func):
 def BreakableFunction(func):
     def wrapper(*args, **kwargs):
         calling_function = sys._getframe().f_back.f_code.co_name
-        if calling_function == breakable_function_name:
+
+        if calling_function == breakable_function_name:  # last valid function name
             wrapper.__name__ = f'{func.__name__}#' + wrapper.__name__
 
             result = func(*args, **kwargs)
             return result
+        else:
+            calling_file = sys._getframe().f_back.f_code.co_filename
+            if FILE_PATH != calling_file:                                      # or another file (like main.py)
+                wrapper.__name__ = f'{func.__name__}#' + wrapper.__name__
+
+                result = func(*args, **kwargs)
+                return result
+
         return
 
     return wrapper

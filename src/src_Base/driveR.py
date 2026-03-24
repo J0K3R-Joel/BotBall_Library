@@ -1962,7 +1962,7 @@ class Solarbotic_Wheels_two(base_driver):
 
             if line_turner_timer.stop_timer(False) > maxDuration:
                 self.turn_degrees_condition_analog(direction[1], instances[4], '<', instances[4].get_value_black_bias(), speed=speed, millis=int(self.ONEEIGHTY_DEGREES_SECS*1000*2)+maxDuration)  # Since you are somewhere more on one side, but you did not find any line in (maxDuration) time, you need to make a full circle to look for any line. If there is no line at all (after 360 degrees) you need to turn for (maxDuration) time again, to face the direction in which you looked beforehand
-                if line_turner_timer.stop_timer() >= int(self.ONEEIGHTY_DEGREES_SECS*1000*2)+maxDuration:
+                if line_turner_timer.stop_timer() >= int(self.ONEEIGHTY_DEGREES_SECS*1000*2) + maxDuration:
                     log('Nothing found', important=True)
                     found = False
                 break
@@ -2158,60 +2158,57 @@ class Solarbotic_Wheels_two(base_driver):
            bool: If there was a line in the first 360 degree turn (True) or not (False)
        '''
         self.check_instance_light_sensors_middle()
-        try:
-            if direction != 'vertical' and direction != 'horizontal':
-                log('Only "vertical" or "horizontal" are valid options for the "direction" parameter',
-                    in_exception=True)
-                raise ValueError(
-                    'align_on_black_line() Exception: Only "vertical" or "horizontal" are valid options for the "direction" parameter')
 
-            if leaning_side != None and leaning_side != 'right' and leaning_side != 'left':
-                log('Only "right", "left" or None / nothing are valid options for the "leaning_side" parameter',
-                    in_exception=True)
-                raise ValueError(
-                    'align_on_black_line() Exception: Only "right", "left" or None / nothing are valid options for the "leaning_side" parameter')
+        if direction != 'vertical' and direction != 'horizontal':
+            log('Only "vertical" or "horizontal" are valid options for the "direction" parameter',
+                in_exception=True)
+            raise ValueError(
+                'align_on_black_line() Exception: Only "vertical" or "horizontal" are valid options for the "direction" parameter')
 
-            if not leaning_side:
-                leaning_side = 'right'  # begin with turning right
+        if leaning_side != None and leaning_side != 'right' and leaning_side != 'left':
+            log('Only "right", "left" or None / nothing are valid options for the "leaning_side" parameter',
+                in_exception=True)
+            raise ValueError(
+                'align_on_black_line() Exception: Only "right", "left" or None / nothing are valid options for the "leaning_side" parameter')
 
-            if leaning_side == 'right':
-                wheels = self.left_wheel, self.right_wheel
+        if not leaning_side:
+            leaning_side = 'right'  # begin with turning right
+
+        if leaning_side == 'right':
+            wheels = self.left_wheel, self.right_wheel
+        else:
+            wheels = self.right_wheel, self.left_wheel
+        align_line_timer = TimeR()
+        turn_after = False
+        direction = self.ds_speed
+        align_line_timer.start_timer_sec()
+
+        while not self.light_sensor_front.sees_black():
+            if align_line_timer.stop_timer(False) < self.ONEEIGHTY_DEGREES_SECS * 2:  # 360 degree turn so that you at least look at the same direction
+                wheels[0].drive_dfw()
+                wheels[1].drive_dbw()
             else:
-                wheels = self.right_wheel, self.left_wheel
-            align_line_timer = TimeR()
-            turn_after = False
-            direction = self.ds_speed
-            align_line_timer.start_timer_sec()
+                self.break_all_motors()
+                log('align_on_black_line error: line not found -> there is no line to align yourself onto!', important=True)
+                return False
+        self.break_all_motors()
 
-            while not self.light_sensor_front.sees_black():
-                if align_line_timer.stop_timer(False) < self.ONEEIGHTY_DEGREES_SECS * 2:  # 360 degree turn so that you at least look at the same direction
-                    wheels[0].drive_dfw()
-                    wheels[1].drive_dbw()
-                else:
-                    self.break_all_motors()
-                    log('align_on_black_line error: line not found -> there is no line to align yourself onto!', important=True)
-                    return False
-            self.break_all_motors()
+        if align_line_timer.stop_timer() > self.NINETY_DEGREES_SECS + self.get_light_sensor_distance_sec()/8:  # longer than 90 degrees + approximetly the bias it can be misaligned -> tenth of the length between the distance sensors
+            leaning_side = 'right' if 'right' != leaning_side else 'left'
+            turn_after = True
+            direction = -self.ds_speed
 
-            if align_line_timer.stop_timer() > self.NINETY_DEGREES_SECS + self.get_light_sensor_distance_sec()/8:  # longer than 90 degrees + approximetly the bias it can be misaligned -> tenth of the length between the distance sensors
-                leaning_side = 'right' if 'right' != leaning_side else 'left'
-                turn_after = True
-                direction = -self.ds_speed
-
-            self.black_line(500, True, pre_aligned=False)
-            self.black_line(500, False, speed=-self.ds_speed, pre_aligned=True)
-            if turn_after:
-                leaning_side = 'right' if 'right' != leaning_side else 'left'
-                self.turn_degrees(leaning_side, 90)
-                self.turn_degrees_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
-                self.black_line(100, True, pre_aligned=False)
-                self.turn_degrees_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
-                self.black_line(100, True, speed=direction, pre_aligned=False)
-                self.black_line(100, True, pre_aligned=True)
-            self.break_all_motors()
-
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
+        self.black_line(500, True, pre_aligned=False)
+        self.black_line(500, False, speed=-self.ds_speed, pre_aligned=True)
+        if turn_after:
+            leaning_side = 'right' if 'right' != leaning_side else 'left'
+            self.turn_degrees(leaning_side, 90)
+            self.turn_degrees_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
+            self.black_line(100, True, pre_aligned=False)
+            self.turn_degrees_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
+            self.black_line(100, True, speed=direction, pre_aligned=False)
+            self.black_line(100, True, pre_aligned=True)
+        self.break_all_motors()
 
 
     @DriveableFunction
@@ -4631,33 +4628,33 @@ class Mecanum_Wheels_four(base_driver):
 
 
     @DriveableFunction
-    def turn_to_black_line(self, direction: str, millis: int = 0, speed: int = None) -> None:
+    def turn_to_black_line(self, direction: str, millis: int = 0) -> None:
         '''
         Turn as long as the light sensor (front or back, depends if the speed is positive or negative) sees the black line
 
         Args:
            direction (str): "right" or "left" - depends on where you want to go
            millis (int, optional): how long (in milliseconds) it should keep turning after finding the black line (default: 0)
-           speed (int, optional): which direction it has to drive (forward = positive or backward = negative) (default: ds_speed)
 
         Returns:
            None
         '''
-        if speed is None:
-            speed = self.ds_speed
         self.check_instance_light_sensors_middle()
+        driving = False
         instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel, self.light_sensor_front
-        if speed < 0:
+        if direction == 'left':
             instances = self.bl_wheel, self.br_wheel, self.fl_wheel, self.fr_wheel, self.light_sensor_back
 
         if direction == 'right':
             while not instances[4].sees_black():
+                driving = True
                 instances[0].drive_mfw()
                 instances[1].drive_mbw()
                 instances[2].drive_mfw()
                 instances[3].drive_mbw()
         elif direction == 'left':
             while not instances[4].sees_black():
+                driving = True
                 instances[0].drive_mbw()
                 instances[1].drive_mfw()
                 instances[2].drive_mbw()
@@ -4666,7 +4663,8 @@ class Mecanum_Wheels_four(base_driver):
             log('Only "right" and "left" are valid commands for the direction!', in_exception=True)
             raise ValueError(
                 'turn_black_line() Exception: Only "right" and "left" are valid commands for the direction!')
-        k.msleep(millis)
+        if driving:
+            k.msleep(millis)
         self.break_all_motors()
 
 
@@ -4708,36 +4706,59 @@ class Mecanum_Wheels_four(base_driver):
             self.drive_straight_condition_analog(ports[1], '<=', ports[1].get_value_black() - ports[1].get_bias(), speed=speed)
 
             self.drive_straight(align_timer.stop_timer() // 2, -speed)
-            self.turn_to_black_line(direction, speed=abs(speed))
+            self.turn_to_black_line(direction)
+
+
             self.turn_degrees(direction, 10)  # this is just so it is a little bit better aligned on the line
-        else:
 
-            instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel, self.button_fl, self.button_fr, self.light_sensor_front
-            direction = 'right', 'left'
-            if speed < 0:
-                instances = self.bl_wheel, self.br_wheel, self.fl_wheel, self.fr_wheel, self.button_bl, self.button_br, self.light_sensor_back
-                direction = 'left', 'right'
 
-            while True:
-                instances[0].drive(speed)
-                instances[1].drive(-speed)
-                instances[2].drive(speed)
-                instances[3].drive(-speed)
-                if align_timer.stop_timer(False) > maxDuration:
-                    self.turn_to_black_line(direction[1], millis=20, speed=speed)
-                    break
-                if instances[6].sees_black():
-                    k.ao()
-                    self.turn_to_black_line(direction[0], millis=20, speed=speed)
-                    break
-                if instances[4].is_pressed() or instances[5].is_pressed():
-                    if speed < 0:
-                        self.align_drive_back()
-                    else:
-                        self.align_drive_front()
-                    break
-            self.break_all_motors()
+    def align_on_black_line(self, direction: str = 'vertical', leaning_side: str = None):
 
+        self.check_instance_light_sensors_middle()
+        if direction != 'vertical' and direction != 'horizontal':
+            log('Only "vertical" or "horizontal" are valid options for the "direction" parameter',
+                in_exception=True)
+            raise ValueError(
+                'align_on_black_line() Exception: Only "vertical" or "horizontal" are valid options for the "direction" parameter')
+
+        if leaning_side != None and leaning_side != 'right' and leaning_side != 'left':
+            log('Only "right", "left" or None / nothing are valid options for the "leaning_side" parameter',
+                in_exception=True)
+            raise ValueError(
+                'align_on_black_line() Exception: Only "right", "left" or None / nothing are valid options for the "leaning_side" parameter')
+
+        if not leaning_side:
+            leaning_side = 'right'  # begin with turning right
+
+
+        speed = self.ds_speed
+
+
+        instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel, self.button_fl, self.button_fr, self.light_sensor_front
+        direction = 'right', 'left'
+        if speed < 0:
+            instances = self.bl_wheel, self.br_wheel, self.fl_wheel, self.fr_wheel, self.button_bl, self.button_br, self.light_sensor_back
+            direction = 'left', 'right'
+
+        while True:
+            instances[0].drive(speed)
+            instances[1].drive(-speed)
+            instances[2].drive(speed)
+            instances[3].drive(-speed)
+            if align_timer.stop_timer(False) > maxDuration:
+                self.turn_to_black_line(direction[1], millis=20)
+                break
+            if instances[6].sees_black():
+                k.ao()
+                self.turn_to_black_line(direction[0], millis=20)
+                break
+            if instances[4].is_pressed() or instances[5].is_pressed():
+                if speed < 0:
+                    self.align_drive_back()
+                else:
+                    self.align_drive_front()
+                break
+        self.break_all_motors()
 
     @DriveableFunction
     def black_line(self, millis: int, speed: int = None) -> None:

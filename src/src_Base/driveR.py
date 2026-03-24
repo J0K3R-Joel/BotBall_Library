@@ -1244,8 +1244,8 @@ class Solarbotic_Wheels_two(base_driver):
                     if self.light_sensor_back.sees_black():
                         back_found = True
 
-            t_front = KillableThread(target=white_front_valid)
-            t_back = KillableThread(target=white_back_valid)
+            t_front = KillableThread(target=white_front_valid, daemon=True)
+            t_back = KillableThread(target=white_back_valid, daemon=True)
             t_front.start()
             t_back.start()
 
@@ -1634,7 +1634,7 @@ class Solarbotic_Wheels_two(base_driver):
         '''
         if speed is None:
             speed = self.ds_speed
-        self.check_instances_buttons()
+
         theta = 0.0
         straight_timer = TimeR()
         straight_timer.start_timer_millis()
@@ -1644,7 +1644,7 @@ class Solarbotic_Wheels_two(base_driver):
             instances = self.right_wheel, self.left_wheel, self.button_bl, self.button_br
 
         if condition == 'let' or condition == '<=':  # let -> less or equal than
-            while instance.current_value() <= value and (not instances[2].is_pressed() and not instances[3].is_pressed()) and straight_timer.stop_timer(False) < millis:
+            while instance.current_value() <= value and straight_timer.stop_timer(False) < millis:
                 if 10 > theta > -10:
                     instances[0].drive(speed)
                     instances[1].drive(speed)
@@ -1657,7 +1657,7 @@ class Solarbotic_Wheels_two(base_driver):
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
 
         elif condition == 'het' or condition == '>=':  # het -> higher or equal than
-            while instance.current_value() >= value and (not instances[2].is_pressed() and not instances[3].is_pressed()) and straight_timer.stop_timer(False) < millis:
+            while instance.current_value() >= value and straight_timer.stop_timer(False) < millis:
                 if 10 > theta > -10:
                     instances[0].drive(speed)
                     instances[1].drive(speed)
@@ -1670,7 +1670,7 @@ class Solarbotic_Wheels_two(base_driver):
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
 
         elif condition == 'ht' or condition == '>':  # ht -> higher than
-            while instance.current_value() > value and (not instances[2].is_pressed() and not instances[3].is_pressed()) and straight_timer.stop_timer(False) < millis:
+            while instance.current_value() > value and straight_timer.stop_timer(False) < millis:
                 if 10 > theta > -10:
                     instances[0].drive(speed)
                     instances[1].drive(speed)
@@ -1683,7 +1683,7 @@ class Solarbotic_Wheels_two(base_driver):
                 theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
 
         elif condition == 'lt' or condition == '<':  # lt -> less than
-            while instance.current_value() < value and (not instances[2].is_pressed() and not instances[3].is_pressed()) and straight_timer.stop_timer(False) < millis:
+            while instance.current_value() < value and straight_timer.stop_timer(False) < millis:
                 if 10 > theta > -10:
                     instances[0].drive(speed)
                     instances[1].drive(speed)
@@ -3172,8 +3172,8 @@ class Mecanum_Wheels_four(base_driver):
                     if self.light_sensor_back.sees_black():
                         back_found = True
 
-            t_front = KillableThread(target=white_front_valid)
-            t_back = KillableThread(target=white_back_valid)
+            t_front = KillableThread(target=white_front_valid, daemon=True)
+            t_back = KillableThread(target=white_back_valid, daemon=True)
             t_front.start()
             t_back.start()
 

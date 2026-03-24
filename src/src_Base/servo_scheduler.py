@@ -37,12 +37,12 @@ class ServoScheduler:
         self.id_set = set()
         self._commands = {}
         self._old_funcs = set()
-        self._thread = threading.Thread(target=self._loop, daemon=True)
+        self._thread = threading.Thread(target=self._loop)
         self._thread.start()
 
     def _setup_loop(self):
         self._running = True
-        self._thread = threading.Thread(target=self._loop, daemon=True).start()
+        self._thread = threading.Thread(target=self._loop).start()
 
     def _get_ID(self):
         tid = threading.current_thread().ident
@@ -88,7 +88,6 @@ class ServoScheduler:
                             self.enable_servo(port)
                             to_sleep = data['millis']
                             k.set_servo_position(port, data['pos'])
-                            #k.msleep(to_sleep)
 
                 if self.last_activity and time.time() - self.last_activity > self.AUTO_SHUTDOWN_TIMEOUT:
                     self.disable_all()
@@ -110,7 +109,7 @@ class ServoScheduler:
 
                 key = (port, func_id)
                 self.last_activity = now
-                millis = int((abs(k.get_servo_position(port) - pos) / 100))  # + 20 is just a kind of bias.
+                millis = int((abs(k.get_servo_position(port) - pos) / 100))  # * 2 to increase the time it is allowed to take.
 
                 if key in self._commands:
                     self._commands[key].update({

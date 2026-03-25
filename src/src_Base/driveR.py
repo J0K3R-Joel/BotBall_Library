@@ -1522,7 +1522,7 @@ class Solarbotic_Wheels_two(base_driver):
 
 
     @DriveableFunction
-    def align_drive_back(self, drive_fw: bool = True, drive_fw_speed: int = None, millis: int = 4000) -> None:
+    def align_drive_back(self, drive_fw: bool = True, millis: int = 4000, drive_fw_speed: int = None) -> None:
         '''
         aligning back by bumping into something, so both buttons on the back will be pressed. If there's an error by pressing the buttons, a fail save will occur. If at will it also drive forwards a little bit to be able to turn after it bumped into something
 
@@ -1563,7 +1563,7 @@ class Solarbotic_Wheels_two(base_driver):
 
 
     @DriveableFunction
-    def drive_straight_condition_digital(self, instance: Digital, condition: str, value: int, millis: int = 9999999, speed: int = None):
+    def drive_straight_condition_digital(self, instance: Digital, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
         '''
         drive straight until an digital value gets reached for the desired instance
 
@@ -1736,7 +1736,7 @@ class Solarbotic_Wheels_two(base_driver):
 
 
     @DriveableFunction
-    def drive_align_line(self, direction: str, forward: bool) -> None:
+    def drive_align_line(self, direction: str, forward: bool) -> bool:
         '''
         If you are not on the line, it drives (forwards or backwards, depends if the speed is positive or negative) until the line was found and then aligns as desired.
 
@@ -1745,7 +1745,7 @@ class Solarbotic_Wheels_two(base_driver):
             forward (bool): If it should drive forwards towards the black line or backwards with the default speed
 
         Returns:
-           None
+           bool: If the function is confident enough to say that it is aligned (True) or not (False)
         '''
         self.check_instances_buttons()
         self.check_instance_light_sensors_middle()
@@ -1784,7 +1784,8 @@ class Solarbotic_Wheels_two(base_driver):
         if not ports[0].sees_white():
             self.break_all_motors()
             log('drive_align_line failed: angle was too steep to be certain on how to rotate', important=True)
-            return
+            return False
+
         self.break_all_motors()
         self.turn_degrees_condition_analog(direction, ports[0], '<', ports[0].get_value_white_bias(), speed=speed)
         self.break_all_motors()
@@ -1792,6 +1793,7 @@ class Solarbotic_Wheels_two(base_driver):
         direction = 'right' if 'right' != direction else 'left'
         self.turn_wheel_condition_analog(direction, ports[0], '<', ports[0].get_value_white_bias(), speed=speed)  # basically a fail-save, since the ports[0] ALWAYS needs to be on the black line
         self.break_all_motors()
+        return True
 
 
 
@@ -2423,6 +2425,7 @@ class Solarbotic_Wheels_two(base_driver):
     def turn_wheel(self, direction: str, millis: int, speed: int = None) -> None:
         '''
         turning with only one wheel
+        Information: the time it takes to do a normal 180 degree turn is double the amount you need for turning 180 degrees with only one wheel -> self.ONEEIGHTY_DEGREES_SECS = 90 degrees when using this function
 
         Args:
             direction (str): "left" or "right" - depends on where you want to go
@@ -2432,7 +2435,6 @@ class Solarbotic_Wheels_two(base_driver):
         Returns:
             None
         '''
-        # Information: the time it takes to do a normal 180 degree turn is double the amount you need for turning 180 degrees with only one wheel -> self.ONEEIGHTY_DEGREES_SECS = 90 degrees when using this function
         if speed is None:
             speed = self.ds_speed
 
@@ -4628,32 +4630,45 @@ class Mecanum_Wheels_four(base_driver):
 
 
     @DriveableFunction
-    def turn_to_black_line(self, direction: str, millis: int = 0) -> None:
+    def turn_to_black_line(self, direction: str, priority_at_front: bool = True, millis: int = 0) -> bool:
         '''
         Turn as long as the light sensor (front or back, depends if the speed is positive or negative) sees the black line
 
         Args:
            direction (str): "right" or "left" - depends on where you want to go
+           priority_at_front (bool, optional): If you want to turn for as long as the front light sensor does not see black (True) or if you want it to rotate as long as the back light sensor
            millis (int, optional): how long (in milliseconds) it should keep turning after finding the black line (default: 0)
 
         Returns:
-           None
+           bool: If it found the black line in a full rotation (=360 degree turn) (True) or if there was no black line (False)
         '''
         self.check_instance_light_sensors_middle()
         driving = False
-        instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel, self.light_sensor_front
-        if direction == 'left':
-            instances = self.bl_wheel, self.br_wheel, self.fl_wheel, self.fr_wheel, self.light_sensor_back
+        found = True
+        instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
+        light_sensor = self.light_sensor_front if priority_at_front else self.light_sensor_back
 
+
+        if direction == 'left':
+            instances = self.bl_wheel, self.br_wheel, self.fl_wheel, self.fr_wheel
+
+        turning_timer = TimeR()
+        turning_timer.start_timer_sec()
         if direction == 'right':
-            while not instances[4].sees_black():
+            while not light_sensor.sees_black():
+                if turning_timer.stop_timer(False) > self.ONEEIGHTY_DEGREES_SECS * 2:
+                    found = False
+                    break
                 driving = True
                 instances[0].drive_mfw()
                 instances[1].drive_mbw()
                 instances[2].drive_mfw()
                 instances[3].drive_mbw()
         elif direction == 'left':
-            while not instances[4].sees_black():
+            while not light_sensor.sees_black():
+                if turning_timer.stop_timer(False) > self.ONEEIGHTY_DEGREES_SECS * 2:
+                    found = False
+                    break
                 driving = True
                 instances[0].drive_mbw()
                 instances[1].drive_mfw()
@@ -4663,9 +4678,15 @@ class Mecanum_Wheels_four(base_driver):
             log('Only "right" and "left" are valid commands for the direction!', in_exception=True)
             raise ValueError(
                 'turn_black_line() Exception: Only "right" and "left" are valid commands for the direction!')
-        if driving:
+        if driving and found:
             k.msleep(millis)
+            
         self.break_all_motors()
+
+        if not found:
+            log('No black line found in a full rotation (360 degree turn)', important=True)
+            return False
+        return True
 
 
     @DriveableFunction

@@ -56,7 +56,7 @@ class TimeR:
         return self.begin_time
 
 
-    def change_current_type(self, new_type: str):
+    def change_current_type(self, new_type: str) -> None:
         '''
         Change the current time convertion at which the timer currently operates
 
@@ -111,7 +111,7 @@ class TimeR:
             self.current_timer_type = self.timer_type_millis
 
 
-    def reset_timer(self):
+    def reset_timer(self) -> None:
         '''
         Reset the current running timer to zero
 
@@ -123,6 +123,7 @@ class TimeR:
         '''
         if not self.begin_time:
             log('Timer has not been set yet')
+
         with self._timer_lock:
             self.begin_time = None
             self.current_timer_type = None

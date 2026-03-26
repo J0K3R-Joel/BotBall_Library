@@ -95,12 +95,12 @@ class TimeR:
             self.begin_time = time.time() - additional_time
             self.current_timer_type = self.timer_type_secs
 
-    def start_timer_millis(self, starting_millis=None) -> None:
+    def start_timer_millis(self, starting_millis: int = None) -> None:
         '''
         Start the timer for time examination (in milliseconds)
 
         Args:
-            starting_millis (int or float): The time at which the timer should begin counting (in milliseconds)
+            starting_millis (int): The time at which the timer should begin counting (in milliseconds)
 
         Returns:
             None

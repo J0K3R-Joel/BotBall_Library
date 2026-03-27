@@ -111,14 +111,14 @@ class Util:
                 if number == port_number and cat == category:
                     return name
             if port_file_logable_function_name == "get_port_file_entries":
-                log(f'Category "{category}" with port number #{port_number}" does not exist')
+                log(f'Category "{category}" with port number #{port_number}" does not exist', important=True)
 
         elif cat_exists and pname_exists:  # category and port name are given -> number is wanted
             for name, (number, cat) in port_names.items():
                 if port_name == name and cat == category:
                     return number
             if port_file_logable_function_name == "get_port_file_entries":
-                log(f'Category "{category}" with port name "{port_name}" does not exist')
+                log(f'Category "{category}" with port name "{port_name}" does not exist', important=True)
 
         elif cat_exists:  # category is given -> name and numbers are wanted
             res = dict()
@@ -132,7 +132,7 @@ class Util:
                 if port_name == name and number == port_number:
                     return cat
             if port_file_logable_function_name == "get_port_file_entries":
-                log(f'Port number #{port_number} with port name "{port_name}" does not exist')
+                log(f'Port number #{port_number} with port name "{port_name}" does not exist', important=True)
 
         elif pnumber_exists:  # number is given -> category and port name are wanted
             res = dict()
@@ -145,7 +145,7 @@ class Util:
             if port_name in list(port_names.keys()):
                 return port_names[port_name]
             if port_file_logable_function_name == "get_port_file_entries":
-                log(f'Port name "{port_name}" does not exist')
+                log(f'Port name "{port_name}" does not exist', important=True)
 
 
     @Port_File_Logging

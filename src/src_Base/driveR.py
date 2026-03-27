@@ -123,7 +123,7 @@ class base_driver:
 
         Args:
             default_speed (int): The speed of which the robot is driving normally when no speed is specified
-            standing (bool): If the controller is standing on top of the metal chassis the robot is based on (True), or if it is laying down flat on the metal chassis (False)
+            standing (bool): If the controller is standing on top of the metal chassis, the robot is based on (True), or if it is laying down flat on the metal chassis (False)
             *motors (WheelR): The WheelR instances which the robot needs to get to another pointa
         '''
         self.ds_speed = default_speed
@@ -269,6 +269,31 @@ class base_driver:
         except Exception as e:
             log(str(e), important=True, in_exception=True)
 
+    def get_bias_gyro_x(self, calibrated: bool = False) -> float:
+        '''
+        Getting the average bias from the bias_gyro_x.txt file
+
+        Args:
+            calibrated (bool, optional): Writing to the file bias_gyro_x.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
+
+
+        Returns:
+            Average of the bias_gyro_x.txt file (optionally with the recent calibrated bias as well)
+        '''
+        avg = 0
+        file_name = os.path.join(BIAS_FOLDER, 'bias_gyro_x.txt')
+        try:
+            with open(file_name, "r") as f:
+                temp_bias = f.read()
+                if calibrated:
+                    avg = (float(temp_bias) + self.bias_gyro_x) / 2
+                    file_Manager.writer(file_name, 'w', str(avg))
+                else:
+                    avg = float(temp_bias)
+            return avg
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
+
     def get_bias_accel_z(self, calibrated: bool = False) -> float:
         '''
         Getting the average bias from the bias_accel_z.txt file
@@ -312,6 +337,31 @@ class base_driver:
                 temp_bias = f.read()
                 if calibrated:
                     avg = (float(temp_bias) + self.bias_accel_y) / 2
+                    file_Manager.writer(file_name, 'w', str(avg))
+                else:
+                    avg = float(temp_bias)
+            return avg
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
+
+    def get_bias_accel_x(self, calibrated: bool = False) -> float:
+        '''
+        Getting the average bias from the bias_accel_x.txt file
+
+        Args:
+            calibrated (bool, optional): Writing to the file bias_accel_x.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
+
+
+        Returns:
+            Average of the bias_accel_x.txt file (optionally with the recent calibrated bias as well)
+        '''
+        avg = 0
+        file_name = os.path.join(BIAS_FOLDER, 'bias_accel_x.txt')
+        try:
+            with open(file_name, "r") as f:
+                temp_bias = f.read()
+                if calibrated:
+                    avg = (float(temp_bias) + self.bias_accel_x) / 2
                     file_Manager.writer(file_name, 'w', str(avg))
                 else:
                     avg = float(temp_bias)
@@ -389,7 +439,7 @@ class base_driver:
     # ======================== SET METHODS ========================
     def set_degrees(self, secs: float) -> None:
         '''
-        Sets the amount of degrees for a 180° turn
+        Sets the number of degrees for a 180° turn
 
         Args:
             secs (float): the time in seconds it takes for a 180° turn
@@ -405,7 +455,7 @@ class base_driver:
         Sets the amount of bias where the controller is laying down (for example) and getting turned from left to right or right to left
 
         Args:
-            bias (float): the average of gyro_z after some time
+            bias (float): the average of _kipr.gyro_z() after some time
 
         Returns:
             None
@@ -426,12 +476,25 @@ class base_driver:
         self.bias_gyro_y = bias
         self._handle_standard_bias()
 
+    def set_gyro_x(self, bias: float) -> None:
+        '''
+        Sets the amount of bias where the controller is standing (for example) and getting turned from left to right or right to left
+
+        Args:
+            bias (float): the average of _kipr.gyro_y() after some time
+
+        Returns:
+            None
+        '''
+        self.bias_gyro_x = bias
+        self._handle_standard_bias()
+
     def set_accel_z(self, bias: float) -> None:
         '''
         Sets the amount of bias where the controller is standing (for example) and moving backward or forward
 
         Args:
-            bias (float): the average of _kipr.accel_y() after some time
+            bias (float): the average of _kipr.accel_z() after some time
 
         Returns:
             None
@@ -450,6 +513,19 @@ class base_driver:
             None
         '''
         self.bias_accel_y = bias
+        self._handle_standard_bias()
+
+    def set_accel_x(self, bias: float) -> None:
+        '''
+        Sets the amount of bias where the controller is laying down (for example) and moving backward or forward
+
+        Args:
+            bias (float): the average of _kipr.accel_x() after some time
+
+        Returns:
+            None
+        '''
+        self.bias_accel_x = bias
         self._handle_standard_bias()
 
     def set_distances(self, values: list = None, mm: list = None) -> None:
@@ -647,11 +723,13 @@ class base_driver:
         Returns:
             None. Writes bias into files
         '''
-        self.calibrate_hardware('gyro_z', 'gyro_y', 'accel_z', 'accel_y', output=False)
+        self.calibrate_hardware('gyro_z', 'gyro_y', 'gyro_x', 'accel_z', 'accel_y', 'accel_x', output=False)
         self.bias_gyro_y = self.get_bias_gyro_y(True)
-        self.bias_accel_z = self.get_bias_accel_y(True)
         self.bias_gyro_z = self.get_bias_gyro_z(True)
+        self.bias_gyro_x = self.get_bias_gyro_x(True)
+        self.bias_accel_z = self.get_bias_accel_z(True)
         self.bias_accel_y = self.get_bias_accel_y(True)
+        self.bias_accel_x = self.get_bias_accel_x(True)
         self.calibrate_degrees(output)
         self.break_all_motors()
         self.get_degrees_time(True)
@@ -660,7 +738,7 @@ class base_driver:
 
     def calibrate_gyro_z(self, counter: int = None, max: int = None, times: int = 8000) -> None:
         '''
-        calibrates the bias from the gyro to be able to drive straight, since the bias is for telling us how far off from driving straight the wombat is
+        calibrate the bias for the controllers right and left
 
         Args:
             counter (int): the number where it is at the moment
@@ -682,7 +760,7 @@ class base_driver:
 
     def calibrate_gyro_y(self, counter: int = None, max: int = None, times: int = 8000) -> None:
         '''
-        calibrates the bias from the gyro to be able to drive straight, since the bias is for telling us how far off from driving straight the wombat is (theoretically it is for driving sideways)
+        calibrate the bias for the controllers front and rear
 
         Args:
             counter (int, default): the number where it is at the moment (default: None)
@@ -702,9 +780,31 @@ class base_driver:
         if counter is not None and max is not None:
             log(f'{counter}/{max} - GYRO Y CALIBRATED')
 
+    def calibrate_gyro_x(self, counter: int = None, max: int = None, times: int = 8000) -> None:
+        '''
+        calibrate the bias for the controllers top and bottom
+
+        Args:
+            counter (int, default): the number where it is at the moment (default: None)
+            max (int, default): how many calibrations there are (to show it on the screen and for debugging usage) (default: None)
+            times (int, optional): how many calibrations should be done (default: 8000)
+
+        Returns:
+            None
+        '''
+        i: int = 0
+        avg: float = 0
+        while i < times:
+            avg += k.gyro_x()
+            k.msleep(1)
+            i += 1
+        self.bias_gyro_x = avg / times
+        if counter is not None and max is not None:
+            log(f'{counter}/{max} - GYRO X CALIBRATED')
+
     def calibrate_accel_z(self, counter: int = None, max: int = None, times: int = 8000) -> None:
         '''
-        calibrates the bias from the accelerometer to know how fast the wombat is going towards the x-axis(accelerometer is not yet in use though)
+        calibrates the bias from the accelerometer to know how fast the wombat is going towards the x-axis (accelerometer is not yet in use though)
 
         Args:
             counter (int, optional): the number where it is at the moment (default: None)
@@ -726,7 +826,7 @@ class base_driver:
 
     def calibrate_accel_y(self, counter: int = None, max: int = None, times: int = 8000) -> None:
         '''
-        calibrates the bias from the accelerometer to know how fast the wombat is going towards the y-axis(accelerometer is not yet in use though)
+        calibrates the bias from the accelerometer to know how fast the wombat is going towards the y-axis (accelerometer is not yet in use though)
 
         Args:
             counter (int, optional): the number where it is at the moment (default: None)
@@ -746,9 +846,31 @@ class base_driver:
         if counter is not None and max is not None:
             log(f'{counter}/{max} - ACCEL Y CALIBRATED')
 
+    def calibrate_accel_x(self, counter: int = None, max: int = None, times: int = 8000) -> None:
+        '''
+        calibrates the bias from the accelerometer to know how fast the wombat is going towards the x-axis (accelerometer is not yet in use though)
+
+        Args:
+            counter (int, optional): the number where it is at the moment (default: None)
+            max (int, optional): how many calibrations there are (to show it on the screen and for debugging usage) (default: None)
+            times (int, optional): how many calibrations should be done (default: 8000)
+
+        Returns:
+            None
+        '''
+        i: int = 0
+        avg: float = 0
+        while i < times:
+            avg += k.accel_x()
+            k.msleep(1)
+            i += 1
+        self.bias_accel_x = avg / times
+        if counter is not None and max is not None:
+            log(f'{counter}/{max} - ACCEL X CALIBRATED')
+
     def calibrate_hardware(self, *args: str, millis: int = None, output: bool = True) -> None:
         '''
-        Gives you access to thread based calibration, so you do not need to wait for every function individually.
+        Gives you access to thread-based calibration, so you do not need to wait for every function individually.
 
         Args:
             *args: either one or more of the following options:
@@ -773,15 +895,21 @@ class base_driver:
             elif arg == 'gyro_y' or arg == 'gy':
                 t1 = threading.Thread(target=self.calibrate_gyro_y, kwargs=arguments, name='gyro_y', daemon=True)
                 calibrations.append(t1)
+            elif arg == 'gyro_x' or arg == 'gx':
+                t1 = threading.Thread(target=self.calibrate_gyro_x, kwargs=arguments, name='gyro_x', daemon=True)
+                calibrations.append(t1)
             elif arg == 'accel_z' or arg == 'az':
                 t1 = threading.Thread(target=self.calibrate_accel_z, kwargs=arguments, name='accel_z', daemon=True)
                 calibrations.append(t1)
             elif arg == 'accel_y' or arg == 'ay':
                 t1 = threading.Thread(target=self.calibrate_accel_y, kwargs=arguments, name='accel_y', daemon=True)
                 calibrations.append(t1)
+            elif arg == 'accel_x' or arg == 'ax':
+                t1 = threading.Thread(target=self.calibrate_accel_x, kwargs=arguments, name='accel_x', daemon=True)
+                calibrations.append(t1)
             else:
-                log(f'You can only calibrate "gyro_z", "gyro_y", "accel_z" or "accel_y" and not "{arg}"', in_exception=True)
-                raise ValueError(f'You can only calibrate "gyro_z", "gyro_y", "accel_z" or "accel_y" and not "{arg}"')
+                log(f'You can only calibrate "gyro_z", "gyro_y", "gyro_x", "accel_z", "accel_y" or "accel_x" and not "{arg}"', in_exception=True)
+                raise ValueError(f'You can only calibrate "gyro_z", "gyro_y", "gyro_x", "accel_z", "accel_y" or "accel_x" and not "{arg}"')
 
         for calibration in calibrations:
             calibration.start()
@@ -3201,7 +3329,6 @@ class Mecanum_Wheels_four(base_driver):
         self.check_instance_light_sensors_middle()
         t_timer = TimeR()
         turning_time = self.ONEEIGHTY_DEGREES_SECS / 2 if self.ONEEIGHTY_DEGREES_SECS else 1
-        t_timer.start_timer_sec()
 
         def sensor_checker():
             global front_found, back_found
@@ -3220,17 +3347,21 @@ class Mecanum_Wheels_four(base_driver):
                     if self.light_sensor_back.sees_black():
                         back_found = True
 
-            t_front = KillableThread(target=white_front_valid, daemon=True)
-            t_back = KillableThread(target=white_back_valid, daemon=True)
+            t_front = KillableThread(target=white_front_valid)
+            t_back = KillableThread(target=white_back_valid)
             t_front.start()
             t_back.start()
 
-            while not front_found and not back_found:
+            while not front_found or not back_found:
                 self.fl_wheel.drive_dfw()
                 self.fr_wheel.drive_dbw()
                 self.bl_wheel.drive_dfw()
                 self.br_wheel.drive_dbw()
 
+            t_back.kill()
+            t_front.kill()
+
+        t_timer.start_timer_sec()
         while t_timer.stop_timer(False) < turning_time:
             self.fl_wheel.drive_dfw()
             self.fr_wheel.drive_dbw()
@@ -3238,8 +3369,8 @@ class Mecanum_Wheels_four(base_driver):
             self.br_wheel.drive_dbw()
 
         sensor_checker()
-        self.break_all_motors()
         self.ONEEIGHTY_DEGREES_SECS = t_timer.stop_timer()
+        self.break_all_motors()
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
 
         if output:
@@ -3428,8 +3559,8 @@ class Mecanum_Wheels_four(base_driver):
             adjuster = -adjuster
 
         while side_timer.stop_timer(False) < millis:
-            theta_side += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
-
+            theta_side += (self.get_current_standard_gyro() - self.standard_bias_gyro)
+            print(theta_side, flush=True)
             if 100 >= theta_side >= -100:
                 instances[0].drive(speed)
                 instances[1].drive(-speed)
@@ -3438,13 +3569,13 @@ class Mecanum_Wheels_four(base_driver):
             elif theta_side < -100:
                 instances[0].drive(speed + adjuster)
                 instances[1].drive(-speed - adjuster)
-                instances[2].drive(-speed - adjuster)
-                instances[3].drive(speed + adjuster)
+                instances[2].drive(-speed + adjuster)
+                instances[3].drive(speed - adjuster)
             elif theta_side > 100:
                 instances[0].drive(speed - adjuster)
                 instances[1].drive(-speed + adjuster)
-                instances[2].drive(-speed + adjuster)
-                instances[3].drive(speed - adjuster)
+                instances[2].drive(-speed - adjuster)
+                instances[3].drive(speed + adjuster)
 
         self.break_all_motors()
 

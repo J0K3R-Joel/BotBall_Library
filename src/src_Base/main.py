@@ -37,7 +37,7 @@ except Exception as e:
 
 # ======================== VARIABLE DECLARATION =======================
 # ===== GLOBAL VARIABLES =====
-utility = None
+utility = Util()
 wifi = None
 file_Manager = None
 camera_man = None
@@ -81,24 +81,17 @@ def Wifi_Setup():
 def Comm_Setup():
     try:
         globals()['pause_event'] = PausR()
-        globals()['comm'] = RobotCommunicator('192.168.XX.XX', 10000, is_server=True, pause_event=pause_event) # one has to be the server, the other one has to be is_server=False (or be left out) -> both need the IP-Adress (IP from the the server) and the same port to communicate
+        globals()['comm'] = RobotCommunicator('192.168.XX.XX', 10000, is_server=True, pause_event=pause_event) # one has to be the server, the other one has to be is_server=False (or be left out) -> both need the IP-Address (IP from the server) and the same port to communicate
         #  XX here represents the complete IPv4-Address. eg: 192.168.0.10; 10.290.5.100; 172.100.5.134
     except Exception as e:
         log(f'Communication Exception: {str(e)}', important=True, in_exception=True)
-
-def Util_Setup():
-    global utility
-    try:
-        utility = Util()  # Add parameters here, if needed
-    except Exception as e:
-        log(str(e), in_exception=True)
 
 
 def Instancer_Setup():
     try:
         # ============ Ports Initializing ===========
         # ================= Digital =================
-        globals()['TestButton'] = Digital(PORT_BUTTON)  # This is how you will declare all sensors and motors and servos. globals()['{VAR_NAME)'] creates a global variable that is accessable EVERYWHERE (see main function)!
+        globals()['TestButton'] = Digital(PORT_BUTTON)  # This is how you will declare all sensors and motors and servos. globals()['{VAR_NAME)'] creates a global variable that is accessible EVERYWHERE (see the main function)!
 
         # ================= ServoX ==================
 

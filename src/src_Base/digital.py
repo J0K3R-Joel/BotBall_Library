@@ -35,7 +35,6 @@ class Digital(Sensor):
 
 
     # ======================== PUBLIC METHODS ========================
-
     def current_value(self) -> int:
         '''
         get the current value of the digital Port

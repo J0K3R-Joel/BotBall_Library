@@ -18,7 +18,8 @@ try:
     import uuid
     import math
     import inspect
-    from typing import Optional
+    import heapq
+    from typing import Optional, List
     from timer import TimeR  # selfmade
     from scipy.interpolate import interp1d
     from threadR import KillableThread  # selfmade
@@ -28,15 +29,17 @@ try:
     from light_sensor import LightSensor  # selfmade
     from digital import Digital  # selfmade
     from fileR import FileR  # selfmade
+    from util import Util  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
+
+BIAS_FOLDER = '/home/kipr/BotBall-data/bias_files'
 try:
-    file_Manager = FileR()
+    file_Manager = FileR(BIAS_FOLDER)
 except Exception as e:
     log(f'FileR Error: {str(e)}', important=True, in_exception=True)
 
-BIAS_FOLDER = '/home/kipr/BotBall-data/bias_files'
 os.makedirs(BIAS_FOLDER, exist_ok=True)
 FILE_PATH = os.path.join(sys.path[0], __file__)
 breakable_function_name = None
@@ -48,6 +51,20 @@ def DriveableFunction(func):
 
         if FILE_PATH != calling_file:
             breakable_function_name = func.__name__
+
+        if wrapper.__name__.find(func.__name__) == -1:
+            wrapper.__name__ = f'{func.__name__}#' + wrapper.__name__
+
+        result = func(*args, **kwargs)
+        return result
+
+    return wrapper
+
+def ForceDriveableFunction(func):
+    def wrapper(*args, **kwargs):
+        global breakable_function_name
+
+        breakable_function_name = func.__name__
 
         if wrapper.__name__.find(func.__name__) == -1:
             wrapper.__name__ = f'{func.__name__}#' + wrapper.__name__
@@ -99,7 +116,7 @@ def BreakableFunction(func):
     def wrapper(*args, **kwargs):
         calling_function = sys._getframe().f_back.f_code.co_name
 
-        if calling_function == breakable_function_name:  # last valid function name
+        if calling_function == breakable_function_name:  # last valid function name  @TODO test out if this still works, since the name gets overwritten
             wrapper.__name__ = f'{func.__name__}#' + wrapper.__name__
 
             result = func(*args, **kwargs)
@@ -117,31 +134,44 @@ def BreakableFunction(func):
     return wrapper
 
 class base_driver:
-    def __init__(self, default_speed: int, standing: bool, *motors: WheelR):
-        '''
+    def __init__(self, default_speed: int, *motors: WheelR):
+        """
         Class for every single robot. Every robot will get those functions and variables, since they all have in some way or another the same base of hardware
 
         Args:
             default_speed (int): The speed of which the robot is driving normally when no speed is specified
             standing (bool): If the controller is standing on top of the metal chassis, the robot is based on (True), or if it is laying down flat on the metal chassis (False)
             *motors (WheelR): The WheelR instances which the robot needs to get to another pointa
-        '''
+        """
         self.ds_speed = default_speed
-        self.standing = standing
         self.motors = motors
         self._motor_lock = threading.Lock()
         self._motor_stoppers = {}
         self._next_motor_id = 0
-        self.mm_per_sec_file = BIAS_FOLDER + '/mm_per_sec.txt'
+        self.max_speed = 1500
+        self.mm_per_sec_file = '/mm_per_sec.txt'
+        self.axis_importance_file = '/axis_importance_level.txt'
+
+
+        # @TODO REMOVE ME
+        file_Manager.remover(BIAS_FOLDER + '/bias_importance_level.txt')
+        file_Manager.transfer(BIAS_FOLDER + '/bias_degrees.txt', BIAS_FOLDER + '/degrees_time.txt', create_to_transfer_file=True)
+        file_Manager.transfer(BIAS_FOLDER + '/gyro_importance_level.txt', BIAS_FOLDER + '/axis_importance_level.txt', create_to_transfer_file=True)
+        file_Manager.remover(BIAS_FOLDER + '/bias_degrees.txt')
+        file_Manager.remover(BIAS_FOLDER + '/axis_importance_level.txt')
+
+
+
         self.pseudo_distanceR = DistanceSensor(99999999999)  # just an imaginary port, which will never exist
         self.distance_far_values, self.distance_far_mm = self.pseudo_distanceR.get_distances(raises_exception=False)
         self.check_wheelr_instance(motors)
+        self._set_values()
 
 
 
     # ======================== PRIVATE METHODS =======================
     def _set_values(self):
-        '''
+        """
         Sets all internal values
 
         Args:
@@ -149,228 +179,338 @@ class base_driver:
 
         Returns:
             None
-        '''
+        """
         self.mm_per_sec = self.get_mm_per_sec()
         self.ONEEIGHTY_DEGREES_SECS = self.get_degrees_time()
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
+        self._handle_standard_bias()
         self.bias_gyro_z = self.get_bias_gyro_z()
         self.bias_gyro_y = self.get_bias_gyro_y()
-        self.bias_accel_z = self.get_bias_accel_z()  # There are no function where you can do anything with the accel y -> you need to invent them by yourself
-        self.bias_accel_y = self.get_bias_accel_y()  # There are no function where you can do anything with the accel y -> you need to invent them by yourself
-        self._handle_standard_bias()
+        self.bias_gyro_x = self.get_bias_gyro_x()
+        self.bias_accel_z = self.get_bias_accel_z()  # There is no function where you can do anything with the accel y -> you need to invent them by yourself
+        self.bias_accel_y = self.get_bias_accel_y()  # There is no function where you can do anything with the accel y -> you need to invent them by yourself
+        self.bias_accel_x = self.get_bias_accel_x()  # There is no function where you can do anything with the accel y -> you need to invent them by yourself
 
     def _handle_standard_bias(self):
-        '''
-        Creates all bias which change on the orientation of the controller
+        """
+        Creates all bias that changes on the orientation of the controller
 
         Args:
             None
 
         Returns:
             None
-        '''
-        if self.standing:
+        """
+        most_important_axis = self.get_most_important_axis()
+
+        if most_important_axis.upper() == 'x'.upper():
+            self.standard_bias_gyro = self.bias_gyro_x
+            self.standard_axis_function = k.gyro_x
+            self.standard_bias_accel = self.bias_accel_x
+        elif most_important_axis.upper() == 'y'.upper():
             self.standard_bias_gyro = self.bias_gyro_y
-            self.standard_bias_accel = self.bias_accel_z
-            self.rev_standard_bias_gyro = self.bias_gyro_z
-            self.rev_standard_bias_accel = self.bias_gyro_y
-        else:
-            self.standard_bias_gyro = self.bias_gyro_z
+            self.standard_axis_function = k.gyro_y
             self.standard_bias_accel = self.bias_accel_y
-            self.rev_standard_bias_gyro = self.bias_gyro_y
-            self.rev_standard_bias_accel = self.bias_gyro_z
+        elif most_important_axis.upper() == 'z'.upper():
+            self.standard_bias_gyro = self.bias_gyro_z
+            self.standard_axis_function = k.gyro_z
+            self.standard_bias_accel = self.bias_accel_z
+        else:
+            log('RUN THE "hardware_orientation_identification" FUNCTION TO IDENTIFY THE NECESSARY AXIS (X, Y, Z)', important=True)
+            self.standard_axis_function = None
+
+
+
+    # ======================= SAVE BIAS ========================
+    def save_bias_gyro_x(self) -> None:
+        """
+        Secure the current gyro_x bias and calculate the average between the last bias and this bias. Additionally, set the average as the bias.
+
+        Args:
+            None
+
+        Returns:
+            None, but sets a class variable
+        """
+        file_name = 'bias_gyro_x.txt'
+        temp_bias = file_Manager.reader(file_name, 'float')
+        avg = (temp_bias + self.get_bias_gyro_x()) / 2
+
+        self.bias_gyro_x = avg
+        file_Manager.writer(file_name, 'w', str(avg))
+
+
+    def save_bias_gyro_y(self) -> None:
+        """
+        Secure the current gyro_y bias and calculate the average between the last bias and this bias. Additionally, set the average as the bias.
+
+        Args:
+            None
+
+        Returns:
+            None, but sets a class variable
+        """
+        file_name = 'bias_gyro_y.txt'
+        temp_bias = file_Manager.reader(file_name, 'float')
+        avg = (temp_bias + self.get_bias_gyro_y()) / 2
+
+        self.bias_gyro_y = avg
+        file_Manager.writer(file_name, 'w', str(avg))
+
+
+    def save_bias_gyro_z(self) -> None:
+        """
+        Secure the current gyro_z bias and calculate the average between the last bias and this bias. Additionally, set the average as the bias.
+
+        Args:
+            None
+
+        Returns:
+            None, but sets a class variable
+        """
+        file_name = 'bias_gyro_z.txt'
+        temp_bias = file_Manager.reader(file_name, 'float')
+        avg = (temp_bias + self.get_bias_gyro_z()) / 2
+
+        self.bias_gyro_z = avg
+        file_Manager.writer(file_name, 'w', str(avg))
+
+
+    def save_bias_accel_x(self) -> None:
+        """
+        Secure the current accel_x bias and calculate the average between the last bias and this bias. Additionally, set the average as the bias.
+
+        Args:
+            None
+
+        Returns:
+            None, but sets a class variable
+        """
+        file_name = 'bias_accel_x.txt'
+        temp_bias = file_Manager.reader(file_name, 'float')
+        avg = (temp_bias + self.get_bias_accel_x()) / 2
+
+        self.bias_accel_x = avg
+        file_Manager.writer(file_name, 'w', str(avg))
+
+
+    def save_bias_accel_y(self) -> None:
+        """
+        Secure the current accel_y bias and calculate the average between the last bias and this bias. Additionally, set the average as the bias.
+
+        Args:
+            None
+
+        Returns:
+            None, but sets a class variable
+        """
+        file_name = 'bias_accel_y.txt'
+        temp_bias = file_Manager.reader(file_name, 'float')
+        avg = (temp_bias + self.get_bias_accel_y()) / 2
+
+        self.bias_accel_y = avg
+        file_Manager.writer(file_name, 'w', str(avg))
+
+
+    def save_bias_accel_z(self) -> None:
+        """
+        Secure the current accel_z bias and calculate the average between the last bias and this bias. Additionally, set the average as the bias.
+
+        Args:
+            None
+
+        Returns:
+            None, but sets a class variable
+        """
+        file_name = 'bias_accel_z.txt'
+        temp_bias = file_Manager.reader(file_name, 'float')
+        avg = (temp_bias + self.get_bias_accel_z()) / 2
+
+        self.bias_accel_z = avg
+        file_Manager.writer(file_name, 'w', str(avg))
+
+
+    def save_degrees_time(self) -> None:
+        """
+        Secure the current time it takes for a full 180-degree and calculate the average between the last time and this time. Additionally, set the average as the new 180-degree time.
+
+        Args:
+            None
+
+        Returns:
+            None, but sets class variables
+        """
+        file_name = 'degrees_time.txt'
+        degrees_time = file_Manager.reader(file_name, 'float')
+        avg = (degrees_time + self.get_degrees_time()) / 2
+
+        self.ONEEIGHTY_DEGREES_SECS = avg
+        self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
+        file_Manager.writer(file_name, 'w', str(avg))
+
+
+
+    def save_distances(self, values: list = None, mm: list = None) -> None:
+        """
+        Setting the distances for the distance file
+
+        Args:
+            values (list[int], optional): every distance sensor value (default: class variable)
+            mm (list[int], optional): every calculated millimeter for every distance value (default: class variable)
+
+        Returns:
+            None
+        """
+        v = values if isinstance(values, list) else self.distance_far_values
+        m = mm if isinstance(mm, list) else self.distance_far_mm
+
+        try:
+            with open(self.pseudo_distanceR.get_file_path(), "w") as f:
+                f.write("value=" + ",".join(map(str, v)) + "\n")
+                f.write("mm=" + ",".join(map(str, m)) + "\n")
+            log(f"Distances saved to {self.pseudo_distanceR.get_file_path()}")
+
+        except Exception as e:
+            log(str(e), important=True, in_exception=True)
+
 
     # ================== GET / OVERWRITE BIAS ==================
-
-    def get_current_standard_gyro(self, reverse: bool = False) -> int:
-        '''
+    def get_current_standard_gyro(self) -> int:
+        """
         Getting the current value of the bias depending on if the controller is standing or laying down
 
         Args:
-            reverse (bool): it it should return the reversed value or not
+            None
 
         Returns:
-            int: the gyro_z or gyro_y value
-        '''
-        if reverse:
-            return k.gyro_z() if self.standing else k.gyro_y()
-        return k.gyro_y() if self.standing else k.gyro_z()
+            int: the needed gyro value
+        """
+        if self.standard_axis_function:
+            return self.standard_axis_function()
+        raise ValueError('No axis calibration done. Execute the "hardware_orientation_identification" function first')
 
-    def get_degrees_time(self, calibrated: bool = False) -> float:
-        '''
-        Getting the average time for a 180 degree turn from the bias_degrees.txt file
+    def get_degrees_time(self) -> float:
+        """
+        Receive the time it takes to make a full 180-degree turn
 
         Args:
-            calibrated (bool, optional): Writing to the file bias_degrees.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
+            None
 
         Returns:
-            Average of the bias_degrees.txt file (optionally with the recent calibrated bias as well) in seconds
-        '''
-        file_name = os.path.join(BIAS_FOLDER, 'bias_degrees.txt')
-        try:
-            temp_deg = file_Manager.reader(file_name)
-            if calibrated:
-                avg = (float(temp_deg) + self.ONEEIGHTY_DEGREES_SECS) / 2
-                file_Manager.writer(file_name, 'w', str(avg))
-            else:
-                avg = float(temp_deg)
+            float: time for one 180-degree turn
+        """
+        degree_time = getattr(self, 'ONEEIGHTY_DEGREES_SECS', __default=None)
+        if not degree_time:
+            file_name = 'degrees_time.txt'
+            degree_time = file_Manager.reader(file_name, 'float')
 
-            return avg
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
+        return degree_time
 
-    def get_bias_gyro_z(self, calibrated: bool = False) -> float:
-        '''
-        Getting the average bias from the bias_gyro_z.txt file
+    def get_bias_gyro_z(self) -> float:
+        """
+        Receive the recent bias of gyro_z value
 
         Args:
-            calibrated (bool, optional): Writing to the file bias_gyro_z.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
-
+            None
 
         Returns:
-            Average of the bias_gyro_z.txt file (optionally with the recent calibrated bias as well)
-        '''
-        avg = 0
-        file_name = os.path.join(BIAS_FOLDER, 'bias_gyro_z.txt')
-        try:
-            with open(file_name, "r") as f:
-                temp_bias = f.read()
-                if calibrated:
-                    avg = (float(temp_bias) + self.bias_gyro_z) / 2
-                    file_Manager.writer(file_name, 'w', str(avg))
-                else:
-                    avg = float(temp_bias)
-            return avg
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
+            float: current bias for the gyro_z value
+        """
+        bias = getattr(self, 'bias_gyro_z', __default=None)
+        if not bias:
+            file_name = 'bias_gyro_z.txt'
+            bias = file_Manager.reader(file_name, 'float')
 
-    def get_bias_gyro_y(self, calibrated: bool = False) -> float:
-        '''
-        Getting the average bias from the bias_gyro_y.txt file
+        return bias
+
+    def get_bias_gyro_y(self) -> float:
+        """
+        Receive the recent bias of gyro_y value
 
         Args:
-            calibrated (bool, optional): Writing to the file bias_gyro_y.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
-
+            None
 
         Returns:
-            Average of the bias_gyro_y.txt file (optionally with the recent calibrated bias as well)
-        '''
-        avg = 0
-        file_name = os.path.join(BIAS_FOLDER, 'bias_gyro_y.txt')
-        try:
-            with open(file_name, "r") as f:
-                temp_bias = f.read()
-                if calibrated:
-                    avg = (float(temp_bias) + self.bias_gyro_y) / 2
-                    file_Manager.writer(file_name, 'w', str(avg))
-                else:
-                    avg = float(temp_bias)
-            return avg
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
+            float: current bias for the gyro_y value
+        """
+        bias = getattr(self, 'bias_gyro_y', __default=None)
+        if not bias:
+            file_name = 'bias_gyro_y.txt'
+            bias = file_Manager.reader(file_name, 'float')
 
-    def get_bias_gyro_x(self, calibrated: bool = False) -> float:
-        '''
-        Getting the average bias from the bias_gyro_x.txt file
+        return bias
+
+    def get_bias_gyro_x(self) -> float:
+        """
+        Receive the recent bias of gyro_x value
 
         Args:
-            calibrated (bool, optional): Writing to the file bias_gyro_x.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
-
+            None
 
         Returns:
-            Average of the bias_gyro_x.txt file (optionally with the recent calibrated bias as well)
-        '''
-        avg = 0
-        file_name = os.path.join(BIAS_FOLDER, 'bias_gyro_x.txt')
-        try:
-            with open(file_name, "r") as f:
-                temp_bias = f.read()
-                if calibrated:
-                    avg = (float(temp_bias) + self.bias_gyro_x) / 2
-                    file_Manager.writer(file_name, 'w', str(avg))
-                else:
-                    avg = float(temp_bias)
-            return avg
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
+            float: current bias for the gyro_x value
+        """
+        bias = getattr(self, 'bias_gyro_x', __default=None)
+        if not bias:
+            file_name = 'bias_gyro_x.txt'
+            bias = file_Manager.reader(file_name, 'float')
 
-    def get_bias_accel_z(self, calibrated: bool = False) -> float:
-        '''
-        Getting the average bias from the bias_accel_z.txt file
+        return bias
+
+    def get_bias_accel_z(self) -> float:
+        """
+        Receive the recent bias of accel_z value
 
         Args:
-            calibrated (bool, optional): Writing to the file bias_accel_z.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
-
+            None
 
         Returns:
-            Average of the bias_accel_z.txt file (optionally with the recent calibrated bias as well)
-        '''
-        avg = 0
-        file_name = os.path.join(BIAS_FOLDER, 'bias_accel_z.txt')
-        try:
-            with open(file_name, "r") as f:
-                temp_bias = f.read()
-                if calibrated:
-                    avg = (float(temp_bias) + self.bias_accel_z) / 2
-                    file_Manager.writer(file_name, 'w', str(avg))
-                else:
-                    avg = float(temp_bias)
-            return avg
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
+            float: current bias for the accel_z value
+        """
+        bias = getattr(self, 'bias_accel_z', __default=None)
+        if not bias:
+            file_name = 'bias_accel_z.txt'
+            bias = file_Manager.reader(file_name, 'float')
 
-    def get_bias_accel_y(self, calibrated: bool = False) -> float:
-        '''
-        Getting the average bias from the bias_accel_y.txt file
+        return bias
+
+    def get_bias_accel_y(self) -> float:
+        """
+        Receive the recent bias of accel_y value
 
         Args:
-            calibrated (bool, optional): Writing to the file bias_accel_y.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
-
+            None
 
         Returns:
-            Average of the bias_accel_y.txt file (optionally with the recent calibrated bias as well)
-        '''
-        avg = 0
-        file_name = os.path.join(BIAS_FOLDER, 'bias_accel_y.txt')
-        try:
-            with open(file_name, "r") as f:
-                temp_bias = f.read()
-                if calibrated:
-                    avg = (float(temp_bias) + self.bias_accel_y) / 2
-                    file_Manager.writer(file_name, 'w', str(avg))
-                else:
-                    avg = float(temp_bias)
-            return avg
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
+            float: current bias for the accel_y value
+        """
+        bias = getattr(self, 'bias_accel_y', __default=None)
+        if not bias:
+            file_name = 'bias_accel_y.txt'
+            bias = file_Manager.reader(file_name, 'float')
 
-    def get_bias_accel_x(self, calibrated: bool = False) -> float:
-        '''
-        Getting the average bias from the bias_accel_x.txt file
+        return bias
+
+    def get_bias_accel_x(self) -> float:
+        """
+        Receive the recent bias of accel_x value
 
         Args:
-            calibrated (bool, optional): Writing to the file bias_accel_x.txt and getting the most recent bias with the last average bias (True) or getting the last average bias only (False / optional)
-
+            None
 
         Returns:
-            Average of the bias_accel_x.txt file (optionally with the recent calibrated bias as well)
-        '''
-        avg = 0
-        file_name = os.path.join(BIAS_FOLDER, 'bias_accel_x.txt')
-        try:
-            with open(file_name, "r") as f:
-                temp_bias = f.read()
-                if calibrated:
-                    avg = (float(temp_bias) + self.bias_accel_x) / 2
-                    file_Manager.writer(file_name, 'w', str(avg))
-                else:
-                    avg = float(temp_bias)
-            return avg
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
+           float: current bias for the accel_x value
+        """
+        bias = getattr(self, 'bias_accel_x', __default=None)
+
+        if not bias:
+            file_name = 'bias_accel_x.txt'
+            bias = file_Manager.reader(file_name, 'float')
+
+        return bias
 
     def get_standard_speed(self) -> int:
-        '''
+        """
         Getting the default speed on which the robot moves
 
         Args:
@@ -378,12 +518,11 @@ class base_driver:
 
         Returns:
             int: the speed it is set to
-        '''
+        """
         return self.ds_speed
 
-    def get_mm_per_sec(self, only_mm: bool = False,
-                       only_sec: bool = False) -> None:  # @TODO schauen, wie man float ODER int (ODER list) zurückgeben kann als typ
-        '''
+    def get_mm_per_sec(self, only_mm: bool = False, only_sec: bool = False):  # @TODO schauen, wie man float ODER int (ODER list) zurückgeben kann als typ
+        """
         Getting the mm, sec, mm and sec or total it takes to drive a certain distance (in mm)
 
         Args:
@@ -396,8 +535,7 @@ class base_driver:
                 - int: the mm of distance for driving
                 - float: time in seconds for driving
                 - float: calculated value of mm/sec
-        '''
-
+        """
         text = file_Manager.reader(self.mm_per_sec_file).split('\n')
         total = float(text[0])
         mm = int(text[1])
@@ -412,7 +550,7 @@ class base_driver:
         return total
 
     def get_light_sensor_distance_sec(self) -> float:
-        '''
+        """
         Receive the distance between the very front and very rear light / brightness sensor
 
         Args:
@@ -420,8 +558,8 @@ class base_driver:
 
         Returns:
             float: the distance in seconds calculated to the current default speed (ds_speed) between the front and rear light / brightness sensor
-        '''
-        file_name = os.path.join(BIAS_FOLDER, 'light_sensor_distance_sec.txt')
+        """
+        file_name = 'light_sensor_distance_sec.txt'
         try:
             distances_str = file_Manager.reader(file_name)
             if distances_str == '0':  # not initialized
@@ -436,9 +574,69 @@ class base_driver:
         except Exception as e:
             log(str(e), important=True, in_exception=True)
 
-    # ======================== SET METHODS ========================
-    def set_degrees(self, secs: float) -> None:
-        '''
+    def get_axis_importance(self) -> list[str]:
+        """
+        Receive all gyro sorted by importance
+
+        Args:
+            None
+
+        Returns:
+            list[str]: List with all axis sorted by importance (first element -> most important; last element -> least important)
+        """
+        axis_text: str = file_Manager.reader(self.axis_importance_file)
+        return axis_text.split('\n')
+
+    def get_axis_importance_by_level(self, level: int) -> str:
+        """
+        Receive the desired axis value by level of importance (lower number means more important)
+
+        Args:
+            level (int): Number of how important the wanted axis value is (e.g.: 0 -> this means most important)
+
+        Returns:
+            str: The axis by level of importance (e.g.: 'x')
+
+        Raises:
+            @TODO
+        """
+        axis_importance = self.get_axis_importance()
+        if level < len(axis_importance) < level:
+            log(f'You can only get a level from 0 - {len(axis_importance)}!', in_exception=True)
+            raise ValueError(f'You can only get a level from 0 - {len(axis_importance)}!')
+
+        return axis_importance[level]
+
+    def get_most_important_axis(self) -> str:
+        """
+        Receive the most necessary axis for the current build of the controller
+
+        Args:
+            None
+
+        Returns:
+            str: The most important axis (e.g.: 'y')
+        """
+        axis_importance = self.get_axis_importance()
+        return axis_importance[0]
+
+    def get_least_important_axis(self) -> str:
+        """
+        Receive the most unnecessary axis for the current build of the controller
+
+        Args:
+            None
+
+        Returns:
+            str: The least important axis (e.g.: 'z')
+        """
+        axis_importance = self.get_axis_importance()
+        return axis_importance[len(axis_importance)-1]
+
+
+    # ======================== SETTER ========================
+    def set_current_degrees(self, secs: float) -> None:
+        """
         Sets the number of degrees for a 180° turn
 
         Args:
@@ -446,12 +644,12 @@ class base_driver:
 
         Returns:
             None
-        '''
+        """
         self.ONEEIGHTY_DEGREES_SECS = secs
         self.NINETY_DEGREES_SECS = secs / 2
 
-    def set_gyro_z(self, bias: float) -> None:
-        '''
+    def set_current_bias_gyro_z(self, bias: float) -> None:
+        """
         Sets the amount of bias where the controller is laying down (for example) and getting turned from left to right or right to left
 
         Args:
@@ -459,12 +657,11 @@ class base_driver:
 
         Returns:
             None
-        '''
+        """
         self.bias_gyro_z = bias
-        self._handle_standard_bias()
 
-    def set_gyro_y(self, bias: float) -> None:
-        '''
+    def set_current_bias_gyro_y(self, bias: float) -> None:
+        """
         Sets the amount of bias where the controller is standing (for example) and getting turned from left to right or right to left
 
         Args:
@@ -472,12 +669,11 @@ class base_driver:
 
         Returns:
             None
-        '''
+        """
         self.bias_gyro_y = bias
-        self._handle_standard_bias()
 
-    def set_gyro_x(self, bias: float) -> None:
-        '''
+    def set_current_bias_gyro_x(self, bias: float) -> None:
+        """
         Sets the amount of bias where the controller is standing (for example) and getting turned from left to right or right to left
 
         Args:
@@ -485,12 +681,11 @@ class base_driver:
 
         Returns:
             None
-        '''
+        """
         self.bias_gyro_x = bias
-        self._handle_standard_bias()
 
-    def set_accel_z(self, bias: float) -> None:
-        '''
+    def set_current_bias_accel_z(self, bias: float) -> None:
+        """
         Sets the amount of bias where the controller is standing (for example) and moving backward or forward
 
         Args:
@@ -498,12 +693,11 @@ class base_driver:
 
         Returns:
             None
-        '''
+        """
         self.bias_accel_z = bias
-        self._handle_standard_bias()
 
-    def set_accel_y(self, bias: float) -> None:
-        '''
+    def set_current_bias_accel_y(self, bias: float) -> None:
+        """
         Sets the amount of bias where the controller is laying down (for example) and moving backward or forward
 
         Args:
@@ -511,12 +705,11 @@ class base_driver:
 
         Returns:
             None
-        '''
+        """
         self.bias_accel_y = bias
-        self._handle_standard_bias()
 
-    def set_accel_x(self, bias: float) -> None:
-        '''
+    def set_current_bias_accel_x(self, bias: float) -> None:
+        """
         Sets the amount of bias where the controller is laying down (for example) and moving backward or forward
 
         Args:
@@ -524,35 +717,12 @@ class base_driver:
 
         Returns:
             None
-        '''
+        """
         self.bias_accel_x = bias
-        self._handle_standard_bias()
 
-    def set_distances(self, values: list = None, mm: list = None) -> None:
-        '''
-        Setting the distances for the distances file
-
-        Args:
-            values (list[int], optional): every distance sensor value (default: class variable)
-            mm (list[int], optional): every calculated millimeter for every distance value (default: class variable)
-
-        Returns:
-            None
-        '''
-        v = values if isinstance(values, list) else self.distance_far_values
-        m = mm if isinstance(mm, list) else self.distance_far_mm
-
-        try:
-            with open(self.pseudo_distanceR.get_file_path(), "w") as f:
-                f.write("value=" + ",".join(map(str, v)) + "\n")
-                f.write("mm=" + ",".join(map(str, m)) + "\n")
-            log(f"Distances saved to {self.pseudo_distanceR.get_file_path()}")
-
-        except Exception as e:
-            log(str(e), important=True, in_exception=True)
 
     def set_TOTAL_mm_per_sec(self, mm: int = None, sec: float = None) -> None:
-        '''
+        """
         Sets the millimeters and / or seconds for driving mm per seconds
 
         Args:
@@ -561,19 +731,18 @@ class base_driver:
 
         Returns:
             None
-        '''
+        """
         if mm is None and sec is None:
-            log('By setting the mm and sec at least one of those values need to be assigned to a number!',
-                important=True, in_exception=True)
-            raise ValueError(
-                'By setting the mm and sec at least one of those values need to be assigned to a number!')
+            log('By setting the mm and sec at least one of those values need to be assigned to a number!', important=True, in_exception=True)
+            raise ValueError('By setting the mm and sec at least one of those values need to be assigned to a number!')
+
         if not isinstance(mm, int) and mm is not None:
             log('mm need to stay in mm! make sure mm is not in seconds!', important=True, in_exception=True)
             raise TypeError('mm need to stay in mm! make sure mm is not in seconds!')
+
         if (not isinstance(sec, int) and not isinstance(sec, float)) and sec is not None:
             str_instance = isinstance(sec, str)
-            log(f'seconds need to stay as a float or int! seconds being a string: {str_instance}', important=True,
-                in_exception=True)
+            log(f'seconds need to stay as a float or int! seconds being a string: {str_instance}', important=True, in_exception=True)
             raise TypeError(f'seconds need to stay as a float or int! seconds being a string: {str_instance}')
 
         text = file_Manager.reader(self.mm_per_sec_file).split('\n')
@@ -588,41 +757,41 @@ class base_driver:
         file_Manager.writer(self.mm_per_sec_file, 'a', '\n' + str(actual_sec))
 
     def set_MM_mm_per_sec(self, mm: int) -> None:
-        '''
-        Specifically sets the millimeters for driving mm per seconds
+        """
+        Sets specifically the millimeters for driving mm per seconds
 
         Args:
             mm (int): How far it drove (in mm)
 
         Returns:
             None
-        '''
+        """
         self.set_TOTAL_mm_per_sec(mm=mm)
 
     def set_SEC_mm_per_sec(self, sec: float) -> None:
-        '''
-        Specifically sets the seconds for driving mm per seconds
+        """
+        Sets specifically the seconds for driving mm per seconds
 
         Args:
             sec (float): The amount of time (in seconds) it took to drive
 
         Returns:
             None
-        '''
+        """
         self.set_TOTAL_mm_per_sec(sec=sec)
 
 
-    # ===================== Check instances =====================
+    # ===================== CHECKER =====================
     def check_wheelr_instance(self, *motors) -> bool:
-        '''
+        """
         Check, if the arguments are motors (instances of the WheelR class)
 
         Args:
             *motors (args): the instances that should be checked
 
         Returns:
-            bool: True, if every instance is a instance of the WheelR class. Raises TypeError if otherwise.
-        '''
+            bool: True, if every instance is an instance of the WheelR class. Raises TypeError if otherwise.
+        """
         for motor in motors[0]:
             if not isinstance(motor, WheelR):
                 log(f'{motor} is an instance of {type(motor).__name__} and not an instance of WheelR! {motor} needs to be an instance of WheelR!', in_exception=True)
@@ -632,15 +801,15 @@ class base_driver:
 
     # ====================== CALCULATIONS ======================
     def calculate_seconds_in_degrees(self, seconds: float) -> float:
-        '''
+        """
         Calculates (based on the seconds given) the degrees
 
         Args:
             seconds (float): The time in seconds which will be calculated in degrees
 
         Returns:
-            float: The degrees (for example 92.192 degrees)
-        '''
+            float: The degrees (e.g.:, 92.192 degrees)
+        """
         if not self.ONEEIGHTY_DEGREES_SECS:
             raise ValueError('You need to calibrate the degrees first using the "calibrate_degrees" function!')
 
@@ -648,15 +817,15 @@ class base_driver:
         return 180 * multi
 
     def calculate_degrees_in_seconds(self, degrees: int) -> float:
-        '''
+        """
         Calculates (based on the degrees given) the seconds
 
         Args:
             degrees (int): The degrees which should be calculated in seconds
 
         Returns:
-            float: The seconds (for example 2.1482 seconds)
-        '''
+            float: The seconds (e.g.: 2.1482 seconds)
+        """
         if not self.ONEEIGHTY_DEGREES_SECS:
             raise ValueError('You need to calibrate the degrees first using the "calibrate_degrees" function!')
 
@@ -666,7 +835,7 @@ class base_driver:
     # ===================== CALIBRATE BIAS =====================
     @DriveableFunction
     def calibrate_light_sensor_distance_sec(self):
-        '''
+        """
         Function that needs to be overwritten to calibrate the distance between the two light sensors in the middle (light sensors for line follower (black_line))
 
         Args:
@@ -674,29 +843,28 @@ class base_driver:
 
         Returns:
             None, but writes the calibrated distance (in seconds) into the file
-        '''
+        """
         log(f'You need to create a "{self.calibrate_light_sensor_distance_sec.__name__.split("#")[0]}" method in your own class!', in_exception=True)
         raise NotImplementedError(f'You need to create a "{self.calibrate_light_sensor_distance_sec.__name__.split("#")[0]}" method in your own class!')
 
 
-
     @DriveableFunction
     def calibrate_degrees(self, output: bool) -> None:
-        '''
+        """
         Function that needs to be overwritten to calibrate the degrees (this should calibrate the time it takes the robot/wombat for a 180 degree turn)
 
         Args:
-            output (bool): (Could be used for -> ) If you want an output / print message (True) or not (False)
+            output (bool): (Could be used for ->) If you want an output / print message (True) or not (False)
 
         Returns:
             None
-        '''
+        """
         log(f'You need to create a "{self.calibrate_degrees.__name__.split("#")[0]}" method in your own class!', in_exception=True)
         raise NotImplementedError(
             f'You need to create a "{self.calibrate_degrees.__name__.split("#")[0]}" method in your own class!')
 
     def auto_calibration(self, times: int, output: bool = False) -> None:
-        '''
+        """
         Automatically calibrates as often as you wish
 
         Args:
@@ -705,7 +873,7 @@ class base_driver:
 
         Returns:
             None
-        '''
+        """
         for i in range(times):
             self.calibrate(output=output)
             print(f'=== {i + 1} / {times} times calibrated ===', flush=True)
@@ -714,177 +882,186 @@ class base_driver:
 
     @IsDriveableFunction
     def calibrate(self, output: bool = True) -> None:
-        '''
-        Calibrates all necessary bias
+        """
+        Calibrates all necessary bias'
 
         Args:
             output (bool): If it should make an output, that it is done calibrating (True, default) or not (False)
 
         Returns:
-            None. Writes bias into files
-        '''
+            None. Write bias' into files
+        """
         self.calibrate_hardware('gyro_z', 'gyro_y', 'gyro_x', 'accel_z', 'accel_y', 'accel_x', output=False)
-        self.bias_gyro_y = self.get_bias_gyro_y(True)
-        self.bias_gyro_z = self.get_bias_gyro_z(True)
-        self.bias_gyro_x = self.get_bias_gyro_x(True)
-        self.bias_accel_z = self.get_bias_accel_z(True)
-        self.bias_accel_y = self.get_bias_accel_y(True)
-        self.bias_accel_x = self.get_bias_accel_x(True)
         self.calibrate_degrees(output)
         self.break_all_motors()
-        self.get_degrees_time(True)
+        self.save_degrees_time()  # needs to be outside since every new class needs their own degrees calibration and I simply cannot expect the future programmer to think of this to be implemented into the function
         if output:
             log('CALIBRATION DONE', important=True)
 
-    def calibrate_gyro_z(self, counter: int = None, max: int = None, times: int = 8000) -> None:
-        '''
+    def calibrate_gyro_z(self, counter: int = None, max: int = None, millis: int = 8000) -> None:
+        """
         calibrate the bias for the controllers right and left
 
         Args:
             counter (int): the number where it is at the moment
             max (int): how many calibrations there are (to show it on the screen and for debugging usage)
-            times (int, optional): how many calibrations should be done (default: 8000)
+            millis (int, optional): how long (in milliseconds) it should calibrate (default: 8000)
 
         Returns:
             None
-        '''
-        i: int = 0
-        avg: float = 0
-        while i < times:
+        """
+        gyro_timer: TimeR = TimeR()
+        avg: int = 0
+
+        gyro_timer.start_timer_millis()
+        while gyro_timer.stop_timer(False) < millis:
             avg += k.gyro_z()
             k.msleep(1)
-            i += 1
-        self.bias_gyro_z = avg / times
+
+        self.bias_gyro_z = avg / gyro_timer.stop_timer()
+        self.save_bias_gyro_z()
         if counter is not None and max is not None:
             log(f'{counter}/{max} - GYRO Z CALIBRATED')
 
-    def calibrate_gyro_y(self, counter: int = None, max: int = None, times: int = 8000) -> None:
-        '''
+    def calibrate_gyro_y(self, counter: int = None, max: int = None, millis: int = 8000) -> None:
+        """
         calibrate the bias for the controllers front and rear
 
         Args:
             counter (int, default): the number where it is at the moment (default: None)
             max (int, default): how many calibrations there are (to show it on the screen and for debugging usage) (default: None)
-            times (int, optional): how many calibrations should be done (default: 8000)
+            millis (int, optional): how long (in milliseconds) it should calibrate (default: 8000)
 
         Returns:
             None
-        '''
-        i: int = 0
-        avg: float = 0
-        while i < times:
+        """
+        gyro_timer: TimeR = TimeR()
+        avg: int = 0
+
+        gyro_timer.start_timer_millis()
+        while gyro_timer.stop_timer(False) < millis:
             avg += k.gyro_y()
             k.msleep(1)
-            i += 1
-        self.bias_gyro_y = avg / times
+
+        self.bias_gyro_y = avg / gyro_timer.stop_timer()
+        self.save_bias_gyro_y()
         if counter is not None and max is not None:
             log(f'{counter}/{max} - GYRO Y CALIBRATED')
 
-    def calibrate_gyro_x(self, counter: int = None, max: int = None, times: int = 8000) -> None:
-        '''
+    def calibrate_gyro_x(self, counter: int = None, max: int = None, millis: int = 8000) -> None:
+        """
         calibrate the bias for the controllers top and bottom
 
         Args:
             counter (int, default): the number where it is at the moment (default: None)
             max (int, default): how many calibrations there are (to show it on the screen and for debugging usage) (default: None)
-            times (int, optional): how many calibrations should be done (default: 8000)
+            millis (int, optional): how long (in milliseconds) it should calibrate (default: 8000)
 
         Returns:
             None
-        '''
-        i: int = 0
-        avg: float = 0
-        while i < times:
+        """
+        gyro_timer: TimeR = TimeR()
+        avg: int = 0
+
+        gyro_timer.start_timer_millis()
+        while gyro_timer.stop_timer(False) < millis:
             avg += k.gyro_x()
             k.msleep(1)
-            i += 1
-        self.bias_gyro_x = avg / times
+
+        self.bias_gyro_x = avg / gyro_timer.stop_timer()
+        self.save_bias_gyro_x()
         if counter is not None and max is not None:
             log(f'{counter}/{max} - GYRO X CALIBRATED')
 
-    def calibrate_accel_z(self, counter: int = None, max: int = None, times: int = 8000) -> None:
-        '''
+    def calibrate_accel_z(self, counter: int = None, max: int = None, millis: int = 8000) -> None:
+        """
         calibrates the bias from the accelerometer to know how fast the wombat is going towards the x-axis (accelerometer is not yet in use though)
 
         Args:
             counter (int, optional): the number where it is at the moment (default: None)
             max (int, optional): how many calibrations there are (to show it on the screen and for debugging usage) (default: None)
-            times (int, optional): how many calibrations should be done (default: 8000)
+            millis (int, optional): how long (in milliseconds) it should calibrate (default: 8000)
 
         Returns:
             None
-        '''
-        i: int = 0
-        avg: float = 0
-        while i < times:
+        """
+        gyro_timer: TimeR = TimeR()
+        avg: int = 0
+
+        gyro_timer.start_timer_millis()
+        while gyro_timer.stop_timer(False) < millis:
             avg += k.accel_z()
             k.msleep(1)
-            i += 1
-        self.bias_accel_z = avg / times
+
+        self.bias_accel_z = avg / gyro_timer.stop_timer()
+        self.save_bias_accel_x()
         if counter is not None and max is not None:
             log(f'{counter}/{max} - ACCEL X CALIBRATED')
 
-    def calibrate_accel_y(self, counter: int = None, max: int = None, times: int = 8000) -> None:
-        '''
+    def calibrate_accel_y(self, counter: int = None, max: int = None, millis: int = 8000) -> None:
+        """
         calibrates the bias from the accelerometer to know how fast the wombat is going towards the y-axis (accelerometer is not yet in use though)
 
         Args:
             counter (int, optional): the number where it is at the moment (default: None)
             max (int, optional): how many calibrations there are (to show it on the screen and for debugging usage) (default: None)
-            times (int, optional): how many calibrations should be done (default: 8000)
+            millis (int, optional): how long (in milliseconds) it should calibrate (default: 8000)
 
         Returns:
             None
-        '''
-        i: int = 0
-        avg: float = 0
-        while i < times:
+        """
+        gyro_timer: TimeR = TimeR()
+        avg: int = 0
+
+        gyro_timer.start_timer_millis()
+        while gyro_timer.stop_timer(False) < millis:
             avg += k.accel_y()
             k.msleep(1)
-            i += 1
-        self.bias_accel_y = avg / times
+
+        self.bias_accel_y = avg / gyro_timer.stop_timer()
+        self.save_bias_accel_y()
         if counter is not None and max is not None:
             log(f'{counter}/{max} - ACCEL Y CALIBRATED')
 
-    def calibrate_accel_x(self, counter: int = None, max: int = None, times: int = 8000) -> None:
-        '''
+    def calibrate_accel_x(self, counter: int = None, max: int = None, millis: int = 8000) -> None:
+        """
         calibrates the bias from the accelerometer to know how fast the wombat is going towards the x-axis (accelerometer is not yet in use though)
 
         Args:
             counter (int, optional): the number where it is at the moment (default: None)
             max (int, optional): how many calibrations there are (to show it on the screen and for debugging usage) (default: None)
-            times (int, optional): how many calibrations should be done (default: 8000)
+            millis (int, optional): how long (in milliseconds) it should calibrate (default: 8000)
 
         Returns:
             None
-        '''
-        i: int = 0
-        avg: float = 0
-        while i < times:
+        """
+        gyro_timer: TimeR = TimeR()
+        avg: int = 0
+
+        gyro_timer.start_timer_millis()
+        while gyro_timer.stop_timer(False) < millis:
             avg += k.accel_x()
             k.msleep(1)
-            i += 1
-        self.bias_accel_x = avg / times
+
+        self.bias_accel_x = avg / gyro_timer.stop_timer()
+        self.save_bias_accel_x()
         if counter is not None and max is not None:
             log(f'{counter}/{max} - ACCEL X CALIBRATED')
 
-    def calibrate_hardware(self, *args: str, millis: int = None, output: bool = True) -> None:
-        '''
+    def calibrate_hardware(self, *args: str, millis: int = 8000, output: bool = True) -> None:
+        """
         Gives you access to thread-based calibration, so you do not need to wait for every function individually.
 
         Args:
-            *args: either one or more of the following options:
-
-            millis: the time
+            *args (str): either one or more of the following options:
+            millis (int, optional): the time it is allowed to take for one single calibration (default: 8000)
+            output (bool, optional): if the function should let you know that the calibration is finished (True) or not (False) (default: True)
 
         Returns:
             None
-        '''
-        if millis is None:
-            millis = 8000
-
+        """
         calibrations = list()
-        arguments = {'times': millis}
+        arguments = {'millis': millis}
         if output:
             log('beginning with hardware calibration...')
 
@@ -914,7 +1091,6 @@ class base_driver:
         for calibration in calibrations:
             calibration.start()
 
-
         while len(calibrations) > 0:
             for calibration in calibrations:
                 if calibration.is_alive():
@@ -927,8 +1103,148 @@ class base_driver:
 
 
     # ======================== PUBLIC METHODS =======================
+    @ForceDriveableFunction
+    def hardware_orientation_identification(self, identification_count: int = 10, identification_millis: int = 500, required_percent: float = 1.2):
+        globals()['gyro_x_value'], globals()['gyro_y_value'], globals()['gyro_z_value'] = 0, 0, 0
+        globals()['gyro_x_weight'], globals()['gyro_y_weight'], globals()['gyro_z_weight'] = 0, 0, 0
+        x_importance, y_importance, z_importance = 0, 0, 0
+
+        def create_test():
+            identification_timer = TimeR()
+            identify_timer = TimeR()
+
+            def identify_percentage():
+                global gyro_x_weight, gyro_y_weight, gyro_z_weight
+
+                bias_gyro_x = 0
+                bias_gyro_y = 0
+                bias_gyro_z = 0
+
+                identify_timer.start_timer_millis()
+                while identify_timer.stop_timer(False) < identification_millis:
+                    bias_gyro_x += k.gyro_x()
+                    bias_gyro_y += k.gyro_y()
+                    bias_gyro_z += k.gyro_z()
+                    k.msleep(1)
+
+                # create the bias which will be created in the identification_millis time
+                stopped_at = identify_timer.stop_timer()
+                gyro_x_weight = bias_gyro_x / stopped_at
+                gyro_y_weight = bias_gyro_y / stopped_at
+                gyro_z_weight = bias_gyro_z / stopped_at
+
+            def reset_gyro_values():
+                global gyro_x_value, gyro_y_value, gyro_z_value
+                gyro_x_value = 0
+                gyro_y_value = 0
+                gyro_z_value = 0
+
+            def look_at_gyro_values():
+                global gyro_x_value, gyro_y_value, gyro_z_value, gyro_x_weight, gyro_y_weight, gyro_z_weight
+                gyro_x_value += k.gyro_x() - gyro_x_weight
+                gyro_y_value += k.gyro_y() - gyro_y_weight
+                gyro_z_value += k.gyro_z() - gyro_z_weight
+
+            def forward_identification():
+                identification_timer.start_timer_millis()
+                while identification_timer.stop_timer(False) < identification_millis:
+                    for motor in self.motors:
+                        motor.drive_mfw()
+                        look_at_gyro_values()
+
+                identification_timer.start_timer_millis()
+                while identification_timer.stop_timer(False) < identification_millis:
+                    for motor in self.motors:
+                        motor.drive_mbw()
+            def backward_identification():
+                identification_timer.start_timer_millis()
+                while identification_timer.stop_timer(False) < identification_millis:
+                    for motor in self.motors:
+                        motor.drive_mfw()
+
+                identification_timer.start_timer_millis()
+                while identification_timer.stop_timer(False) < identification_millis:
+                    for motor in self.motors:
+                        motor.drive_mbw()
+                        look_at_gyro_values()
+
+            identify_percentage()
+            while True:
+                forward_identification()  # firstly, look at the bias you create when driving forward
+                self.break_all_motors()
+                three_largest_dimensions = heapq.nlargest(3, [abs(gyro_x_value), abs(gyro_y_value), abs(gyro_z_value)])  # sort the gyro values from highest to lowest (value)
+
+                # exit if the bigger value is 20% higher than the second-highest value
+                if three_largest_dimensions[0] > three_largest_dimensions[1] * required_percent and three_largest_dimensions[1] > three_largest_dimensions[2] * required_percent:
+                    break
+
+            #  safe the values you just created
+            x1 = gyro_x_value
+            y1 = gyro_y_value
+            z1 = gyro_z_value
+
+            reset_gyro_values()  # clean value start
+            while True:
+                backward_identification()  # secondly, look at the bias you create when driving backward
+                self.break_all_motors()
+                three_largest_dimensions = heapq.nlargest(3, [abs(gyro_x_value), abs(gyro_y_value), abs(gyro_z_value)])  # sort the gyro values from highest to lowest (value)
+
+                # exit if the bigger value is 20% higher than the second-highest value
+                if three_largest_dimensions[0] > three_largest_dimensions[1] * required_percent and three_largest_dimensions[1] > three_largest_dimensions[2] * required_percent:
+                    break
+
+            #  add them together (the absolute value since you do not know how the controller is mounted and therefore you do not know the sign for the values
+            total_x = abs(gyro_x_value) + abs(x1)
+            total_y = abs(gyro_y_value) + abs(y1)
+            total_z = abs(gyro_z_value) + abs(z1)
+
+            #  add them together, so you can receive the percentage of how much the gyros are needed
+            total = abs(total_x) + abs(total_y) + abs(total_z)
+            gyro_x_percentage = abs(total_x)/total
+            gyro_y_percentage = abs(total_y)/total
+            gyro_z_percentage = abs(total_z)/total
+
+            return gyro_x_percentage, gyro_y_percentage, gyro_z_percentage
+
+        log('YOU NEED TO BE SURE THAT THE ROBOT WILL NOT BUMP INTO ANY OBSTACLE BEFORE RUNNING THIS FUNCTION! DO NOT TOUCH THE ROBOT WHILE EXECUTION', important=True)
+        for i in range(identification_count):
+            log(f'{i + 1} / {identification_count} identification runs')
+            x, y, z = create_test()
+            x_importance += x
+            y_importance += y
+            z_importance += z
+
+        # calculate (in percent) how important every gyro value is after identification_count runs
+        x_importance /= identification_count
+        y_importance /= identification_count
+        z_importance /= identification_count
+
+        # display the results
+        print('=' * 100, flush=True)
+        message = ''
+        three_largest_dimensions = heapq.nlargest(3, [x_importance, y_importance, z_importance])  # sort the results
+        for key, dimension in enumerate(three_largest_dimensions, start=0):
+            if dimension == x_importance:
+                log(f'AXIS X has an importance level of: {key} with {x_importance * 100}% accuracy')
+                message += 'x\n'
+            elif dimension == y_importance:
+                log(f'AXIS Y has an importance level of: {key} with {y_importance * 100}% accuracy')
+                message += 'y\n'
+            elif dimension == z_importance:
+                log(f'AXIS Z has an importance level of: {key} with {z_importance * 100}% accuracy')
+                message += 'z\n'
+
+        message = message.strip('\n')
+        log('\nNote: \n'
+            '\t-The lower the importance level the more important the calculated gyro is (e.g.: 0 -> most important | 2-> least important)\n'
+            '\t-If the accuracy between level 0 and 1 is too low (e.g.: <15%), consider recalculating\n'
+            '\t-The difference between accuracy of importance level 1 and 2 does not matter\n', important=True)
+
+        file_Manager.writer(self.axis_importance_file, 'w', message)  # save the importance level in a file
+
+
     def break_all_motors(self):
-        '''
+        """
         Function that needs to be overwritten to make every registered motor stop
 
         Args:
@@ -936,7 +1252,7 @@ class base_driver:
 
         Returns:
             None
-        '''
+        """
         log(f'You need to create a "{self.break_all_motors.__name__.split("#")[0]}" method in your own class!', in_exception=True)
         raise NotImplementedError(
             f'You need to create a "{self.break_all_motors.__name__.split("#")[0]}" method in your own class!')
@@ -947,7 +1263,6 @@ class Solarbotic_Wheels_two(base_driver):
     def __init__(self,
                  Instance_right_wheel: WheelR,
                  Instance_left_wheel: WheelR,
-                 controller_standing: bool,
                  wheels_at_front: bool,
                  DS_SPEED: int = 1400,
                  Instance_button_front_right: Digital = None,
@@ -958,7 +1273,7 @@ class Solarbotic_Wheels_two(base_driver):
                  Instance_light_sensor_back: LightSensor = None,
                  Instance_light_sensor_side: LightSensor = None,
                  Instance_distance_sensor: DistanceSensor = None):
-        '''
+        """
         Rubber_Wheels_two represents a robot with two solarbotic wheels and a caster ball. This class is for driving this kind of wheels only!
 
         Args:
@@ -976,12 +1291,10 @@ class Solarbotic_Wheels_two(base_driver):
             Instance_light_sensor_side (LightSensor, optional): The light- or brightness sensor instance where the button is mounted on the side (between the wheels) of the robot (default: None)
             Instance_distance_sensor (DistanceSensor, optional): The distance sensor instance where the button is mounted on of the robot (default: None)
 
-        '''
-        super().__init__(DS_SPEED, controller_standing, Instance_right_wheel, Instance_left_wheel)
+        """
+        super().__init__(DS_SPEED, Instance_right_wheel, Instance_left_wheel)
         self.right_wheel = Instance_right_wheel
         self.left_wheel = Instance_left_wheel
-
-        self.standing = controller_standing
 
         self.button_fr = Instance_button_front_right
         self.button_fl = Instance_button_front_left
@@ -996,21 +1309,14 @@ class Solarbotic_Wheels_two(base_driver):
 
         self.wheels_at_front = wheels_at_front
         self.ds_speed = DS_SPEED
-        self.bias_gyro_z = None
-        self.bias_gyro_y = None
-        self.bias_accel_z = None  # There are no function where you can do anything with the accel x -> you need to invent them by yourself
-        self.bias_accel_y = None  # There are no function where you can do anything with the accel y -> you need to invent them by yourself
         self.isClose = False
-        self.ONEEIGHTY_DEGREES_SECS = None
-        self.NINETY_DEGREES_SECS = None
         self._motor_lock = threading.Lock()
-        self.max_speed = 1500
 
         self._set_values()
 
-    # ======================== SET METHODS ========================
+    # ======================== SETTER ========================
     def set_instance_distance_sensor(self, Instance_distance_sensor: DistanceSensor) -> None:
-        '''
+        """
         create or overwrite the existence of the distance_sensor
 
         Args:
@@ -1018,13 +1324,13 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.distance_sensor = Instance_distance_sensor
 
     def set_instance_light_sensors(self, Instance_light_sensor_front: LightSensor,
                                    Instance_light_sensor_back: LightSensor,
                                    Instance_light_sensor_side: LightSensor) -> None:
-        '''
+        """
         create or overwrite the existence of all light sensors
 
         Args:
@@ -1034,13 +1340,13 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.light_sensor_front = Instance_light_sensor_front
         self.light_sensor_back = Instance_light_sensor_back
         self.light_sensor_side = Instance_light_sensor_side
 
     def set_instance_light_sensor_front(self, Instance_light_sensor_front: LightSensor) -> None:
-        '''
+        """
         create or overwrite the existence of the front light sensors
 
         Args:
@@ -1048,11 +1354,11 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.light_sensor_front = Instance_light_sensor_front
 
     def set_instance_light_sensor_back(self, Instance_light_sensor_back: LightSensor) -> None:
-        '''
+        """
         create or overwrite the existence of the back light sensor
 
         Args:
@@ -1060,11 +1366,11 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.light_sensor_back = Instance_light_sensor_back
 
     def set_instance_light_sensor_side(self, Instance_light_sensor_side: LightSensor) -> None:
-        '''
+        """
         create or overwrite the existence of the side light sensor
 
         Args:
@@ -1072,12 +1378,12 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.light_sensor_side = Instance_light_sensor_side
 
     def set_instances_buttons(self, Instance_button_front_right: Digital, Instance_button_front_left: Digital,
                               Instance_button_back_right: Digital, Instance_button_back_left: Digital) -> None:
-        '''
+        """
         create or overwrite the existence of all buttons
 
         Args:
@@ -1088,14 +1394,14 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.button_fl = Instance_button_front_left
         self.button_fr = Instance_button_front_right
         self.button_br = Instance_button_back_right
         self.button_bl = Instance_button_back_left
 
     def set_instance_button_fl(self, Instance_button_front_left: Digital) -> None:
-        '''
+        """
         create or overwrite the existence of the front left button
 
         Args:
@@ -1103,11 +1409,11 @@ class Solarbotic_Wheels_two(base_driver):
 
        Returns:
             None
-        '''
+        """
         self.button_fl = Instance_button_front_left
 
     def set_instance_button_fr(self, Instance_button_front_right: Digital) -> None:
-        '''
+        """
         create or overwrite the existence of the front right button
 
         Args:
@@ -1115,11 +1421,11 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.button_fr = Instance_button_front_right
 
     def set_instance_button_bl(self, Instance_button_back_left: Digital) -> None:
-        '''
+        """
         create or overwrite the existence of the back left button
 
         Args:
@@ -1127,11 +1433,11 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.button_bl = Instance_button_back_left
 
     def set_instance_button_br(self, Instance_button_back_right: Digital) -> None:
-        '''
+        """
         create or overwrite the existence of the back right button
 
         Args:
@@ -1139,13 +1445,13 @@ class Solarbotic_Wheels_two(base_driver):
 
        Returns:
             None
-        '''
+        """
         self.button_br = Instance_button_back_right
 
-    # ======================== CHECK METHODS ========================
+    # ======================== CHECKER ========================
 
     def check_instance_light_sensors(self) -> bool:
-        '''
+        """
         inspect the existence of all light sensors
 
         Args:
@@ -1153,7 +1459,7 @@ class Solarbotic_Wheels_two(base_driver):
 
        Returns:
             if there is an instance of all light sensor in existence
-        '''
+        """
         if not isinstance(self.light_sensor_front, LightSensor):
             log('Light sensor front is not initialized!', in_exception=True)
             raise TypeError('Light sensor front is not initialized!')
@@ -1168,7 +1474,7 @@ class Solarbotic_Wheels_two(base_driver):
         return True
 
     def check_instance_light_sensors_middle(self) -> bool:
-        '''
+        """
         inspect the existence of the middle light sensors
 
         Args:
@@ -1176,7 +1482,7 @@ class Solarbotic_Wheels_two(base_driver):
 
        Returns:
             if there is an instance of the middle light sensors in existence
-        '''
+        """
         if not isinstance(self.light_sensor_front, LightSensor):
             log('Light sensor front is not initialized!', in_exception=True)
             raise TypeError('Light sensor front is not initialized!')
@@ -1187,7 +1493,7 @@ class Solarbotic_Wheels_two(base_driver):
         return True
 
     def check_instance_light_sensor_front(self) -> bool:
-        '''
+        """
         inspect the existence of the front light sensor
 
         Args:
@@ -1195,14 +1501,14 @@ class Solarbotic_Wheels_two(base_driver):
 
        Returns:
             if there is an instance of the front light sensor in existence
-        '''
+        """
         if not isinstance(self.light_sensor_front, LightSensor):
             log('Light sensor front is not initialized!', in_exception=True)
             raise TypeError('Light sensor front is not initialized!')
         return True
 
     def check_instance_light_sensor_back(self) -> bool:
-        '''
+        """
         inspect the existence of the back light sensor
 
         Args:
@@ -1210,14 +1516,14 @@ class Solarbotic_Wheels_two(base_driver):
 
        Returns:
             if there is an instance of the back light sensor in existence
-        '''
+        """
         if not isinstance(self.light_sensor_back, LightSensor):
             log('Light sensor back is not initialized!', in_exception=True)
             raise TypeError('Light sensor back is not initialized!')
         return True
 
     def check_instance_light_sensor_side(self) -> bool:
-        '''
+        """
         inspect the existence of the side light sensor
 
         Args:
@@ -1225,14 +1531,14 @@ class Solarbotic_Wheels_two(base_driver):
 
        Returns:
             if there is an instance of the side light sensor in existence
-        '''
+        """
         if not isinstance(self.light_sensor_side, LightSensor):
             log('Light sensor side is not initialized!', in_exception=True)
             raise TypeError('Light sensor side is not initialized!')
         return True
 
     def check_instance_distance_sensor(self) -> bool:
-        '''
+        """
         inspect the existence of the distance sensor
 
         Args:
@@ -1240,14 +1546,14 @@ class Solarbotic_Wheels_two(base_driver):
 
        Returns:
             if there is an instance of the distance sensor in existence
-        '''
+        """
         if not isinstance(self.distance_sensor, DistanceSensor):
             log('Distance sensor is not initialized!', in_exception=True)
             raise TypeError('Distance sensor is not initialized!')
         return True
 
     def check_instance_button_fl(self) -> bool:
-        '''
+        """
         inspect the existence of the front left button
 
         Args:
@@ -1255,14 +1561,14 @@ class Solarbotic_Wheels_two(base_driver):
 
        Returns:
             if there is an instance of the front left button in existence
-        '''
+        """
         if not isinstance(self.button_fl, Digital):
             log('Button front left is not initialized!', in_exception=True)
             raise TypeError('Button front left is not initialized!')
         return True
 
     def check_instance_button_fr(self) -> bool:
-        '''
+        """
         inspect the existence of the front right button
 
         Args:
@@ -1270,14 +1576,14 @@ class Solarbotic_Wheels_two(base_driver):
 
        Returns:
             if there is an instance of the front right button in existence
-        '''
+        """
         if not isinstance(self.button_fr, Digital):
             log('Button front right is not initialized!', in_exception=True)
             raise TypeError('Button front right is not initialized!')
         return True
 
     def check_instance_button_bl(self) -> bool:
-        '''
+        """
         inspect the existence of the back left button
 
         Args:
@@ -1285,14 +1591,14 @@ class Solarbotic_Wheels_two(base_driver):
 
        Returns:
             if there is an instance of the back left button in existence
-        '''
+        """
         if not isinstance(self.button_bl, Digital):
             log('Button back left is not initialized!', in_exception=True)
             raise TypeError('Button back left is not initialized!')
         return True
 
     def check_instance_button_br(self) -> bool:
-        '''
+        """
         inspect the existence of the back right button
 
         Args:
@@ -1300,14 +1606,14 @@ class Solarbotic_Wheels_two(base_driver):
 
        Returns:
             if there is an instance of the back right button in existence
-        '''
+        """
         if not isinstance(self.button_br, Digital):
             log('Button back right is not initialized!', in_exception=True)
             raise TypeError('Button back right is not initialized!')
         return True
 
     def check_instances_buttons_front(self) -> bool:
-        '''
+        """
         inspect the existence of the front buttons
 
         Args:
@@ -1315,7 +1621,7 @@ class Solarbotic_Wheels_two(base_driver):
 
        Returns:
             if there is an instance of the front buttons in existence
-        '''
+        """
         if not isinstance(self.button_fl, Digital):
             log('Button front left is not initialized!', in_exception=True)
             raise TypeError('Button front left is not initialized!')
@@ -1327,7 +1633,7 @@ class Solarbotic_Wheels_two(base_driver):
         return True
 
     def check_instances_buttons_back(self) -> bool:
-        '''
+        """
         inspect the existence of the back buttons
 
         Args:
@@ -1335,7 +1641,7 @@ class Solarbotic_Wheels_two(base_driver):
 
        Returns:
             if there is an instance of the back buttons in existence
-        '''
+        """
         if not isinstance(self.button_bl, Digital):
             log('Button back left is not initialized!', in_exception=True)
             raise TypeError('Button back left is not initialized!')
@@ -1347,7 +1653,7 @@ class Solarbotic_Wheels_two(base_driver):
         return True
 
     def check_instances_buttons(self) -> bool:
-        '''
+        """
         inspect the existence of all buttons
 
         Args:
@@ -1355,7 +1661,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             if there is an instance of all buttons in existence
-        '''
+        """
         if not isinstance(self.button_fl, Digital):
             log('Button front left is not initialized!', in_exception=True)
             raise TypeError('Button front left is not initialized!')
@@ -1377,16 +1683,16 @@ class Solarbotic_Wheels_two(base_driver):
     # ===================== CALIBRATE BIAS =====================
     @DriveableFunction
     def calibrate_degrees(self, output: bool=True) -> None:
-        '''
+        """
         The wombat has to be aligned on the black line. Afterwards it turns 180 degrees to see how long it takes for a full 180 degrees turn
-        Improvement: Drives straight and after it recognises a black line it turns right (or left) to be aligned with the line. Afterwards doing a full 180 degrees turn to know how long it takes for a 180B0 turn
+        Improvement: Drives straight and after it recognizes a black line it turns right (or left) to be aligned with the line. Afterwards doing a full 180 degrees turn to know how long it takes for a 180B0 turn
 
         Args:
             None
 
         Returns:
             None (but sets a class variable)
-        '''
+        """
         self.check_instance_light_sensors_middle()
         degree_timer = TimeR()
         degree_timer.start_timer_sec()
@@ -1424,8 +1730,8 @@ class Solarbotic_Wheels_two(base_driver):
             self.right_wheel.drive_dbw()
 
         sensor_checker()
-        self.break_all_motors()
         self.ONEEIGHTY_DEGREES_SECS = degree_timer.stop_timer()
+        self.break_all_motors()
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
 
         if output:
@@ -1434,7 +1740,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def calibrate_mm_per_sec(self, millis: int = 5000, speed: int = None) -> None:
-        '''
+        """
         calibrates the mm per second. You need to mark the beginning on where it began to drive from, since you need to know how far it went (in mm)
 
         Args:
@@ -1443,7 +1749,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         if speed is None:
             speed = self.ds_speed
 
@@ -1458,7 +1764,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def calibrate_light_sensor_distance_sec(self):
-        '''
+        """
         Calibrates the distance between the very front and rear light / brightness sensor in seconds
 
         Args:
@@ -1466,7 +1772,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None, but writes into a bias file
-        '''
+        """
         self.check_instance_light_sensors_middle()
         self.drive_straight_condition_analog(self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
         light_sensor_distance_timer = TimeR()
@@ -1475,7 +1781,7 @@ class Solarbotic_Wheels_two(base_driver):
         self.light_sensor_distance_sec = light_sensor_distance_timer.stop_timer()
         self.break_all_motors()
 
-        file_name = os.path.join(BIAS_FOLDER, 'light_sensor_distance_sec.txt')
+        file_name = 'light_sensor_distance_sec.txt'
         try:
             distance_sec = file_Manager.reader(file_name)
             if distance_sec != '0':
@@ -1492,7 +1798,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def calibrate_distance(self, start_mm: int, step: float = 0.1) -> None:
-        '''
+        """
         calibrates the values for the distance sensor. HINT: calibrate the gyro first (if you did not already do that), so it drives straight. Also it calibrates one time, make sure it is as accurate as possible.
         Both object have to be as parallel to each other as possible.
 
@@ -1503,7 +1809,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.check_instance_distance_sensor()
 
         if self.mm_per_sec == 0:
@@ -1560,14 +1866,14 @@ class Solarbotic_Wheels_two(base_driver):
 
         tkill.kill()
         self.break_all_motors()
-        self.set_distances(values=self.distance_far_values, mm=self.distance_far_mm)
+        self.save_distances(values=self.distance_far_values, mm=self.distance_far_mm)
 
         log(f"Calibration finished. The distance sensor should be like {self.distance_far_mm[-1]}mm away of the object.")
 
     # ======================== PUBLIC METHODS =======================
     @BreakableFunction
     def break_all_motors(self) -> None:
-        '''
+        """
         stops both motors immediately, without letting them roll to an end
 
         Args:
@@ -1575,14 +1881,14 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.right_wheel.stop_all() # @TODO test this out, if this is faster than executing both stops
         #self.left_wheel.stop()
 
 
     @DriveableFunction
     def align_drive_side(self, speed: int, drive_dir: bool = True, millis: int = 5000) -> None:
-        '''
+        """
         Drives (forwards or backwards, depending if the speed is positive or negative) until it bumps into something, but it won't readjust with the other wheel, resulting in aligning as far away as possible
 
         Args:
@@ -1592,7 +1898,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             bool: True when all specified motors are done.
-        '''
+        """
         self.check_instances_buttons()
         theta = 0
         adjuster = int(speed/15)  # 15 is just a value that worked the best
@@ -1634,7 +1940,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def align_drive_front(self, drive_bw: bool = True, millis: int = 4000, speed: int = None) -> None:
-        '''
+        """
         aligning front by bumping into something, so both buttons on the front will be pressed. If there's an error by pressing the buttons, a fail save will occur. If at will it also drive backwards a little bit to be able to turn after it bumped into something
 
         Args:
@@ -1645,7 +1951,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.check_instances_buttons_front()
 
         if speed is None:
@@ -1688,7 +1994,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def align_drive_back(self, drive_fw: bool = True, millis: int = 4000, drive_fw_speed: int = None) -> None:
-        '''
+        """
         aligning back by bumping into something, so both buttons on the back will be pressed. If there's an error by pressing the buttons, a fail save will occur. If at will it also drive forwards a little bit to be able to turn after it bumped into something
 
         Args:
@@ -1698,7 +2004,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.check_instances_buttons_back()
         if drive_fw_speed is None:
             drive_fw_speed = self.ds_speed
@@ -1729,7 +2035,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def drive_straight_condition_digital(self, instance: Digital, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
-        '''
+        """
         drive straight until an digital value gets reached for the desired instance
 
         Args:
@@ -1741,7 +2047,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         if speed is None:
             speed = self.ds_speed
         theta = 0
@@ -1784,7 +2090,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def drive_straight_condition_analog(self, instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
-        '''
+        """
         drive straight until an analog value gets reached for the desired instance
 
         Args:
@@ -1796,7 +2102,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         if speed is None:
             speed = self.ds_speed
 
@@ -1864,7 +2170,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def turn_to_black_line(self, direction: str, priority_at_front: bool = True, millis: int = 0) -> bool:
-        '''
+        """
         Turn as long as the light sensor (front or back, depends on if the speed is positive or negative) does not see the black line
 
         Args:
@@ -1874,7 +2180,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
            None
-        '''
+        """
         self.check_instance_light_sensors_middle()
 
         if direction != 'right' and direction != 'left':
@@ -1912,7 +2218,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def drive_align_line(self, direction: str, forward: bool) -> bool:
-        '''
+        """
         If you are not on the line, it drives (forwards or backwards, depends on if the speed is positive or negative) until the line was found and then aligns as desired.
 
         Args:
@@ -1921,7 +2227,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
            bool: If the function is confident enough to say that it is aligned (True) or not (False)
-        '''
+        """
         self.check_instances_buttons()
         self.check_instance_light_sensors_middle()
 
@@ -2097,7 +2403,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def line_time_turner(self, front_has_importance: bool, leaning_side: str, max_duration: int, speed: int = None) -> bool:
-        '''
+        """
         If you are on the line, then it will turn as long as you wish and look for the line. If the line was not found in the time given, then it will turn the other way
 
         Args:
@@ -2108,7 +2414,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             bool: If anything got found along the way (True) or if there was nothing and stopping, where you were in the beginning of the call (False)
-        '''
+        """
         if speed is None:
             speed = self.ds_speed
 
@@ -2150,7 +2456,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def black_line(self, millis: int, distance_over_time: bool, speed: int = None, pre_aligned: bool = False) -> bool:
-        '''
+        """
         drive on the black line as long as wished
 
         Args:
@@ -2162,7 +2468,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             bool: If there was a black line (True) or if there was no black line at all (False)
-        '''
+        """
         if speed is None:
             speed = self.ds_speed
         self.check_instances_buttons()
@@ -2222,7 +2528,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def drive_straight(self, millis: int, speed: int = None) -> None:
-        '''
+        """
         drive straight for as long as you want to (in millis)
 
         Args:
@@ -2231,7 +2537,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         if speed is None:
             speed = self.ds_speed
 
@@ -2263,7 +2569,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def next_to_onto_line(self, leaning_side: str = None) -> bool:
-        '''
+        """
         If you are next to a black line, you can get onto it and be aligned
 
         Args:
@@ -2271,7 +2577,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             bool: If a line was found in the beginning (True) or if you were too far away (False)
-        '''
+        """
         self.check_instance_light_sensors_middle()
 
         if not leaning_side:
@@ -2331,7 +2637,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def align_on_black_line(self, leaning_side: str = None) -> bool:
-        '''
+        """
         Align yourself on the black line. It will only align itself on one line and not a collections of lines (crossings of lines)! You need to be somewhere on top of the black line to let this function work!
 
         Args:
@@ -2339,7 +2645,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             bool: If there was a line in the first 360 degree turn (True) or not (False)
-       '''
+       """
         self.check_instance_light_sensors_middle()
 
         if leaning_side != None and leaning_side != 'right' and leaning_side != 'left':
@@ -2392,7 +2698,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def drive_til_distance(self, mm_to_object: int, speed: int = None) -> None:
-        '''
+        """
         drive straight as long as the object in front of the distance sensor (in mm) is not in reach
 
         Args:
@@ -2401,7 +2707,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         if speed is None:
             speed = self.ds_speed
         if mm_to_object > self.distance_sensor.get_mm()[-1] or mm_to_object < 10:
@@ -2520,7 +2826,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def turn_degrees_far(self, direction: str, forward: bool, degree: int) -> None:
-        '''
+        """
         Turn the number of degrees given, to take a turn with only one wheel, resulting in a turn not on the spot
 
         Args:
@@ -2530,7 +2836,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
             raise ValueError(
@@ -2562,7 +2868,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def turn_degrees(self, direction: str, degree: int) -> None:
-        '''
+        """
         turn the number of degrees given, to take a turn with all wheels, resulting in a turn on the spot
 
         Args:
@@ -2571,7 +2877,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
             raise ValueError(
@@ -2600,7 +2906,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def turn_wheel(self, direction: str, millis: int, speed: int = None) -> None:
-        '''
+        """
         turning with only one-wheel
         Information: the time it takes to do a normal 180-degree turn is double the amount you need for turning 180 degrees with only one wheel -> self.ONEEIGHTY_DEGREES_SECS = 90 degrees when using this function
 
@@ -2611,7 +2917,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         if speed is None:
             speed = self.ds_speed
 
@@ -2630,7 +2936,7 @@ class Solarbotic_Wheels_two(base_driver):
     @DriveableFunction
     def turn_wheel_condition_digital(self, direction: str, instance: Digital, condition: str, value: int,
                                      millis: int = 9999999, speed: int = None) -> None:
-        '''
+        """
         Turning with one wheel to the desired direction until a button gets pressed (or released)
 
         Args:
@@ -2643,7 +2949,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         # Information: the time it takes to do a normal 180-degree turn is double the amount you need for turning 180 degrees with only one wheel -> self.ONEEIGHTY_DEGREES_SECS = 90 degrees when using this function
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
@@ -2676,7 +2982,7 @@ class Solarbotic_Wheels_two(base_driver):
     @DriveableFunction
     def turn_wheel_condition_analog(self, direction: str, instance: Analog, condition: str, value: int,
                                     millis: int = 9999999, speed: int = None) -> None:
-        '''
+        """
         Turning with one wheel to the desired direction until a value gets of an analog sensor gets reached
 
         Args:
@@ -2689,7 +2995,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             None
-        '''
+        """
         # Information: the time it takes to do a normal 180 degree turn is double the amount you need for turning 180 degrees with only one wheel -> self.ONEEIGHTY_DEGREES_SECS = 90 degrees when using this function
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
@@ -2733,7 +3039,7 @@ class Solarbotic_Wheels_two(base_driver):
     @DriveableFunction
     def turn_degrees_condition_digital(self, direction: str, instance: Digital, condition: str, value: int,
                                     millis: int = 9999999, speed: int = None) -> int:
-        '''
+        """
         Turning on the stand to the desired direction until a button gets pressed (or released)
 
         Args:
@@ -2746,7 +3052,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             int: The degrees that it took the robot to turn (if it took the robot longer than the time for 180 degrees, then it returns 181, indicating that it was more than 180 degrees)
-        '''
+        """
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
             raise ValueError('Only "right" or "left" are valid options for the "direction" parameter')
@@ -2796,7 +3102,7 @@ class Solarbotic_Wheels_two(base_driver):
     @DriveableFunction
     def turn_degrees_condition_analog(self, direction: str, instance: Analog, condition: str, value: int,
                                    millis: int = 9999999, speed: int = None) -> int:
-        '''
+        """
         Turning on the stand to the desired direction until a value gets of an analog sensor gets reached
 
         Args:
@@ -2809,7 +3115,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Returns:
             int:  The degrees that it took the robot to turn (if it took the robot longer than the time for 180 degrees, then it returns 181, indicating that it was more than 180 degrees)
-        '''
+        """
 
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
@@ -2890,7 +3196,6 @@ class Mecanum_Wheels_four(base_driver):
                  Instance_front_left_wheel: WheelR,
                  Instance_back_left_wheel: WheelR,
                  Instance_back_right_wheel: WheelR,
-                 controller_standing: bool,
                  DS_SPEED: int = 1400,
                  Instance_button_front_right: Digital = None,
                  Instance_button_front_left: Digital = None,
@@ -2901,7 +3206,7 @@ class Mecanum_Wheels_four(base_driver):
                  Instance_light_sensor_side: LightSensor = None,
                  Instance_distance_sensor: DistanceSensor = None
                  ):
-        '''
+        """
                 Mecanum_Wheels_four represents a robot with four mecanum wheels. This class is for driving this kind of wheels only!
 
                 Args:
@@ -2920,16 +3225,14 @@ class Mecanum_Wheels_four(base_driver):
                     Instance_light_sensor_side (LightSensor, optional): The light- or brightness sensor instance where the button is mounted on the side (between the wheels) of the robot (default: None)
                     Instance_distance_sensor (DistanceSensor, optional): The distance sensor instance where the button is mounted on of the robot (default: None)
 
-        '''
+        """
 
-        super().__init__(DS_SPEED, controller_standing, Instance_front_right_wheel, Instance_front_left_wheel, Instance_back_left_wheel, Instance_back_right_wheel)
+        super().__init__(DS_SPEED, Instance_front_right_wheel, Instance_front_left_wheel, Instance_back_left_wheel, Instance_back_right_wheel)
 
         self.fr_wheel = Instance_front_right_wheel
         self.fl_wheel = Instance_front_left_wheel
         self.bl_wheel = Instance_back_left_wheel
         self.br_wheel = Instance_back_right_wheel
-
-        self.standing = controller_standing
 
         self.button_fr = Instance_button_front_right
         self.button_fl = Instance_button_front_left
@@ -2944,14 +3247,12 @@ class Mecanum_Wheels_four(base_driver):
 
         self.ds_speed = DS_SPEED
         self.isClose = False
-        self.max_speed = 1500
-
-        self._set_values()
 
 
-    # ======================== SET METHODS ========================
+
+    # ======================== SETTER ========================
     def set_instance_distance_sensor(self, Instance_distance_sensor: DistanceSensor) -> None:
-        '''
+        """
         create or overwrite the existence of the distance_sensor
 
         Args:
@@ -2959,13 +3260,13 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.distance_sensor = Instance_distance_sensor
 
     def set_instance_light_sensors(self, Instance_light_sensor_front: LightSensor,
                                    Instance_light_sensor_back: LightSensor,
                                    Instance_light_sensor_side: LightSensor) -> None:
-        '''
+        """
         create or overwrite the existence of all light sensors
 
         Args:
@@ -2975,13 +3276,13 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.light_sensor_front = Instance_light_sensor_front
         self.light_sensor_back = Instance_light_sensor_back
         self.light_sensor_side = Instance_light_sensor_side
 
     def set_instance_light_sensor_front(self, Instance_light_sensor_front: LightSensor) -> None:
-        '''
+        """
         create or overwrite the existence of the front light sensors
 
         Args:
@@ -2989,11 +3290,11 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.light_sensor_front = Instance_light_sensor_front
 
     def set_instance_light_sensor_back(self, Instance_light_sensor_back: LightSensor) -> None:
-        '''
+        """
         create or overwrite the existence of the back light sensor
 
         Args:
@@ -3001,11 +3302,11 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.light_sensor_back = Instance_light_sensor_back
 
     def set_instance_light_sensor_side(self, Instance_light_sensor_side: LightSensor) -> None:
-        '''
+        """
         create or overwrite the existence of the side light sensor
 
         Args:
@@ -3013,12 +3314,12 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.light_sensor_side = Instance_light_sensor_side
 
     def set_instances_buttons(self, Instance_button_front_right: Digital, Instance_button_front_left: Digital,
                               Instance_button_back_right: Digital, Instance_button_back_left: Digital) -> None:
-        '''
+        """
         create or overwrite the existence of all buttons
 
         Args:
@@ -3029,14 +3330,14 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.button_fl = Instance_button_front_left
         self.button_fr = Instance_button_front_right
         self.button_br = Instance_button_back_right
         self.button_bl = Instance_button_back_left
 
     def set_instance_button_fl(self, Instance_button_front_left: Digital) -> None:
-        '''
+        """
         create or overwrite the existence of the front left button
 
         Args:
@@ -3044,11 +3345,11 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.button_fl = Instance_button_front_left
 
     def set_instance_button_fr(self, Instance_button_front_right: Digital) -> None:
-        '''
+        """
         create or overwrite the existence of the front right button
 
         Args:
@@ -3056,11 +3357,11 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.button_fr = Instance_button_front_right
 
     def set_instance_button_bl(self, Instance_button_back_left: Digital) -> None:
-        '''
+        """
         create or overwrite the existence of the back left button
 
         Args:
@@ -3068,11 +3369,11 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.button_bl = Instance_button_back_left
 
     def set_instance_button_br(self, Instance_button_back_right: Digital) -> None:
-        '''
+        """
         create or overwrite the existence of the back right button
 
         Args:
@@ -3080,13 +3381,13 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.button_br = Instance_button_back_right
 
 
-    # ======================== CHECK METHODS ========================
+    # ======================== CHECKER ========================
     def check_instance_light_sensors(self) -> bool:
-        '''
+        """
         inspect the existence of all light sensors
 
         Args:
@@ -3094,7 +3395,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             if there is an instance of all light sensor in existence
-        '''
+        """
         if not isinstance(self.light_sensor_front, LightSensor):
             log('Light sensor front is not initialized!', in_exception=True)
             raise TypeError('Light sensor front is not initialized!')
@@ -3109,7 +3410,7 @@ class Mecanum_Wheels_four(base_driver):
         return True
 
     def check_instance_light_sensors_middle(self) -> bool:
-        '''
+        """
         inspect the existence of the middle light sensors
 
         Args:
@@ -3117,7 +3418,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             if there is an instance of the middle light sensors in existence
-        '''
+        """
         if not isinstance(self.light_sensor_front, LightSensor):
             log('Light sensor front is not initialized!', in_exception=True)
             raise TypeError('Light sensor front is not initialized!')
@@ -3128,7 +3429,7 @@ class Mecanum_Wheels_four(base_driver):
         return True
 
     def check_instance_light_sensor_front(self) -> bool:
-        '''
+        """
         inspect the existence of the front light sensor
 
         Args:
@@ -3136,14 +3437,14 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             if there is an instance of the front light sensor in existence
-        '''
+        """
         if not isinstance(self.light_sensor_front, LightSensor):
             log('Light sensor front is not initialized!', in_exception=True)
             raise TypeError('Light sensor front is not initialized!')
         return True
 
     def check_instance_light_sensor_back(self) -> bool:
-        '''
+        """
         inspect the existence of the back light sensor
 
         Args:
@@ -3151,14 +3452,14 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             if there is an instance of the back light sensor in existence
-        '''
+        """
         if not isinstance(self.light_sensor_back, LightSensor):
             log('Light sensor back is not initialized!', in_exception=True)
             raise TypeError('Light sensor back is not initialized!')
         return True
 
     def check_instance_light_sensor_side(self) -> bool:
-        '''
+        """
         inspect the existence of the side light sensor
 
         Args:
@@ -3166,14 +3467,14 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             bool: if there is an instance of the side light sensor in existence (True) or not (raises TypeError)
-        '''
+        """
         if not isinstance(self.light_sensor_side, LightSensor):
             log('Light sensor side is not initialized!', in_exception=True)
             raise TypeError('Light sensor side is not initialized!')
         return True
 
     def check_instance_distance_sensor(self) -> bool:
-        '''
+        """
         inspect the existence of the distance sensor
 
         Args:
@@ -3181,14 +3482,14 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             bool: if there is an instance of the distance in existence (True) or not (raises TypeError)
-        '''
+        """
         if not isinstance(self.distance_sensor, DistanceSensor):
             log('Distance sensor is not initialized!', in_exception=True)
             raise TypeError('Distance sensor is not initialized!')
         return True
 
     def check_instance_button_fl(self) -> bool:
-        '''
+        """
         inspect the existence of the front left button
 
         Args:
@@ -3196,14 +3497,14 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             bool: if there is an instance of the front left button in existence (True) or not (raises TypeError)
-        '''
+        """
         if not isinstance(self.button_fl, Digital):
             log('Button front left is not initialized!', in_exception=True)
             raise TypeError('Button front left is not initialized!')
         return True
 
     def check_instance_button_fr(self) -> bool:
-        '''
+        """
         inspect the existence of the front right button
 
         Args:
@@ -3211,14 +3512,14 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             bool: if there is an instance of the front right button in existence (True) or not (raises TypeError)
-        '''
+        """
         if not isinstance(self.button_fr, Digital):
             log('Button front right is not initialized!', in_exception=True)
             raise TypeError('Button front right is not initialized!')
         return True
 
     def check_instance_button_bl(self) -> bool:
-        '''
+        """
         inspect the existence of the back left button
 
         Args:
@@ -3226,14 +3527,14 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             bool: if there is an instance of the back left button in existence (True) or not (raises TypeError)
-        '''
+        """
         if not isinstance(self.button_bl, Digital):
             log('Button back left is not initialized!', in_exception=True)
             raise TypeError('Button back left is not initialized!')
         return True
 
     def check_instance_button_br(self) -> bool:
-        '''
+        """
         inspect the existence of the back right button
 
         Args:
@@ -3241,14 +3542,14 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             bool: if there is an instance of the back right button in existence (True) or not (raises TypeError)
-        '''
+        """
         if not isinstance(self.button_br, Digital):
             log('Button back right is not initialized!', in_exception=True)
             raise TypeError('Button back right is not initialized!')
         return True
 
     def check_instances_buttons_front(self) -> bool:
-        '''
+        """
         inspect the existence of the front buttons
 
         Args:
@@ -3256,7 +3557,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             bool: if there is an instance of the front buttons in existence (True) or not (raises TypeError)
-        '''
+        """
         if not isinstance(self.button_fl, Digital):
             log('Button front left is not initialized!', in_exception=True)
             raise TypeError('Button front left is not initialized!')
@@ -3268,7 +3569,7 @@ class Mecanum_Wheels_four(base_driver):
         return True
 
     def check_instances_buttons_back(self) -> bool:
-        '''
+        """
         inspect the existence of the back buttons
 
         Args:
@@ -3276,7 +3577,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             bool: if there is an instance of all buttons in existence (True) or not (raises TypeError)
-        '''
+        """
         if not isinstance(self.button_bl, Digital):
             log('Button back left is not initialized!', in_exception=True)
             raise TypeError('Button back left is not initialized!')
@@ -3288,7 +3589,7 @@ class Mecanum_Wheels_four(base_driver):
         return True
 
     def check_instances_buttons(self) -> bool:
-        '''
+        """
         inspect the existence of all buttons
 
         Args:
@@ -3296,7 +3597,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             bool: if there is an instance of all buttons in existence (True) or not (raises TypeError)
-        '''
+        """
         if not isinstance(self.button_fl, Digital):
             log('Button front left is not initialized!', in_exception=True)
             raise TypeError('Button front left is not initialized!')
@@ -3317,7 +3618,7 @@ class Mecanum_Wheels_four(base_driver):
 
     # ===================== CALIBRATE BIAS =====================
     def calibrate_degrees(self, output:bool = True) -> None:
-        '''
+        """
         drive to the side until a black line was found and then slowly turn 180 degrees to know how long it takes to make one 180B0 turn
 
         Args:
@@ -3325,7 +3626,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None (but sets a class variable)
-        '''
+        """
         self.check_instance_light_sensors_middle()
         t_timer = TimeR()
         turning_time = self.ONEEIGHTY_DEGREES_SECS / 2 if self.ONEEIGHTY_DEGREES_SECS else 1
@@ -3378,7 +3679,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def calibrate_light_sensor_distance_sec(self):
-        '''
+        """
         Calibrates the distance between the very front and rear light / brightness sensor in seconds
 
         Args:
@@ -3386,7 +3687,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None, but writes into a bias file
-        '''
+        """
         self.check_instance_light_sensors_middle()
         self.drive_straight_condition_analog(self.light_sensor_front, '<',
                                              self.light_sensor_front.get_value_black_bias())
@@ -3396,7 +3697,7 @@ class Mecanum_Wheels_four(base_driver):
         self.light_sensor_distance_sec = light_sensor_distance_timer.stop_timer()
         self.break_all_motors()
 
-        file_name = os.path.join(BIAS_FOLDER, 'light_sensor_distance_sec.txt')
+        file_name = 'light_sensor_distance_sec.txt'
         try:
             distance_sec = file_Manager.reader(file_name)
             if distance_sec != '0':
@@ -3413,7 +3714,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def calibrate_mm_per_sec(self, millis: int = 5000, speed: int = None) -> None:
-        '''
+        """
         calibrates the mm per second. You need to mark the beginning on where it began to drive from, since you need to know how far it went (in mm)
 
         Args:
@@ -3422,7 +3723,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         if speed is None:
             speed = self.ds_speed
 
@@ -3436,7 +3737,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def calibrate_distance(self, start_mm: int, step: float = 0.15) -> None:
-        '''
+        """
         calibrates the values for the distance sensor. HINT: calibrate the gyro first (if you did not already do that), so it drives straight. Also it calibrates one time, make sure it is as accurate as possible.
         Both object have to be as parallel to each other as possible.
 
@@ -3448,7 +3749,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.check_instance_distance_sensor()
 
         if self.mm_per_sec == 0:
@@ -3504,14 +3805,14 @@ class Mecanum_Wheels_four(base_driver):
 
         tkill.kill()
         self.break_all_motors()
-        self.set_distances(values=self.distance_far_values, mm=self.distance_far_mm)
+        self.save_distances(values=self.distance_far_values, mm=self.distance_far_mm)
 
         log(f"Calibration finished. The distance sensor should be like {self.distance_far_mm[-1]}mm away of the object.")
 
     # ======================== PUBLIC METHODS =======================
     @BreakableFunction
     def break_all_motors(self):
-        '''
+        """
         stops all four motors immediately, without letting them roll to an end
 
         Args:
@@ -3519,7 +3820,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.fr_wheel.stop_all()
         # self.fl_wheel.stop()
         # self.br_wheel.stop()
@@ -3528,7 +3829,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def drive_side(self, direction: str, millis: int, speed: int = None) -> None:
-        '''
+        """
         drive sideways for as long as you want to (in millis)
 
         Args:
@@ -3538,7 +3839,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
 
         if direction != 'right' and direction != 'left':
             log('direction parameter needs to be either "right" or "left"', in_exception=True)
@@ -3581,7 +3882,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def drive_straight(self, millis: int, speed: int = None) -> None:
-        '''
+        """
         drive straight for as long as you want to (in millis)
 
         Args:
@@ -3590,7 +3891,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         if speed is None:
             speed = self.ds_speed
 
@@ -3629,7 +3930,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def drive_diagonal(self, end: str, side: str, millis: int, speed: int = None) -> None:
-        '''
+        """
         drive diagonal for as long as you want to (in millis)
 
         Args:
@@ -3640,7 +3941,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         if speed is None:
             speed = self.ds_speed
         if end != 'front' and end != 'back':
@@ -3776,7 +4077,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def turn_degrees_far(self, direction_side: str, forward: bool, degree: int) -> None:
-        '''
+        """
         turn the number of degrees given, to take a turn with only two wheels, resulting in a turn not on the spot
 
         Args:
@@ -3786,7 +4087,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         if direction_side != 'right' and direction_side != 'left':
             log('Only "right" or "left" are valid options for the "direction_side" parameter', in_exception=True)
             raise ValueError('Only "right" or "left" are valid options for the "direction_side" parameter')
@@ -3817,7 +4118,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def turn_degrees(self, direction: str, degree: int) -> None:
-        '''
+        """
         turn the number of degrees given, to take a turn with all four wheels, resulting in a turn on the spot
 
         Args:
@@ -3826,7 +4127,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
             raise ValueError('turn_degrees() Exception: Only "right" or "left" are valid options for the "direction" parameter')
@@ -3859,7 +4160,7 @@ class Mecanum_Wheels_four(base_driver):
     @DriveableFunction
     def turn_wheel_condition_digital(self, direction: str, instance: Digital, condition: str, value: int,
                                      millis: int = 9999999, speed: int = None) -> None:
-        '''
+        """
         Turning with one wheel to the desired direction until a button gets pressed (or released)
 
         Args:
@@ -3872,7 +4173,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
             raise ValueError('Only "right" or "left" are valid options for the "direction" parameter')
@@ -3905,7 +4206,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def turn_wheel_condition_analog(self, direction: str, instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
-        '''
+        """
         Turning with one wheel to the desired direction until a value gets of an analog sensor gets reached
 
         Args:
@@ -3918,7 +4219,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
             raise ValueError('Only "right" or "left" are valid options for the "direction" parameter')
@@ -3967,7 +4268,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def turn_degrees_condition_digital(self, direction: str, instance: Digital, condition: str, value: int, millis: int = 9999999, speed: int = None) -> int:
-        '''
+        """
         Turning on the stand to the desired direction until a button gets pressed (or released)
 
         Args:
@@ -3980,7 +4281,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             int: The degrees that it took the robot to turn (if it took the robot longer than the time for 180 degrees, then it returns 181, indicating that it was more than 180 degrees)
-        '''
+        """
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
             raise ValueError('Only "right" or "left" are valid options for the "direction" parameter')
@@ -4037,7 +4338,7 @@ class Mecanum_Wheels_four(base_driver):
     @DriveableFunction
     def turn_degrees_condition_analog(self, direction: str, instance: Analog, condition: str, value: int,
                                    millis: int = 9999999, speed: int = None) -> int:
-        '''
+        """
         Turning on the stand to the desired direction until a value gets of an analog sensor gets reached
 
         Args:
@@ -4049,8 +4350,8 @@ class Mecanum_Wheels_four(base_driver):
             speed (int, optional): how fast it should turn (default: ds_speed)
 
         Returns:
-            int:  The degrees that it took the robot to turn (if it took the robot longer than the time for 180 degrees, then it returns 181, indicating that it was more than 180 degrees)
-        '''
+            int: The degrees that it took the robot to turn (if it took the robot longer than the time for 180 degrees, then it returns 181, indicating that it was more than 180 degrees)
+        """
 
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
@@ -4141,7 +4442,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def drive_side_til_mm_found(self, mm_to_object: int, direction: str, speed: int = None) -> None:
-        '''
+        """
         turn the amount of degrees given, to take a turn with basically only two, resulting in a turn not on the spot
         This function might me unreliable! keep track of the distances!
 
@@ -4152,7 +4453,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         if speed is None:
             speed = self.ds_speed
         if direction != 'right' and direction != 'left':
@@ -4228,7 +4529,7 @@ class Mecanum_Wheels_four(base_driver):
                     theta = 0
 
                 k.msleep(t)
-                theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
 
         elif direction == 'left':
             while not self.isClose:
@@ -4259,14 +4560,13 @@ class Mecanum_Wheels_four(base_driver):
                     theta = 0
 
                 k.msleep(t)
-                theta += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
+                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
         self.break_all_motors()
 
 
     @DriveableFunction
     def drive_til_distance(self, mm_to_object: int, speed: int = None) -> None:
-        # distance in mm
-        '''
+        """
         drive straight as long as the object in front of the distance sensor (in mm) is not in reach
 
         Args:
@@ -4275,7 +4575,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         if speed is None:
             speed = self.ds_speed
         if mm_to_object > self.distance_sensor.get_mm()[-1] or mm_to_object < 10:
@@ -4425,7 +4725,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def shake_side(self, times: int, millis: int = 50) -> None:
-        '''
+        """
         drive right and left in small steps
 
         Args:
@@ -4434,7 +4734,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         for i in range(times):
             self.drive_side('right', millis)
             self.drive_side('left', millis)
@@ -4442,7 +4742,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def align_drive_front(self, drive_bw: bool = True, max_millis: int = 9999999) -> None:
-        '''
+        """
         aligning front by bumping into something, so both buttons on the front will be pressed. If there's an error by pressing the buttons, a fail save will occur. If at will it also drive backwards a little bit to be able to turn after it bumped into something
 
         Args:
@@ -4452,7 +4752,7 @@ class Mecanum_Wheels_four(base_driver):
         Returns:
             None
 
-        '''
+        """
         self.check_instances_buttons_front()
         align_front_timer = TimeR()
         align_front_timer.start_timer_millis()
@@ -4485,7 +4785,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def align_drive_back(self, drive_fw: bool = True, max_millis: int = 9999999) -> None:
-        '''
+        """
         aligning back by bumping into something, so both buttons on the back will be pressed. If there's an error by pressing the buttons, a fail save will occur. If at will it also drive forwards a little bit to be able to turn after it bumped into something
 
         Args:
@@ -4494,7 +4794,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.check_instances_buttons_back()
         align_back_timer = TimeR()
         align_back_timer.start_timer_millis()
@@ -4527,7 +4827,7 @@ class Mecanum_Wheels_four(base_driver):
     @DriveableFunction
     def drive_side_condition_analog(self, direction: str, instance: Analog, condition: str, value: int, millis: int = 9999999,
                                     speed: int = None) -> None:
-        '''
+        """
         drive sideways until an analog value gets reached for the desired instance
 
         Args:
@@ -4540,7 +4840,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         if speed is None:
             speed = self.ds_speed
         if direction != 'right' and direction != 'left':
@@ -4578,28 +4878,28 @@ class Mecanum_Wheels_four(base_driver):
 
         if condition == 'let' or condition == '<=':  # let -> less or equal than
             while (instance.current_value() <= value) and (side_timer.stop_timer(False) < millis):
-                theta_side += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
+                theta_side += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
 
                 driving_on_side()
 
 
         elif condition == 'het' or condition == '>=':  # het -> higher or equal than
             while (instance.current_value() >= value) and (side_timer.stop_timer(False) < millis):
-                theta_side += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
+                theta_side += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
 
                 driving_on_side()
 
 
         elif condition == 'ht' or condition == '>':  # ht -> higher than
             while (instance.current_value() > value) and (side_timer.stop_timer(False) < millis):
-                theta_side += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
+                theta_side += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
 
                 driving_on_side()
 
 
         elif condition == 'lt' or condition == '<':  # lt -> less than
             while (instance.current_value() < value) and (side_timer.stop_timer(False) < millis):
-                theta_side += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
+                theta_side += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
 
                 driving_on_side()
 
@@ -4613,7 +4913,7 @@ class Mecanum_Wheels_four(base_driver):
     def drive_side_condition_digital(self, direction: str, instance: Digital, condition: str, value: int,
                                     millis: int = 9999999,
                                     speed: int = None) -> None:
-        '''
+        """
         drive sideways until an analog value gets reached for the desired instance
 
         Args:
@@ -4626,7 +4926,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         if speed is None:
             speed = self.ds_speed
         if direction != 'right' and direction != 'left':
@@ -4663,14 +4963,14 @@ class Mecanum_Wheels_four(base_driver):
 
         if condition == '==':
             while (instance.current_value() == value) and (side_timer.stop_timer(False) < millis):
-                theta_side += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
+                theta_side += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
 
                 driving_on_side()
 
 
         elif condition == '!=':
             while (instance.current_value() != value) and (side_timer.stop_timer(False) < millis):
-                theta_side += (self.get_current_standard_gyro(True) - self.rev_standard_bias_gyro) * 3
+                theta_side += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
 
                 driving_on_side()
         else:
@@ -4682,7 +4982,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def drive_straight_condition_analog(self, instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
-        '''
+        """
         drive straight until an analog value gets reached for the desired instance
 
         Args:
@@ -4694,7 +4994,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-       '''
+       """
         if speed is None:
             speed = self.ds_speed
         self.check_instances_buttons()
@@ -4791,7 +5091,7 @@ class Mecanum_Wheels_four(base_driver):
     @DriveableFunction
     def drive_straight_condition_digital(self, instance: Digital, condition: str, value: int, millis: int = 9999999,
                                          speed: int = None):
-        '''
+        """
         drive straight until an digital value gets reached for the desired instance
 
         Args:
@@ -4803,7 +5103,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         if speed is None:
             speed = self.ds_speed
         theta = 0
@@ -4859,7 +5159,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def turn_to_black_line(self, direction: str, priority_at_front: bool, millis: int = 0) -> bool:
-        '''
+        """
         Turn as long as the light sensor (front or back, depends on if the speed is positive or negative) does not see the black line
 
         Args:
@@ -4869,7 +5169,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
            bool: If it found the black line in a full rotation (=360-degree turn) (True) or if there was no black line (False)
-        '''
+        """
         self.check_instance_light_sensors_middle()
 
         if direction != 'right' and direction != 'left':
@@ -4909,7 +5209,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def drive_align_line(self, direction: str, forward: bool) -> None:
-        '''
+        """
         If you are anywhere on the black line, you can align yourself on the black line. If you are not on the line, it drives (forwards or backwards, depends if the speed is positive or negative) until the line was found and then aligns as desired.
         Improvement: align backwards, so there is no need to make a 180 degrees turn. Would spare you some time.
 
@@ -4919,7 +5219,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         speed = self.ds_speed if forward else -self.ds_speed
         self.check_instances_buttons()
         self.check_instance_light_sensors_middle()
@@ -4946,7 +5246,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def align_on_black_line(self, leaning_side: str = 'right') -> bool:
-        '''
+        """
         Align yourself on the black line. It will only align itself on one line and not a collections of lines (crossings of lines)! You need to be somewhere on top of the black line to let this function work!
 
         Args:
@@ -4954,7 +5254,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             bool: If there was a line in the first 360 degree turn (True) or not (False)
-       '''
+       """
         self.check_instance_light_sensors_middle()
 
         if leaning_side != 'right' and leaning_side != 'left':
@@ -5006,7 +5306,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def line_time_turner(self,front_has_importance: bool, leaning_side: str, max_duration: int, speed: int = None) -> bool:
-        '''
+        """
         If you are on the line, then it will turn as long as you wish and look for the line. If the line was not found in the time given, then it will turn the other way
 
         Args:
@@ -5017,7 +5317,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             bool: If anything got found along the way (True) or if there was nothing and stopping, where you were in the beginning of the call (False)
-        '''
+        """
         if speed is None:
             speed = self.ds_speed
 
@@ -5060,7 +5360,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def black_line(self, millis: int, distance_over_time: bool, speed: int = None, pre_aligned: bool = False) -> bool:
-        '''
+        """
         drive on the black line as long as wished
 
         Args:
@@ -5072,7 +5372,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             bool: If there was a black line (True) or if there was no black line at all (False)
-       '''
+       """
         if speed is None:
             speed = self.ds_speed
 
@@ -5134,7 +5434,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def scanner_face_object(self, degree: int) -> None:
-        '''
+        """
         Scan the location for the nearest object and then face the nearest object
 
         Args:
@@ -5142,7 +5442,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Returns:
             None
-        '''
+        """
         self.check_instance_distance_sensor()
         if degree > 90:
             log('Only a value under 91 is acceptable for the degree!', in_exception=True)

@@ -84,7 +84,6 @@ def Instance_Setup():
         # ================= DriveR ==================
         globals()['RubberWheeler'] = Solarbotic_Wheels_two(Instance_right_wheel=Wheel_R,
                                                    Instance_left_wheel=Wheel_L,
-                                                   controller_standing=XX,                                  # If the controller is standing up-right (True) or if it is laying flat on the surface of the chassis bracket (False)
                                                    wheels_at_front=XX,                                      # If the wheels from the solarbotic wheels robot are located in the front (True) or back (False) half
                                                    Instance_button_front_right=Button_FR,
                                                    Instance_button_front_left=Button_FL,
@@ -138,17 +137,17 @@ def main():
         # Step 0: Create the global instances
         #Instance_Setup()  # you will need this all the time, so do not comment this line out!
 
-        # Step 1: Identify the orientation of the controller -> Create some space for the robot, this function will need it
-        #RubberWheeler.hardware_orientation_identification()  # make sure that the robot will NOT bump into / interfere with anything -> DO NOT TOUCH IT
-
-        # Step 2: basic calibrations (turning, driving straight and brightness sensors)
+        # Step 1: Basic calibrations (turning, driving straight and brightness sensors)
         #register_light_values()
         #RubberWheeler.auto_calibration(times=10)  # make sure that the robot is standing on top of a black line and is aligned in the direction of the black line
 
-        # Step 3: test how well it turns
+        # Step 2: Identify the orientation of the controller -> Create some space for the robot, this function will need it
+        #RubberWheeler.hardware_orientation_identification()  # make sure that the robot will NOT bump into / interfere with anything -> DO NOT TOUCH IT
+
+        # Step 3: Test how well it turns
         #RubberWheeler.turn_degrees('left', 180)
 
-        # Step 4: calibrate the rest (one after the other!!!)
+        # Step 4: Calibrate the rest (one after the other!!!)
         #RubberWheeler.calibrate_light_sensor_distance_sec()
         #RubberWheeler.calibrate_mm_per_sec()
         #RubberWheeler.calibrate_distance(XX)

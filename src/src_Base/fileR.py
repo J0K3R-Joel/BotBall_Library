@@ -127,12 +127,11 @@ class FileR:
 			return
 
 		path, potential_file, contains_file = self._separate_file_from_path(file_path)
-
 		if not os.path.exists(path):
 			os.makedirs(path, exist_ok=True)
 
 		if contains_file:
-			self.writer(path, 'w', text)
+			self.writer(file_path, 'w', text)
 
 		log(f'Path {file_path} created!')
 
@@ -148,13 +147,13 @@ class FileR:
         Returns:
             content of the file
         """
+		file_path = self._build_file_path(file_name)
 		try:
-			file_path = self._build_file_path(file_name)
 			with open(file_path, 'r') as f:
 				text = f.read()
 				return getattr(builtins, type_name)(text)
 		except Exception as e:
-			log(str(e), important=True, in_exception=True)
+			log(file_path + ': ' + str(e), important=True, in_exception=True)
 
 	def writer(self, file_name: str, mode: str, msg: str) -> None:
 		"""

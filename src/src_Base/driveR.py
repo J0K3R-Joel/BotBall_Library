@@ -118,7 +118,6 @@ def BreakableFunction(func):
 
         if calling_function == breakable_function_name:  # last valid function name  @TODO test out if this still works, since the name gets overwritten
             wrapper.__name__ = f'{func.__name__}#' + wrapper.__name__
-
             result = func(*args, **kwargs)
             return result
         else:
@@ -128,7 +127,7 @@ def BreakableFunction(func):
 
                 result = func(*args, **kwargs)
                 return result
-
+        print('breaking not allowed: ', calling_function, flush=True)
         return
 
     return wrapper
@@ -149,19 +148,8 @@ class base_driver:
         self._motor_stoppers = {}
         self._next_motor_id = 0
         self.max_speed = 1500
-        self.mm_per_sec_file = '/mm_per_sec.txt'
-        self.axis_importance_file = '/axis_importance_level.txt'
-
-
-        # @TODO REMOVE ME
-        file_Manager.remover(BIAS_FOLDER + '/bias_importance_level.txt')
-        file_Manager.transfer(BIAS_FOLDER + '/bias_degrees.txt', BIAS_FOLDER + '/degrees_time.txt', create_to_transfer_file=True)
-        file_Manager.transfer(BIAS_FOLDER + '/gyro_importance_level.txt', BIAS_FOLDER + '/axis_importance_level.txt', create_to_transfer_file=True)
-        file_Manager.remover(BIAS_FOLDER + '/bias_degrees.txt')
-        file_Manager.remover(BIAS_FOLDER + '/axis_importance_level.txt')
-
-
-
+        self.mm_per_sec_file = 'mm_per_sec.txt'
+        self.axis_importance_file = 'axis_importance_level.txt'
         self.pseudo_distanceR = DistanceSensor(99999999999)  # just an imaginary port, which will never exist
         self.distance_far_values, self.distance_far_mm = self.pseudo_distanceR.get_distances(raises_exception=False)
         self.check_wheelr_instance(motors)
@@ -183,13 +171,13 @@ class base_driver:
         self.mm_per_sec = self.get_mm_per_sec()
         self.ONEEIGHTY_DEGREES_SECS = self.get_degrees_time()
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
-        self._handle_standard_bias()
         self.bias_gyro_z = self.get_bias_gyro_z()
         self.bias_gyro_y = self.get_bias_gyro_y()
         self.bias_gyro_x = self.get_bias_gyro_x()
         self.bias_accel_z = self.get_bias_accel_z()  # There is no function where you can do anything with the accel y -> you need to invent them by yourself
         self.bias_accel_y = self.get_bias_accel_y()  # There is no function where you can do anything with the accel y -> you need to invent them by yourself
         self.bias_accel_x = self.get_bias_accel_x()  # There is no function where you can do anything with the accel y -> you need to invent them by yourself
+        self._handle_standard_bias()
 
     def _handle_standard_bias(self):
         """
@@ -399,7 +387,7 @@ class base_driver:
         Returns:
             float: time for one 180-degree turn
         """
-        degree_time = getattr(self, 'ONEEIGHTY_DEGREES_SECS', __default=None)
+        degree_time = getattr(self, 'ONEEIGHTY_DEGREES_SECS', None)
         if not degree_time:
             file_name = 'degrees_time.txt'
             degree_time = file_Manager.reader(file_name, 'float')
@@ -416,7 +404,7 @@ class base_driver:
         Returns:
             float: current bias for the gyro_z value
         """
-        bias = getattr(self, 'bias_gyro_z', __default=None)
+        bias = getattr(self, 'bias_gyro_z', None)
         if not bias:
             file_name = 'bias_gyro_z.txt'
             bias = file_Manager.reader(file_name, 'float')
@@ -433,7 +421,7 @@ class base_driver:
         Returns:
             float: current bias for the gyro_y value
         """
-        bias = getattr(self, 'bias_gyro_y', __default=None)
+        bias = getattr(self, 'bias_gyro_y', None)
         if not bias:
             file_name = 'bias_gyro_y.txt'
             bias = file_Manager.reader(file_name, 'float')
@@ -450,7 +438,7 @@ class base_driver:
         Returns:
             float: current bias for the gyro_x value
         """
-        bias = getattr(self, 'bias_gyro_x', __default=None)
+        bias = getattr(self, 'bias_gyro_x', None)
         if not bias:
             file_name = 'bias_gyro_x.txt'
             bias = file_Manager.reader(file_name, 'float')
@@ -467,7 +455,7 @@ class base_driver:
         Returns:
             float: current bias for the accel_z value
         """
-        bias = getattr(self, 'bias_accel_z', __default=None)
+        bias = getattr(self, 'bias_accel_z', None)
         if not bias:
             file_name = 'bias_accel_z.txt'
             bias = file_Manager.reader(file_name, 'float')
@@ -484,7 +472,7 @@ class base_driver:
         Returns:
             float: current bias for the accel_y value
         """
-        bias = getattr(self, 'bias_accel_y', __default=None)
+        bias = getattr(self, 'bias_accel_y', None)
         if not bias:
             file_name = 'bias_accel_y.txt'
             bias = file_Manager.reader(file_name, 'float')
@@ -501,7 +489,7 @@ class base_driver:
         Returns:
            float: current bias for the accel_x value
         """
-        bias = getattr(self, 'bias_accel_x', __default=None)
+        bias = getattr(self, 'bias_accel_x', None)
 
         if not bias:
             file_name = 'bias_accel_x.txt'
@@ -1067,22 +1055,22 @@ class base_driver:
 
         for arg in args:
             if arg == 'gyro_z' or arg == 'gz':
-                t1 = threading.Thread(target=self.calibrate_gyro_z, kwargs=arguments, name='gyro_z', daemon=True)
+                t1 = threading.Thread(target=self.calibrate_gyro_z, kwargs=arguments, name='gyro_z')
                 calibrations.append(t1)
             elif arg == 'gyro_y' or arg == 'gy':
-                t1 = threading.Thread(target=self.calibrate_gyro_y, kwargs=arguments, name='gyro_y', daemon=True)
+                t1 = threading.Thread(target=self.calibrate_gyro_y, kwargs=arguments, name='gyro_y')
                 calibrations.append(t1)
             elif arg == 'gyro_x' or arg == 'gx':
-                t1 = threading.Thread(target=self.calibrate_gyro_x, kwargs=arguments, name='gyro_x', daemon=True)
+                t1 = threading.Thread(target=self.calibrate_gyro_x, kwargs=arguments, name='gyro_x')
                 calibrations.append(t1)
             elif arg == 'accel_z' or arg == 'az':
-                t1 = threading.Thread(target=self.calibrate_accel_z, kwargs=arguments, name='accel_z', daemon=True)
+                t1 = threading.Thread(target=self.calibrate_accel_z, kwargs=arguments, name='accel_z')
                 calibrations.append(t1)
             elif arg == 'accel_y' or arg == 'ay':
-                t1 = threading.Thread(target=self.calibrate_accel_y, kwargs=arguments, name='accel_y', daemon=True)
+                t1 = threading.Thread(target=self.calibrate_accel_y, kwargs=arguments, name='accel_y')
                 calibrations.append(t1)
             elif arg == 'accel_x' or arg == 'ax':
-                t1 = threading.Thread(target=self.calibrate_accel_x, kwargs=arguments, name='accel_x', daemon=True)
+                t1 = threading.Thread(target=self.calibrate_accel_x, kwargs=arguments, name='accel_x')
                 calibrations.append(t1)
             else:
                 log(f'You can only calibrate "gyro_z", "gyro_y", "gyro_x", "accel_z", "accel_y" or "accel_x" and not "{arg}"', in_exception=True)
@@ -1103,12 +1091,12 @@ class base_driver:
 
 
     # ======================== PUBLIC METHODS =======================
-    @ForceDriveableFunction
     def hardware_orientation_identification(self, identification_count: int = 10, identification_millis: int = 500, required_percent: float = 1.2):
         globals()['gyro_x_value'], globals()['gyro_y_value'], globals()['gyro_z_value'] = 0, 0, 0
         globals()['gyro_x_weight'], globals()['gyro_y_weight'], globals()['gyro_z_weight'] = 0, 0, 0
         x_importance, y_importance, z_importance = 0, 0, 0
 
+        @ForceDriveableFunction
         def create_test():
             identification_timer = TimeR()
             identify_timer = TimeR()
@@ -3902,12 +3890,11 @@ class Mecanum_Wheels_four(base_driver):
         straight_timer = TimeR()
         straight_timer.start_timer_millis()
         theta = 0
-        adjuster = int(speed/15)  # 15 is just a value that worked the best
+        adjuster = int(speed/14)  # 15 is just a value that worked the best
         instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
 
         if speed < 0:
             instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
-
 
         while straight_timer.stop_timer(False) < millis:
             if 10 > theta > -10:
@@ -3916,16 +3903,18 @@ class Mecanum_Wheels_four(base_driver):
                 instances[2].drive(speed)
                 instances[3].drive(speed)
             elif theta > 10:
-                instances[0].drive(speed - adjuster)
+                instances[0].drive(speed + adjuster)
                 instances[1].drive(speed + adjuster)
-                instances[2].drive(speed - adjuster)
+                instances[2].drive(speed + adjuster)
                 instances[3].drive(speed + adjuster)
             else:
-                instances[0].drive(speed + adjuster)
+                instances[0].drive(speed - adjuster)
                 instances[1].drive(speed - adjuster)
-                instances[2].drive(speed + adjuster)
+                instances[2].drive(speed - adjuster)
                 instances[3].drive(speed - adjuster)
-            theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+            theta += self.get_current_standard_gyro() - self.standard_bias_gyro
+            k.msleep(1)
+            print(theta, flush=True)
         self.break_all_motors()
 
     @DriveableFunction
@@ -5198,7 +5187,7 @@ class Mecanum_Wheels_four(base_driver):
 
         if driving and found:
             k.msleep(millis)
-            
+
         self.break_all_motors()
 
         if not found:

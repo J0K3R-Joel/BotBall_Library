@@ -92,7 +92,7 @@ class Util:
         counter = cat_exists + pname_exists + pnumber_exists
 
 
-        if not os.path.exists(self.port_file_name):
+        if not os.path.exists(self.file_manager.get_base_directory() + self.port_file_name):
             if port_file_logable_function_name == "get_port_file_entries":
                 log('No entries created just yet', in_exception=True)
             raise FileNotFoundError('No entries created just yet')

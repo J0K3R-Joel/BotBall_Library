@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import os, sys
+from functools import lru_cache
 
 sys.path.append("/usr/lib")
 
@@ -886,191 +887,221 @@ class base_driver:
         if output:
             log('CALIBRATION DONE', important=True)
 
-    def calibrate_gyro_z(self, counter: int = None, max: int = None, millis: int = 8000) -> None:
+    @lru_cache
+    def calibrate_gyro_z(self, counter: int = None, max: int = None, amount: int = 8000) -> None:
         """
         calibrate the bias for the controllers right and left
 
         Args:
             counter (int): the number where it is at the moment
             max (int): how many calibrations there are (to show it on the screen and for debugging usage)
-            millis (int, optional): how long (in milliseconds) it should calibrate (default: 8000)
+            amount (int, optional): how may calibrations it should do (more calibrations = more accurate) (default: 8000)
 
         Returns:
             None
         """
-        gyro_timer: TimeR = TimeR()
         avg: int = 0
+        current = 0
+        last_bias = 0
 
-        gyro_timer.start_timer_millis()
-        while gyro_timer.stop_timer(False) < millis:
-            avg += k.gyro_z()
-            k.msleep(1)
+        while current < amount:
+            this_bias = k.gyro_z()
+            if last_bias != this_bias:
+                last_bias = this_bias
+                avg += this_bias
+                current += 1
 
-        self.bias_gyro_z = avg / gyro_timer.stop_timer()
+        self.bias_gyro_z = avg / amount
         self.save_bias_gyro_z()
         if counter is not None and max is not None:
             log(f'{counter}/{max} - GYRO Z CALIBRATED')
 
-    def calibrate_gyro_y(self, counter: int = None, max: int = None, millis: int = 8000) -> None:
+    @lru_cache
+    def calibrate_gyro_y(self, counter: int = None, max: int = None, amount: int = 8000) -> None:
         """
         calibrate the bias for the controllers front and rear
 
         Args:
             counter (int, default): the number where it is at the moment (default: None)
             max (int, default): how many calibrations there are (to show it on the screen and for debugging usage) (default: None)
-            millis (int, optional): how long (in milliseconds) it should calibrate (default: 8000)
+            amount (int, optional): how may calibrations it should do (more calibrations = more accurate) (default: 8000)
 
         Returns:
             None
         """
-        gyro_timer: TimeR = TimeR()
         avg: int = 0
+        current = 0
+        last_bias = 0
 
-        gyro_timer.start_timer_millis()
-        while gyro_timer.stop_timer(False) < millis:
-            avg += k.gyro_y()
-            k.msleep(1)
+        while current < amount:
+            this_bias = k.gyro_y()
+            if last_bias != this_bias:
+                last_bias = this_bias
+                avg += this_bias
+                current += 1
 
-        self.bias_gyro_y = avg / gyro_timer.stop_timer()
+        self.bias_gyro_y = avg / amount
         self.save_bias_gyro_y()
         if counter is not None and max is not None:
             log(f'{counter}/{max} - GYRO Y CALIBRATED')
 
-    def calibrate_gyro_x(self, counter: int = None, max: int = None, millis: int = 8000) -> None:
+    @lru_cache
+    def calibrate_gyro_x(self, counter: int = None, max: int = None, amount: int = 8000) -> None:
         """
         calibrate the bias for the controllers top and bottom
 
         Args:
             counter (int, default): the number where it is at the moment (default: None)
             max (int, default): how many calibrations there are (to show it on the screen and for debugging usage) (default: None)
-            millis (int, optional): how long (in milliseconds) it should calibrate (default: 8000)
+            amount (int, optional): how may calibrations it should do (more calibrations = more accurate) (default: 8000)
 
         Returns:
             None
         """
-        gyro_timer: TimeR = TimeR()
         avg: int = 0
+        current = 0
+        last_bias = 0
 
-        gyro_timer.start_timer_millis()
-        while gyro_timer.stop_timer(False) < millis:
-            avg += k.gyro_x()
-            k.msleep(1)
+        while current < amount:
+            this_bias = k.gyro_x()
+            if last_bias != this_bias:
+                last_bias = this_bias
+                avg += this_bias
+                current += 1
 
-        self.bias_gyro_x = avg / gyro_timer.stop_timer()
+        self.bias_gyro_x = avg / amount
         self.save_bias_gyro_x()
         if counter is not None and max is not None:
             log(f'{counter}/{max} - GYRO X CALIBRATED')
 
-    def calibrate_accel_z(self, counter: int = None, max: int = None, millis: int = 8000) -> None:
+    @lru_cache
+    def calibrate_accel_z(self, counter: int = None, max: int = None, amount: int = 8000) -> None:
         """
         calibrates the bias from the accelerometer to know how fast the wombat is going towards the x-axis (accelerometer is not yet in use though)
 
         Args:
             counter (int, optional): the number where it is at the moment (default: None)
             max (int, optional): how many calibrations there are (to show it on the screen and for debugging usage) (default: None)
-            millis (int, optional): how long (in milliseconds) it should calibrate (default: 8000)
+            amount (int, optional): how may calibrations it should do (more calibrations = more accurate) (default: 8000)
 
         Returns:
             None
         """
-        gyro_timer: TimeR = TimeR()
         avg: int = 0
+        current = 0
+        last_bias = 0
 
-        gyro_timer.start_timer_millis()
-        while gyro_timer.stop_timer(False) < millis:
-            avg += k.accel_z()
-            k.msleep(1)
+        while current < amount:
+            this_bias = k.accel_z()
+            if last_bias != this_bias:
+                last_bias = this_bias
+                avg += this_bias
+                current += 1
 
-        self.bias_accel_z = avg / gyro_timer.stop_timer()
+        self.bias_accel_z = avg / amount
         self.save_bias_accel_x()
         if counter is not None and max is not None:
             log(f'{counter}/{max} - ACCEL X CALIBRATED')
 
-    def calibrate_accel_y(self, counter: int = None, max: int = None, millis: int = 8000) -> None:
+    @lru_cache
+    def calibrate_accel_y(self, counter: int = None, max: int = None, amount: int = 8000) -> None:
         """
         calibrates the bias from the accelerometer to know how fast the wombat is going towards the y-axis (accelerometer is not yet in use though)
 
         Args:
             counter (int, optional): the number where it is at the moment (default: None)
             max (int, optional): how many calibrations there are (to show it on the screen and for debugging usage) (default: None)
-            millis (int, optional): how long (in milliseconds) it should calibrate (default: 8000)
+            amount (int, optional): how may calibrations it should do (more calibrations = more accurate) (default: 8000)
 
         Returns:
             None
         """
-        gyro_timer: TimeR = TimeR()
         avg: int = 0
+        current = 0
+        last_bias = 0
 
-        gyro_timer.start_timer_millis()
-        while gyro_timer.stop_timer(False) < millis:
-            avg += k.accel_y()
-            k.msleep(1)
+        while current < amount:
+            this_bias = k.accel_y()
+            if last_bias != this_bias:
+                last_bias = this_bias
+                avg += this_bias
+                current += 1
 
-        self.bias_accel_y = avg / gyro_timer.stop_timer()
+        self.bias_accel_y = avg / amount
         self.save_bias_accel_y()
         if counter is not None and max is not None:
             log(f'{counter}/{max} - ACCEL Y CALIBRATED')
 
-    def calibrate_accel_x(self, counter: int = None, max: int = None, millis: int = 8000) -> None:
+    @lru_cache
+    def calibrate_accel_x(self, counter: int = None, max: int = None, amount: int = 8000) -> None:
         """
         calibrates the bias from the accelerometer to know how fast the wombat is going towards the x-axis (accelerometer is not yet in use though)
 
         Args:
             counter (int, optional): the number where it is at the moment (default: None)
             max (int, optional): how many calibrations there are (to show it on the screen and for debugging usage) (default: None)
-            millis (int, optional): how long (in milliseconds) it should calibrate (default: 8000)
+            amount (int, optional): how may calibrations it should do (more calibrations = more accurate) (default: 8000)
 
         Returns:
             None
         """
-        gyro_timer: TimeR = TimeR()
         avg: int = 0
+        current = 0
+        last_bias = 0
 
-        gyro_timer.start_timer_millis()
-        while gyro_timer.stop_timer(False) < millis:
-            avg += k.accel_x()
-            k.msleep(1)
+        while current < amount:
+            this_bias = k.accel_x()
+            if last_bias != this_bias:
+                last_bias = this_bias
+                avg += this_bias
+                current += 1
 
-        self.bias_accel_x = avg / gyro_timer.stop_timer()
+        self.bias_accel_x = avg / amount
         self.save_bias_accel_x()
         if counter is not None and max is not None:
             log(f'{counter}/{max} - ACCEL X CALIBRATED')
 
-    def calibrate_hardware(self, *args: str, millis: int = 8000, output: bool = True) -> None:
+    def calibrate_hardware(self, *args: str, amount: int = 8000, output: bool = True) -> None:
         """
         Gives you access to thread-based calibration, so you do not need to wait for every function individually.
 
         Args:
             *args (str): either one or more of the following options:
-            millis (int, optional): the time it is allowed to take for one single calibration (default: 8000)
+            amount (int, optional): the number of calculations it is allowed to do for one single calibration (default: 8000)
             output (bool, optional): if the function should let you know that the calibration is finished (True) or not (False) (default: True)
 
         Returns:
             None
         """
         calibrations = list()
-        arguments = {'millis': millis}
+        arguments = {'amount': amount}
         if output:
             log('beginning with hardware calibration...')
 
         for arg in args:
             if arg == 'gyro_z' or arg == 'gz':
-                t1 = threading.Thread(target=self.calibrate_gyro_z, kwargs=arguments, name='gyro_z')
+                t1 = multiprocessing.Process(target=self.calibrate_gyro_z, kwargs=arguments, name='gyro_z', daemon=True)
+                #t1 = KillableThread(target=self.calibrate_gyro_z, kwargs=arguments, name='gyro_z')
                 calibrations.append(t1)
             elif arg == 'gyro_y' or arg == 'gy':
-                t1 = threading.Thread(target=self.calibrate_gyro_y, kwargs=arguments, name='gyro_y')
+                t1 = multiprocessing.Process(target=self.calibrate_gyro_y, kwargs=arguments, name='gyro_y', daemon=True)
+                #t1 = KillableThread(target=self.calibrate_gyro_y, kwargs=arguments, name='gyro_y')
                 calibrations.append(t1)
             elif arg == 'gyro_x' or arg == 'gx':
-                t1 = threading.Thread(target=self.calibrate_gyro_x, kwargs=arguments, name='gyro_x')
+                t1 = multiprocessing.Process(target=self.calibrate_gyro_x, kwargs=arguments, name='gyro_x', daemon=True)
+                #t1 = KillableThread(target=self.calibrate_gyro_x, kwargs=arguments, name='gyro_x')
                 calibrations.append(t1)
             elif arg == 'accel_z' or arg == 'az':
-                t1 = threading.Thread(target=self.calibrate_accel_z, kwargs=arguments, name='accel_z')
+                t1 = multiprocessing.Process(target=self.calibrate_accel_z, kwargs=arguments, name='accel_z', daemon=True)
+                #t1 = KillableThread(target=self.calibrate_accel_z, kwargs=arguments, name='accel_z')
                 calibrations.append(t1)
             elif arg == 'accel_y' or arg == 'ay':
-                t1 = threading.Thread(target=self.calibrate_accel_y, kwargs=arguments, name='accel_y')
+                t1 = multiprocessing.Process(target=self.calibrate_accel_y, kwargs=arguments, name='accel_y', daemon=True)
+                #t1 = KillableThread(target=self.calibrate_accel_y, kwargs=arguments, name='accel_y')
                 calibrations.append(t1)
             elif arg == 'accel_x' or arg == 'ax':
-                t1 = threading.Thread(target=self.calibrate_accel_x, kwargs=arguments, name='accel_x')
+                t1 = multiprocessing.Process(target=self.calibrate_accel_x, kwargs=arguments, name='accel_x', daemon=True)
+                #t1 = KillableThread(target=self.calibrate_accel_x, kwargs=arguments, name='accel_x')
                 calibrations.append(t1)
             else:
                 log(f'You can only calibrate "gyro_z", "gyro_y", "gyro_x", "accel_z", "accel_y" or "accel_x" and not "{arg}"', in_exception=True)
@@ -1084,6 +1115,8 @@ class base_driver:
                 if calibration.is_alive():
                     continue
                 else:
+                    calibration.join()
+                    calibration.terminate()
                     calibrations.remove(calibration)
 
         if output:
@@ -1703,8 +1736,8 @@ class Solarbotic_Wheels_two(base_driver):
                     if self.light_sensor_back.sees_black():
                         back_found = True
 
-            t_front = KillableThread(target=white_front_valid, daemon=True)
-            t_back = KillableThread(target=white_back_valid, daemon=True)
+            t_front = KillableThread(target=white_front_valid)  # @TODO hier multiprocessing.Process ausprobieren
+            t_back = KillableThread(target=white_back_valid)  # @TODO hier multiprocessing.Process ausprobieren
             t_front.start()
             t_back.start()
 
@@ -1810,7 +1843,6 @@ class Solarbotic_Wheels_two(base_driver):
         self.distance_far_mm = []
 
         prev_value = None
-        speed = -self.ds_speed
         counter = 0
         MAX_COUNTS = 20
 
@@ -1826,7 +1858,7 @@ class Solarbotic_Wheels_two(base_driver):
 
             return (0, prev_value)
 
-        tkill = KillableThread(target=self.drive_straight, args=(9999999, speed,), daemon=True)  # will drive backwards!
+        tkill = KillableThread(target=self.drive_straight, args=(9999999, -self.ds_speed,), daemon=True)  # will drive backwards!
         tkill.start()
 
         distance_timer = TimeR()
@@ -3750,7 +3782,6 @@ class Mecanum_Wheels_four(base_driver):
         self.distance_far_mm = []
 
         prev_value = None
-        speed = -self.ds_speed
         counter = 0
         MAX_COUNTS = 20
 
@@ -3766,7 +3797,7 @@ class Mecanum_Wheels_four(base_driver):
 
             return (0, prev_value)
 
-        tkill = KillableThread(target=self.drive_straight, args=(9999999, speed,), daemon=True)  # will drive backwards!
+        tkill = KillableThread(target=self.drive_straight, args=(9999999, -self.ds_speed,), daemon=True)  # will drive backwards!
         tkill.start()
 
         distance_timer = TimeR()
@@ -3838,33 +3869,40 @@ class Mecanum_Wheels_four(base_driver):
 
         speed = abs(speed)
         side_timer = TimeR()
-        side_timer.start_timer_millis()
         theta_side = 0
-        adjuster = int(speed/14)  # 14 is just a value that worked the best
+        threshold = 10
+        last_bias = 0
+
+        adjuster = int(speed/10)  # 15 is just a value that worked the best
         instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
 
         if direction == 'left':
             instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
-            adjuster = -adjuster
+            #adjuster = -adjuster
 
+        side_timer.start_timer_millis()
         while side_timer.stop_timer(False) < millis:
-            theta_side += (self.get_current_standard_gyro() - self.standard_bias_gyro)
-            print(theta_side, flush=True)
-            if 100 >= theta_side >= -100:
+            if threshold > theta_side > -threshold:
                 instances[0].drive(speed)
                 instances[1].drive(-speed)
                 instances[2].drive(-speed)
                 instances[3].drive(speed)
-            elif theta_side < -100:
-                instances[0].drive(speed + adjuster)
+            elif theta_side < threshold:
+                instances[0].drive(speed - adjuster)
                 instances[1].drive(-speed - adjuster)
                 instances[2].drive(-speed + adjuster)
-                instances[3].drive(speed - adjuster)
-            elif theta_side > 100:
-                instances[0].drive(speed - adjuster)
+                instances[3].drive(speed + adjuster)
+            else:
+                instances[0].drive(speed + adjuster)
                 instances[1].drive(-speed + adjuster)
                 instances[2].drive(-speed - adjuster)
-                instances[3].drive(speed + adjuster)
+                instances[3].drive(speed - adjuster)
+
+            this_bias = self.get_current_standard_gyro()
+            if last_bias != this_bias:
+                last_bias = this_bias
+                theta_side += this_bias - self.standard_bias_gyro
+            print(theta_side, flush=True)
 
         self.break_all_motors()
 
@@ -3884,37 +3922,46 @@ class Mecanum_Wheels_four(base_driver):
             speed = self.ds_speed
 
         if millis < 0:
-            log('millis parameter can not be negative!', important=True)
-            raise ValueError('millis parameter can not be negative!')
+            log('millis parameter cannot be negative!', important=True)
+            raise ValueError('millis parameter cannot be negative!')
 
         straight_timer = TimeR()
-        straight_timer.start_timer_millis()
         theta = 0
-        adjuster = int(speed/14)  # 15 is just a value that worked the best
-        instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
+        threshold = 10
+        last_bias = 0
+
+        adjuster = abs(speed) // 15
+        lower_speed = abs(speed) - adjuster
+        higher_speed = abs(speed) + adjuster
+        wheels = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
 
         if speed < 0:
-            instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
+            wheels = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
+            lower_speed = -lower_speed
+            higher_speed = -higher_speed
 
+        straight_timer.start_timer_millis()
         while straight_timer.stop_timer(False) < millis:
-            if 10 > theta > -10:
-                instances[0].drive(speed)
-                instances[1].drive(speed)
-                instances[2].drive(speed)
-                instances[3].drive(speed)
-            elif theta > 10:
-                instances[0].drive(speed + adjuster)
-                instances[1].drive(speed + adjuster)
-                instances[2].drive(speed + adjuster)
-                instances[3].drive(speed + adjuster)
+            if threshold > theta > -threshold:
+                wheels[0].drive(speed)
+                wheels[1].drive(speed)
+                wheels[2].drive(speed)
+                wheels[3].drive(speed)
+            elif theta < threshold:
+                wheels[0].drive(higher_speed)
+                wheels[1].drive(lower_speed)
+                wheels[2].drive(higher_speed)
+                wheels[3].drive(lower_speed)
             else:
-                instances[0].drive(speed - adjuster)
-                instances[1].drive(speed - adjuster)
-                instances[2].drive(speed - adjuster)
-                instances[3].drive(speed - adjuster)
-            theta += self.get_current_standard_gyro() - self.standard_bias_gyro
-            k.msleep(1)
-            print(theta, flush=True)
+                wheels[0].drive(lower_speed)
+                wheels[1].drive(higher_speed)
+                wheels[2].drive(lower_speed)
+                wheels[3].drive(higher_speed)
+
+            this_bias = self.get_current_standard_gyro()
+            if last_bias != this_bias:
+                last_bias = this_bias
+                theta += this_bias - self.standard_bias_gyro
         self.break_all_motors()
 
     @DriveableFunction
@@ -3933,15 +3980,14 @@ class Mecanum_Wheels_four(base_driver):
         """
         if speed is None:
             speed = self.ds_speed
+
         if end != 'front' and end != 'back':
             log('Only "front" or "back" are valid options for the "end" parameter', in_exception=True)
-            raise ValueError(
-                'drive_diagonal() Exception: Only "front" or "back" are valid options for the "end" parameter')
+            raise ValueError('Exception: Only "front" or "back" are valid options for the "end" parameter')
 
         if side != 'right' and side != 'left':
             log('Only "right" or "left" are valid options for the "side" parameter', in_exception=True)
-            raise ValueError(
-                'drive_diagonal() Exception: Only "right" or "left" are valid options for the "side" parameter')
+            raise ValueError('Only "right" or "left" are valid options for the "side" parameter')
 
         points = 0
         if end == 'front':
@@ -3949,63 +3995,49 @@ class Mecanum_Wheels_four(base_driver):
         if side == 'right':
             points += 1
 
+        speed = abs(speed)
+        threshold = 10
+        last_bias = 0
+        theta = 0
         diagonal_timer = TimeR()
-        diagonal_timer.start_timer_millis()
-        theta_z = 0
         adjuster = int(speed/15)  # 15 is just a value that worked the best
+
         if side == 'left':
             adjuster = -adjuster
-        speed = abs(speed)
-        instances_left = self.fr_wheel, self.bl_wheel
-        instances_right = self.fl_wheel, self.br_wheel
-        instances = instances_left
+
+        instances_left = [self.fr_wheel, self.bl_wheel]
+        instances_right = [self.fl_wheel, self.br_wheel]
+        wheels = instances_left
+
         if side == 'right':
-            instances = instances_right
+            wheels = instances_right
         if end == 'back':
             speed = -speed
-            if self.fr_wheel in instances:  # it's associated to the left
-                instances = instances_right
+            if self.fr_wheel in wheels:  # it's associated to the left
+                wheels = instances_right
             else:
-                instances = instances_left
+                wheels = instances_left
 
-        if points == 2 or points == 0:
-            while diagonal_timer.stop_timer(False) < millis:
-                if theta_z < -1200:
-                    instances[0].drive(speed)
-                    instances[1].drive(speed - adjuster)
-                elif theta_z > 1200:
-                    instances[0].drive(speed)
-                    instances[1].drive(speed - adjuster)
-                else:
-                    instances[0].drive(speed)
-                    instances[1].drive(speed)
-                k.msleep(10)
-                theta_z += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
-        else:
-            t = 10
-            while diagonal_timer.stop_timer(False) < millis:
-                if t == 200:
-                    t = 10
-                    k.ao()
-                if theta_z > 4000:
-                    t = 200
-                    theta_z = 0
-                    self.br_wheel.drive(speed - speed//2)
-                elif theta_z < -4000:
-                    t = 200
-                    theta_z = 0
-                    self.fl_wheel.drive(-speed + speed//2)
-                elif theta_z < -800:
-                    instances[0].drive(speed - adjuster)
-                    instances[1].drive(speed)
-                elif theta_z > 800:
-                    instances[0].drive(speed - adjuster)
-                    instances[1].drive(speed)
-                else:
-                    instances[0].drive(speed)
-                    instances[1].drive(speed)
-                k.msleep(t)
-                theta_z += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 1.5
+        if points != 2 or points != 0:
+            wheels[0], wheels[1] = wheels[1], wheels[0]
+
+        diagonal_timer.start_timer_millis()
+        while diagonal_timer.stop_timer(False) < millis:
+            if threshold > theta > -threshold:
+                wheels[0].drive(speed)
+                wheels[1].drive(speed)
+            elif theta < threshold:
+                wheels[0].drive(speed)
+                wheels[1].drive(speed - adjuster)
+            else:
+                wheels[0].drive(speed)
+                wheels[1].drive(speed - adjuster)
+
+            this_bias = self.get_current_standard_gyro()
+            if last_bias != this_bias:
+                last_bias = this_bias
+                theta += this_bias - self.standard_bias_gyro
+
         self.break_all_motors()
 
     def drift(self, front_drift: bool, drift_side: str, degree: int, speed: int = None):
@@ -4732,7 +4764,7 @@ class Mecanum_Wheels_four(base_driver):
     @DriveableFunction
     def align_drive_front(self, drive_bw: bool = True, max_millis: int = 9999999) -> None:
         """
-        aligning front by bumping into something, so both buttons on the front will be pressed. If there's an error by pressing the buttons, a fail save will occur. If at will it also drive backwards a little bit to be able to turn after it bumped into something
+        aligning the front by bumping into something, so both buttons on the front will be pressed. If there's an error by pressing the buttons, a fail save will occur. If at will it also drive backwards a little bit to be able to turn after it bumped into something
 
         Args:
             drive_bw (bool, optional): If you desire to drive back a little bit (default: True) -> (but sometimes you want to stay aligned at the object)
@@ -4775,7 +4807,7 @@ class Mecanum_Wheels_four(base_driver):
     @DriveableFunction
     def align_drive_back(self, drive_fw: bool = True, max_millis: int = 9999999) -> None:
         """
-        aligning back by bumping into something, so both buttons on the back will be pressed. If there's an error by pressing the buttons, a fail save will occur. If at will it also drive forwards a little bit to be able to turn after it bumped into something
+        aligning the back by bumping into something, so both buttons on the back will be pressed. If there's an error by pressing the buttons, a fail save will occur. If at will it also drive forwards a little bit to be able to turn after it bumped into something
 
         Args:
             drive_fw (bool, optional): If you desire to drive forward a little bit (default: True) -> (but sometimes you want to stay aligned at the object)
@@ -5441,7 +5473,7 @@ class Mecanum_Wheels_four(base_driver):
         amount = degree
         value = self.NINETY_DEGREES_SECS / div
         instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
-        distance_saver = [None] * amount
+        distance_saver: list = [None] * amount
         portion = (value * 2) / amount
 
         def build_avrg(index: int, value: int) -> None:

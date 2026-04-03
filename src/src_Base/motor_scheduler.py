@@ -57,7 +57,7 @@ class MotorScheduler:
             None
         """
         self._running = True
-        self._thread = threading.Thread(target=self._loop)
+        self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
 
     def _get_ID(self) -> str:

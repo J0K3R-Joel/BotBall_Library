@@ -1076,7 +1076,7 @@ class base_driver:
         calibrations = list()
         arguments = {'amount': amount}
         if output:
-            log('beginning with hardware calibration...')
+            log('Beginning with hardware calibration...')
 
         for arg in args:
             if arg == 'gyro_z' or arg == 'gz':
@@ -1820,8 +1820,8 @@ class Solarbotic_Wheels_two(base_driver):
     @DriveableFunction
     def calibrate_distance(self, start_mm: int, step: float = 0.1) -> None:
         """
-        calibrates the values for the distance sensor. HINT: calibrate the gyro first (if you did not already do that), so it drives straight. Also it calibrates one time, make sure it is as accurate as possible.
-        Both object have to be as parallel to each other as possible.
+        Calibrates the values for the distance sensor. HINT: calibrate the gyro first (if you did not already do that), so it drives straight. Also it calibrates one time, make sure it is as accurate as possible.
+        Both objects have to be as parallel to each other as possible.
 
         Args:
             start_mm (int): measured starting distance (distance sensor needs to just reach the highest value) (e.g. 95 -> distance sensor has a distance of 95mm from the flat object)
@@ -1909,7 +1909,7 @@ class Solarbotic_Wheels_two(base_driver):
     @DriveableFunction
     def align_drive_side(self, speed: int, drive_dir: bool = True, millis: int = 5000) -> None:
         """
-        Drives (forwards or backwards, depending if the speed is positive or negative) until it bumps into something, but it won't readjust with the other wheel, resulting in aligning as far away as possible
+        Drives (forwards or backwards, depending on if the speed is positive or negative) until it bumps into something, but it won't readjust with the other wheel, resulting in aligning as far away as possible
 
         Args:
             speed (int): How fast the robot should drive (and if it should go backwards (negative value) or forward (positive value))
@@ -1920,9 +1920,13 @@ class Solarbotic_Wheels_two(base_driver):
             bool: True when all specified motors are done.
         """
         self.check_instances_buttons()
+
         theta = 0
-        adjuster = int(speed/15)  # 15 is just a value that worked the best
+        adjuster = speed//15  # 15 is just a value that worked the best
         hit = False
+        threshold = 10
+        last_bias = 0
+
         instances = self.right_wheel, self.left_wheel, self.button_fl, self.button_fr
         if speed < 0:
             instances = self.left_wheel, self.right_wheel, self.button_bl, self.button_br
@@ -1942,16 +1946,20 @@ class Solarbotic_Wheels_two(base_driver):
                 instances[0].drive(0)
                 instances[1].drive(speed)
             else:
-                if 10 > theta > -10:
+                if threshold > theta > -threshold:
                     instances[1].drive(speed)
                     instances[0].drive(speed)
-                elif theta < 10:
+                elif theta < threshold:
                     instances[1].drive(speed + adjuster)
                     instances[0].drive(speed - adjuster * 3)
                 else:
                     instances[1].drive(speed - adjuster * 3)
                     instances[0].drive(speed + adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
         self.break_all_motors()
 
         if drive_dir and hit:
@@ -1961,7 +1969,7 @@ class Solarbotic_Wheels_two(base_driver):
     @DriveableFunction
     def align_drive_front(self, drive_bw: bool = True, millis: int = 4000, speed: int = None) -> None:
         """
-        aligning front by bumping into something, so both buttons on the front will be pressed. If there's an error by pressing the buttons, a fail save will occur. If at will it also drive backwards a little bit to be able to turn after it bumped into something
+        Aligning the front by bumping into something, so both buttons on the front will be pressed. If there's an error by pressing the buttons, a fail save will occur. If at will it also drive backwards a little bit to be able to turn after it bumped into something
 
         Args:
             drive_bw (bool, optional): If you desire to drive backward a little bit (default: True) -> (but sometimes you want to stay aligned at the object)
@@ -1979,9 +1987,13 @@ class Solarbotic_Wheels_two(base_driver):
 
         speed = abs(speed)
         theta = 0
-        adjuster = int(speed/15)  # 15 is just a value that worked the best
+        adjuster = speed//15  # 15 is just a value that worked the best
         hit = False
+        threshold = 10
+        last_bias = 0
         align_front_timer = TimeR()
+
+
         align_front_timer.start_timer_millis()
         while align_front_timer.stop_timer(False) < millis:
             if self.button_fl.is_pressed() and self.button_fr.is_pressed():
@@ -1996,16 +2008,20 @@ class Solarbotic_Wheels_two(base_driver):
                 self.left_wheel.drive_dfw()
                 self.right_wheel.drive_mbw()
             else:
-                if 10 > theta > -10:
+                if threshold > theta > -threshold:
                     self.right_wheel.drive(speed)
                     self.left_wheel.drive(speed)
-                elif theta < -10:
+                elif theta < threshold:
                     self.right_wheel.drive(speed - adjuster*3)
                     self.left_wheel.drive(speed + adjuster)
                 else:
                     self.left_wheel.drive(speed - adjuster*3)
                     self.right_wheel.drive(speed + adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
         self.break_all_motors()
 
         if drive_bw and hit:
@@ -2056,7 +2072,7 @@ class Solarbotic_Wheels_two(base_driver):
     @DriveableFunction
     def drive_straight_condition_digital(self, instance: Digital, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
         """
-        drive straight until an digital value gets reached for the desired instance
+        drive straight until a digital value gets reached for the desired instance
 
         Args:
             instance (Digital): just has to be from something digital (buttons)
@@ -2071,37 +2087,48 @@ class Solarbotic_Wheels_two(base_driver):
         if speed is None:
             speed = self.ds_speed
         theta = 0
-        adjuster = int(speed/15)  # 15 is just a value that worked the best
+        last_bias = 0
+        threshold = 10
+        adjuster = speed//15  # 15 is just a value that worked the best
         straight_timer = TimeR()
-        straight_timer.start_timer_millis()
+
         instances = self.left_wheel, self.right_wheel
         if speed < 0:
             instances = self.right_wheel, self.left_wheel
 
+        straight_timer.start_timer_millis()
         if condition == "==":
             while (instance.current_value() == value) and (straight_timer.stop_timer(False) < millis):
-                if 10 > theta > -10:
+                if threshold > theta > -threshold:
                     instances[0].drive(speed)
                     instances[1].drive(speed)
-                elif theta < 10:
+                elif theta < threshold:
                     instances[0].drive(speed + adjuster)
                     instances[1].drive(speed - adjuster * 3)
                 else:
                     instances[1].drive(speed + adjuster)
                     instances[0].drive(speed - adjuster * 3)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
         elif condition == "!=":
             while (instance.current_value() != value) and (straight_timer.stop_timer(False) < millis):
-                if 10 > theta > -10:
+                if threshold > theta > -threshold:
                     instances[0].drive(speed)
                     instances[1].drive(speed)
-                elif theta < 10:
+                elif theta < threshold:
                     instances[0].drive(speed + adjuster)
                     instances[1].drive(speed - adjuster * 3)
                 else:
                     instances[1].drive(speed + adjuster)
                     instances[0].drive(speed - adjuster * 3)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
         else:
             log('Only "==" or "!=" is available for the condition!', important=True, in_exception=True)
             raise ValueError('Only "==" or "!=" is available for the condition!')
@@ -2128,63 +2155,82 @@ class Solarbotic_Wheels_two(base_driver):
 
         theta = 0.0
         straight_timer = TimeR()
-        straight_timer.start_timer_millis()
-        adjuster = int(speed/15)  # 15 is just a value that worked the best
+        adjuster = speed//15  # 15 is just a value that worked the best
+        last_bias = 0
+        threshold = 10
+
         instances = self.left_wheel, self.right_wheel, self.button_fl, self.button_fr
         if speed < 0:
             instances = self.right_wheel, self.left_wheel, self.button_bl, self.button_br
 
+        straight_timer.start_timer_millis()
         if condition == 'let' or condition == '<=':  # let -> less or equal than
             while instance.current_value() <= value and straight_timer.stop_timer(False) < millis:
-                if 10 > theta > -10:
+                if threshold > theta > -threshold:
                     instances[0].drive(speed)
                     instances[1].drive(speed)
-                elif theta < 10:
+                elif theta < threshold:
                     instances[0].drive(speed + adjuster)
                     instances[1].drive(speed - adjuster * 3)
                 else:
                     instances[1].drive(speed + adjuster)
                     instances[0].drive(speed - adjuster * 3)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
 
         elif condition == 'het' or condition == '>=':  # het -> higher or equal than
             while instance.current_value() >= value and straight_timer.stop_timer(False) < millis:
-                if 10 > theta > -10:
+                if threshold > theta > -threshold:
                     instances[0].drive(speed)
                     instances[1].drive(speed)
-                elif theta < 10:
+                elif theta < threshold:
                     instances[0].drive(speed + adjuster)
                     instances[1].drive(speed - adjuster * 3)
                 else:
                     instances[1].drive(speed + adjuster)
                     instances[0].drive(speed - adjuster * 3)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
 
         elif condition == 'ht' or condition == '>':  # ht -> higher than
             while instance.current_value() > value and straight_timer.stop_timer(False) < millis:
-                if 10 > theta > -10:
+                if threshold > theta > -threshold:
                     instances[0].drive(speed)
                     instances[1].drive(speed)
-                elif theta < 10:
+                elif theta < threshold:
                     instances[0].drive(speed + adjuster)
                     instances[1].drive(speed - adjuster * 3)
                 else:
                     instances[1].drive(speed + adjuster)
                     instances[0].drive(speed - adjuster * 3)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
 
         elif condition == 'lt' or condition == '<':  # lt -> less than
             while instance.current_value() < value and straight_timer.stop_timer(False) < millis:
-                if 10 > theta > -10:
+                if threshold > theta > -threshold:
                     instances[0].drive(speed)
                     instances[1].drive(speed)
-                elif theta < 10:
+                elif theta < threshold:
                     instances[0].drive(speed + adjuster)
                     instances[1].drive(speed - adjuster * 3)
                 else:
                     instances[1].drive(speed + adjuster)
                     instances[0].drive(speed - adjuster * 3)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
         self.break_all_motors()
 
 
@@ -2477,7 +2523,7 @@ class Solarbotic_Wheels_two(base_driver):
     @DriveableFunction
     def black_line(self, millis: int, distance_over_time: bool, speed: int = None, pre_aligned: bool = False) -> bool:
         """
-        drive on the black line as long as wished
+        Drive on the black line as long as wished
 
         Args:
             millis (int): how long you want to follow the black line (in milliseconds)
@@ -2521,20 +2567,20 @@ class Solarbotic_Wheels_two(base_driver):
                 if first_run:
                     if time_end < self.get_light_sensor_distance_sec()/2 and not pre_aligned:
                         black_line_found = self.line_time_turner(front_has_importance=front_importance,
-                                              leaning_side='right',
+                                              leaning_side='right',  # right or left does not matter since the max_duration is long enough for both directions
                                               max_duration=int(self.NINETY_DEGREES_SECS*1000),
-                                              speed=speed)  # right or left does not matter since the max_duration is long enough for both directions
+                                              speed=speed)
                     else:
                         black_line_found = self.line_time_turner(front_has_importance=front_importance,
-                                              leaning_side='right',
+                                              leaning_side='right',  # right or left does not matter since the max_duration is long enough for both directions
                                               max_duration=short_turning_time,
-                                              speed=speed)  # right or left does not matter since the max_duration is long enough for both directions
+                                              speed=speed)
                     first_run = False
                 else:
                     black_line_found = self.line_time_turner(front_has_importance=front_importance,
-                                          leaning_side='right',
+                                          leaning_side='right',  # right or left does not matter since the max_duration is long enough for both directions
                                           max_duration=short_turning_time,
-                                          speed=speed)  # right or left does not matter since the max_duration is long enough for both directions
+                                          speed=speed)
                 self.break_all_motors()
 
                 if not black_line_found:
@@ -2566,25 +2612,31 @@ class Solarbotic_Wheels_two(base_driver):
             raise ValueError('millis parameter can not be negative!')
 
         straight_timer = TimeR()
-        straight_timer.start_timer_millis()
         theta = 0.0
-        adjuster = int(speed/15)  # 15 is just a value that worked the best
+        threshold = 10
+        last_bias = 0
+        adjuster = speed//15  # 15 is just a value that worked the best
         instances = self.left_wheel, self.right_wheel
 
         if speed < 0:
             instances = self.right_wheel, self.left_wheel
 
+        straight_timer.start_timer_millis()
         while straight_timer.stop_timer(False) < millis:
-            if 10 > theta > -10:
+            if threshold > theta > -threshold:
                 instances[0].drive(speed)
                 instances[1].drive(speed)
-            elif theta < -10:
+            elif theta < threshold:
                 instances[0].drive(speed + adjuster)
                 instances[1].drive(speed - adjuster * 3)
             else:
                 instances[0].drive(speed - adjuster * 3)
                 instances[1].drive(speed + adjuster)
-            theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
+
+            this_bias = self.get_current_standard_gyro()
+            if last_bias != this_bias:
+                last_bias = this_bias
+                theta += this_bias - self.standard_bias_gyro
         self.break_all_motors()
 
     @DriveableFunction
@@ -2639,12 +2691,15 @@ class Solarbotic_Wheels_two(base_driver):
         self.drive_straight_condition_analog(self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias(), millis=int(self.get_light_sensor_distance_sec()*1000))
         self.drive_straight_condition_analog(self.light_sensor_front, '>', self.light_sensor_front.get_value_black_bias(), millis=int(self.get_light_sensor_distance_sec()*1000))
         drive_backward_millis = onto_line_timer.stop_timer()
+
         self.drive_straight_condition_analog(self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias(), millis=int(self.get_light_sensor_distance_sec()*1000), speed=-self.ds_speed//2)
         self.break_all_motors()
         self.turn_wheel_condition_analog(leaning_side, self.light_sensor_back, '<', self.light_sensor_back.get_value_white_bias())
         self.break_all_motors()
+
         onto_line_timer.start_timer_sec()
         self.turn_wheel_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_white_bias(), millis=int(self.NINETY_DEGREES_SECS*1000/2), speed=-self.ds_speed)  # maximum of 45 degrees turn
+
         if onto_line_timer.stop_timer(False) >= self.NINETY_DEGREES_SECS/2:
             leaning_side = 'right' if 'right' != leaning_side else 'left'
             self.turn_wheel_condition_analog(leaning_side, self.light_sensor_back, '<', self.light_sensor_back.get_value_black_bias(), speed=-self.ds_speed)
@@ -2652,7 +2707,6 @@ class Solarbotic_Wheels_two(base_driver):
             self.turn_wheel_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias(), speed=-self.ds_speed)
         self.black_line(drive_backward_millis, True, -self.ds_speed)
         self.break_all_motors()
-
         return True
 
     @DriveableFunction
@@ -2712,6 +2766,7 @@ class Solarbotic_Wheels_two(base_driver):
             self.turn_degrees_condition_analog(leaning_side, self.light_sensor_front, '<', self.light_sensor_front.get_value_black_bias())
             self.black_line(100, True, speed=direction, pre_aligned=False)
             self.black_line(100, True, pre_aligned=True)
+
         self.break_all_motors()
         return True
 
@@ -2744,7 +2799,9 @@ class Solarbotic_Wheels_two(base_driver):
 
         self.isClose = False
         theta = 0.0
-        adjuster = int(speed/15)  # 15 is just a value that worked the best
+        adjuster = speed//15  # 15 is just a value that worked the best
+        last_bias = 0
+        threshold = 10
         instances = self.left_wheel, self.right_wheel
 
         if speed < 0:
@@ -2753,16 +2810,22 @@ class Solarbotic_Wheels_two(base_driver):
         if self.distance_sensor.current_value() > 1800: # this is because if it is already too close, it will back out a little bit to get the best result
             while self.distance_sensor.current_value() > 1800 and (
                     not self.button_bl.is_pressed() and not self.button_br.is_pressed()):
-                if 10 > theta > -10:
+                if threshold > theta > -threshold:
                     instances[0].drive(-speed)
                     instances[1].drive(-speed)
-                elif theta < 10:
+                elif theta < threshold:
                     instances[0].drive(-speed + adjuster * 3)
                     instances[1].drive(-speed - adjuster)
                 else:
                     instances[1].drive(-speed + adjuster * 3)
                     instances[0].drive(-speed - adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
+
+
             if theta != 0.0:
                 self.left_wheel.drive(speed)
                 self.right_wheel.drive(speed)
@@ -2770,7 +2833,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         next_value = self.distance_sensor.get_estimated_mm_value(mm_to_object)
         def distance_stopper(positive):
-            tolerance = 0.90
+            tolerance = 0.90  # needs to be 90% accurate -> 10% error margin
             points = 0
             MAX_POINTS = 5
 
@@ -2798,16 +2861,20 @@ class Solarbotic_Wheels_two(base_driver):
             if self.distance_sensor.current_value() < next_value:
                 threading.Thread(target=distance_stopper, args=(True,), daemon=True).start()
                 while not self.isClose:
-                    if 10 > theta > -10:
+                    if threshold > theta > -threshold:
                         instances[0].drive(speed)
                         instances[1].drive(speed)
-                    elif theta < -10:
+                    elif theta < threshold:
                         instances[0].drive(speed + adjuster)
                         instances[1].drive(speed - adjuster * 3)
                     else:
                         instances[1].drive(speed + adjuster)
                         instances[0].drive(speed - adjuster * 3)
-                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
+
+                    this_bias = self.get_current_standard_gyro()
+                    if last_bias != this_bias:
+                        last_bias = this_bias
+                        theta += this_bias - self.standard_bias_gyro
                 self.break_all_motors()
             else:
                 self.drive_straight(500, -speed)
@@ -2817,31 +2884,39 @@ class Solarbotic_Wheels_two(base_driver):
                 mult = speed / self.ds_speed
                 while counter > mm_to_object:
                     counter -= (2 * mult)
-                    if 10 > theta > -10:
+                    if threshold > theta > -threshold:
                         instances[0].drive(speed)
                         instances[1].drive(speed)
-                    elif theta < -10:
+                    elif theta < threshold:
                         instances[0].drive(speed + adjuster)
                         instances[1].drive(speed - adjuster * 3)
                     else:
                         instances[1].drive(speed + adjuster)
                         instances[0].drive(speed - adjuster * 3)
-                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
+
+                    this_bias = self.get_current_standard_gyro()
+                    if last_bias != this_bias:
+                        last_bias = this_bias
+                        theta += this_bias - self.standard_bias_gyro
         else:
             if self.distance_sensor.current_value() > next_value:
                 threading.Thread(target=distance_stopper, args=(False,), daemon=True).start()
 
                 while not self.isClose:
-                    if 10 > theta > -10:
+                    if threshold > theta > -threshold:
                         instances[0].drive(speed)
                         instances[1].drive(speed)
-                    elif theta < 10:
+                    elif theta < threshold:
                         instances[0].drive(speed + adjuster)
                         instances[1].drive(speed - adjuster * 3)
                     else:
                         instances[1].drive(speed + adjuster)
                         instances[0].drive(speed - adjuster * 3)
-                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 5
+
+                    this_bias = self.get_current_standard_gyro()
+                    if last_bias != this_bias:
+                        last_bias = this_bias
+                        theta += this_bias - self.standard_bias_gyro
         self.break_all_motors()
 
     @DriveableFunction
@@ -3873,12 +3948,12 @@ class Mecanum_Wheels_four(base_driver):
         threshold = 10
         last_bias = 0
 
-        adjuster = int(speed/10)  # 15 is just a value that worked the best
+        adjuster = int(speed/15)  # 15 is just a value that worked the best
         instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
 
         if direction == 'left':
             instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
-            #adjuster = -adjuster
+            adjuster = -adjuster
 
         side_timer.start_timer_millis()
         while side_timer.stop_timer(False) < millis:
@@ -4464,8 +4539,8 @@ class Mecanum_Wheels_four(base_driver):
     @DriveableFunction
     def drive_side_til_mm_found(self, mm_to_object: int, direction: str, speed: int = None) -> None:
         """
-        turn the amount of degrees given, to take a turn with basically only two, resulting in a turn not on the spot
-        This function might me unreliable! keep track of the distances!
+        turn the number of degrees given, to take a turn with basically only two, resulting in a turn not on the spot
+        This function might be unreliable! keep track of the distances!
 
         Args:
             mm_to_object (int): the distance (in mm) between the distance sensor and the object in front of the sensor
@@ -4614,37 +4689,49 @@ class Mecanum_Wheels_four(base_driver):
 
         self.isClose = False
         theta = 0.0
-        adjuster = int(speed / 15)  # 15 is just a value that worked the best
-        instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
+        adjuster = -(abs(speed) // 15)
+        lower_speed = -(abs(speed) - adjuster)
+        higher_speed = -(abs(speed) + adjuster)
+        last_bias = 0
+        threshold = 10
+        wheels = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
 
         if speed < 0:
-            instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
+            wheels = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
+            adjuster = -adjuster
+            lower_speed = -lower_speed
+            higher_speed = -higher_speed
 
 
         if self.distance_sensor.current_value() > 1800:
             while self.distance_sensor.current_value() > 1800 and (
                     not self.button_bl.is_pressed() and not self.button_br.is_pressed()):  # this is because if it is already too close, it will back out a little bit to get the best result
-                if 10 > theta > -10:
-                    instances[0].drive(-speed)
-                    instances[1].drive(-speed)
-                    instances[2].drive(-speed)
-                    instances[3].drive(-speed)
-                elif theta > 10:
-                    instances[0].drive(-speed - adjuster)
-                    instances[1].drive(-speed + adjuster)
-                    instances[2].drive(-speed - adjuster)
-                    instances[3].drive(-speed + adjuster)
+                if threshold > theta > -threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(speed)
+                    wheels[2].drive(speed)
+                    wheels[3].drive(speed)
+                elif theta < threshold:
+                    wheels[0].drive(higher_speed)
+                    wheels[1].drive(lower_speed)
+                    wheels[2].drive(higher_speed)
+                    wheels[3].drive(lower_speed)
                 else:
-                    instances[0].drive(-speed + adjuster)
-                    instances[1].drive(-speed - adjuster)
-                    instances[2].drive(-speed + adjuster)
-                    instances[3].drive(-speed - adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                    wheels[0].drive(lower_speed)
+                    wheels[1].drive(higher_speed)
+                    wheels[2].drive(lower_speed)
+                    wheels[3].drive(higher_speed)
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
+
             if theta != 0.0:
-                instances[0].drive(speed)
-                instances[1].drive(speed)
-                instances[2].drive(speed)
-                instances[3].drive(speed)
+                wheels[0].drive(speed)
+                wheels[1].drive(speed)
+                wheels[2].drive(speed)
+                wheels[3].drive(speed)
                 k.msleep(20)
             self.break_all_motors()
 
@@ -4679,22 +4766,26 @@ class Mecanum_Wheels_four(base_driver):
             if self.distance_sensor.current_value() < next_value:
                 threading.Thread(target=distance_stopper, args=(True,), daemon=True).start()
                 while not self.isClose:
-                    if 10 > theta > -10:
-                        instances[0].drive(-speed)
-                        instances[1].drive(-speed)
-                        instances[2].drive(-speed)
-                        instances[3].drive(-speed)
-                    elif theta > 10:
-                        instances[0].drive(-speed - adjuster)
-                        instances[1].drive(-speed + adjuster)
-                        instances[2].drive(-speed - adjuster)
-                        instances[3].drive(-speed + adjuster)
+                    if threshold > theta > -threshold:
+                        wheels[0].drive(speed)
+                        wheels[1].drive(speed)
+                        wheels[2].drive(speed)
+                        wheels[3].drive(speed)
+                    elif theta < threshold:
+                        wheels[0].drive(higher_speed)
+                        wheels[1].drive(lower_speed)
+                        wheels[2].drive(higher_speed)
+                        wheels[3].drive(lower_speed)
                     else:
-                        instances[0].drive(-speed + adjuster)
-                        instances[1].drive(-speed - adjuster)
-                        instances[2].drive(-speed + adjuster)
-                        instances[3].drive(-speed - adjuster)
-                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                        wheels[0].drive(lower_speed)
+                        wheels[1].drive(higher_speed)
+                        wheels[2].drive(lower_speed)
+                        wheels[3].drive(higher_speed)
+
+                    this_bias = self.get_current_standard_gyro()
+                    if last_bias != this_bias:
+                        last_bias = this_bias
+                        theta += this_bias - self.standard_bias_gyro
                 self.break_all_motors()
             else:
                 self.drive_straight(500, -speed)
@@ -4704,44 +4795,51 @@ class Mecanum_Wheels_four(base_driver):
                 mult = speed / self.ds_speed
                 while counter > mm_to_object:
                     counter -= (2 * mult)
-                    if 10 > theta > -10:
-                        instances[0].drive(-speed)
-                        instances[1].drive(-speed)
-                        instances[2].drive(-speed)
-                        instances[3].drive(-speed)
-                    elif theta > 10:
-                        instances[0].drive(-speed - adjuster)
-                        instances[1].drive(-speed + adjuster)
-                        instances[2].drive(-speed - adjuster)
-                        instances[3].drive(-speed + adjuster)
+                    if threshold > theta > -threshold:
+                        wheels[0].drive(speed)
+                        wheels[1].drive(speed)
+                        wheels[2].drive(speed)
+                        wheels[3].drive(speed)
+                    elif theta < threshold:
+                        wheels[0].drive(higher_speed)
+                        wheels[1].drive(lower_speed)
+                        wheels[2].drive(higher_speed)
+                        wheels[3].drive(lower_speed)
                     else:
-                        instances[0].drive(-speed + adjuster)
-                        instances[1].drive(-speed - adjuster)
-                        instances[2].drive(-speed + adjuster)
-                        instances[3].drive(-speed - adjuster)
-                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                        wheels[0].drive(lower_speed)
+                        wheels[1].drive(higher_speed)
+                        wheels[2].drive(lower_speed)
+                        wheels[3].drive(higher_speed)
+
+                    this_bias = self.get_current_standard_gyro()
+                    if last_bias != this_bias:
+                        last_bias = this_bias
+                        theta += this_bias - self.standard_bias_gyro
         else:
             if self.distance_sensor.current_value() > next_value:
                 threading.Thread(target=distance_stopper, args=(False,), daemon=True).start()
 
                 while not self.isClose:
-                    if 10 > theta > -10:
-                        instances[0].drive(-speed)
-                        instances[1].drive(-speed)
-                        instances[2].drive(-speed)
-                        instances[3].drive(-speed)
-                    elif theta > 10:
-                        instances[0].drive(-speed - adjuster)
-
-                        instances[1].drive(-speed + adjuster)
-                        instances[2].drive(-speed - adjuster)
-                        instances[3].drive(-speed + adjuster)
+                    if threshold > theta > -threshold:
+                        wheels[0].drive(speed)
+                        wheels[1].drive(speed)
+                        wheels[2].drive(speed)
+                        wheels[3].drive(speed)
+                    elif theta < threshold:
+                        wheels[0].drive(higher_speed)
+                        wheels[1].drive(lower_speed)
+                        wheels[2].drive(higher_speed)
+                        wheels[3].drive(lower_speed)
                     else:
-                        instances[0].drive(-speed + adjuster)
-                        instances[1].drive(-speed - adjuster)
-                        instances[2].drive(-speed + adjuster)
-                        instances[3].drive(-speed - adjuster)
-                    theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                        wheels[0].drive(lower_speed)
+                        wheels[1].drive(higher_speed)
+                        wheels[2].drive(lower_speed)
+                        wheels[3].drive(higher_speed)
+
+                    this_bias = self.get_current_standard_gyro()
+                    if last_bias != this_bias:
+                        last_bias = this_bias
+                        theta += this_bias - self.standard_bias_gyro
         self.break_all_motors()
 
     @DriveableFunction
@@ -5021,88 +5119,111 @@ class Mecanum_Wheels_four(base_driver):
         self.check_instances_buttons()
         theta = 0.0
         straight_timer = TimeR()
-        instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
-        adjuster = int(speed / 14)  # 14 is just a value that worked the best
+        wheels = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
+        threshold = 10
+        last_bias = 0
+
+        adjuster = abs(speed) // 15
+        lower_speed = abs(speed) - adjuster
+        higher_speed = abs(speed) + adjuster
 
         if speed < 0:
-            instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
+            wheels = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
+            lower_speed = -lower_speed
+            higher_speed = -higher_speed
 
         straight_timer.start_timer_millis()
         if condition == 'let' or condition == '<=':  # let -> less or equal than
             while (instance.current_value() <= value) and straight_timer.stop_timer(False) < millis:
-                if 10 > theta > -10:
-                    instances[0].drive(speed)
-                    instances[1].drive(speed)
-                    instances[2].drive(speed)
-                    instances[3].drive(speed)
-                elif theta > 10:
-                    instances[0].drive(speed - adjuster)
-                    instances[1].drive(speed + adjuster)
-                    instances[2].drive(speed - adjuster)
-                    instances[3].drive(speed + adjuster)
+                if threshold > theta > -threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(speed)
+                    wheels[2].drive(speed)
+                    wheels[3].drive(speed)
+                elif theta < threshold:
+                    wheels[0].drive(higher_speed)
+                    wheels[1].drive(lower_speed)
+                    wheels[2].drive(higher_speed)
+                    wheels[3].drive(lower_speed)
                 else:
-                    instances[0].drive(speed + adjuster)
-                    instances[1].drive(speed - adjuster)
-                    instances[2].drive(speed + adjuster)
-                    instances[3].drive(speed - adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                    wheels[0].drive(lower_speed)
+                    wheels[1].drive(higher_speed)
+                    wheels[2].drive(lower_speed)
+                    wheels[3].drive(higher_speed)
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
 
         elif condition == 'het' or condition == '>=':  # het -> higher or equal than
             while (instance.current_value() >= value) and straight_timer.stop_timer(False) < millis:
-                if 10 > theta > -10:
-                    instances[0].drive(speed)
-                    instances[1].drive(speed)
-                    instances[2].drive(speed)
-                    instances[3].drive(speed)
-                elif theta > 10:
-                    instances[0].drive(speed - adjuster)
-                    instances[1].drive(speed + adjuster)
-                    instances[2].drive(speed - adjuster)
-                    instances[3].drive(speed + adjuster)
+                if threshold > theta > -threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(speed)
+                    wheels[2].drive(speed)
+                    wheels[3].drive(speed)
+                elif theta < threshold:
+                    wheels[0].drive(higher_speed)
+                    wheels[1].drive(lower_speed)
+                    wheels[2].drive(higher_speed)
+                    wheels[3].drive(lower_speed)
                 else:
-                    instances[0].drive(speed + adjuster)
-                    instances[1].drive(speed - adjuster)
-                    instances[2].drive(speed + adjuster)
-                    instances[3].drive(speed - adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                    wheels[0].drive(lower_speed)
+                    wheels[1].drive(higher_speed)
+                    wheels[2].drive(lower_speed)
+                    wheels[3].drive(higher_speed)
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
 
         elif condition == 'ht' or condition == '>':  # ht -> higher than
             while (instance.current_value() > value) and straight_timer.stop_timer(False) < millis:
-                if 10 > theta > -10:
-                    instances[0].drive(speed)
-                    instances[1].drive(speed)
-                    instances[2].drive(speed)
-                    instances[3].drive(speed)
-                elif theta > 10:
-                    instances[0].drive(speed - adjuster)
-                    instances[1].drive(speed + adjuster)
-                    instances[2].drive(speed - adjuster)
-                    instances[3].drive(speed + adjuster)
+                if threshold > theta > -threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(speed)
+                    wheels[2].drive(speed)
+                    wheels[3].drive(speed)
+                elif theta < threshold:
+                    wheels[0].drive(higher_speed)
+                    wheels[1].drive(lower_speed)
+                    wheels[2].drive(higher_speed)
+                    wheels[3].drive(lower_speed)
                 else:
-                    instances[0].drive(speed + adjuster)
-                    instances[1].drive(speed - adjuster)
-                    instances[2].drive(speed + adjuster)
-                    instances[3].drive(speed - adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                    wheels[0].drive(lower_speed)
+                    wheels[1].drive(higher_speed)
+                    wheels[2].drive(lower_speed)
+                    wheels[3].drive(higher_speed)
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
 
         elif condition == 'lt' or condition == '<':  # lt -> less than
             while (instance.current_value() < value) and straight_timer.stop_timer(False) < millis:
-                if 10 > theta > -10:
-                    instances[0].drive(speed)
-                    instances[1].drive(speed)
-                    instances[2].drive(speed)
-                    instances[3].drive(speed)
-                elif theta > 10:
-                    instances[0].drive(speed - adjuster)
-                    instances[1].drive(speed + adjuster)
-                    instances[2].drive(speed - adjuster)
-                    instances[3].drive(speed + adjuster)
+                if threshold > theta > -threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(speed)
+                    wheels[2].drive(speed)
+                    wheels[3].drive(speed)
+                elif theta < threshold:
+                    wheels[0].drive(higher_speed)
+                    wheels[1].drive(lower_speed)
+                    wheels[2].drive(higher_speed)
+                    wheels[3].drive(lower_speed)
                 else:
-                    instances[0].drive(speed + adjuster)
-                    instances[1].drive(speed - adjuster)
-                    instances[2].drive(speed + adjuster)
-                    instances[3].drive(speed - adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                    wheels[0].drive(lower_speed)
+                    wheels[1].drive(higher_speed)
+                    wheels[2].drive(lower_speed)
+                    wheels[3].drive(higher_speed)
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
 
         else:
             log('the "condition" parameter has to be either "<" / "lt" ; ">" / "ht" ; "<=" / "het" ; ">=" / "let"')
@@ -5128,50 +5249,66 @@ class Mecanum_Wheels_four(base_driver):
         if speed is None:
             speed = self.ds_speed
         theta = 0
-        adjuster = int(speed / 14)  # 15 is just a value that worked the best
+        threshold = 10
+        last_bias = 0
+
+        adjuster = abs(speed) // 15
+        lower_speed = abs(speed) - adjuster
+        higher_speed = abs(speed) + adjuster
         straight_timer = TimeR()
-        straight_timer.start_timer_millis()
-        instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
+
+        wheels = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
 
         if speed < 0:
-            instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
+            wheels = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
+            lower_speed = -lower_speed
+            higher_speed = -higher_speed
 
+        straight_timer.start_timer_millis()
         if condition == "==":
             while (instance.current_value() == value) and (straight_timer.stop_timer(False) < millis):
-                if 10 > theta > -10:
-                    instances[0].drive(speed)
-                    instances[1].drive(speed)
-                    instances[2].drive(speed)
-                    instances[3].drive(speed)
-                elif theta > 10:
-                    instances[0].drive(speed - adjuster)
-                    instances[1].drive(speed + adjuster)
-                    instances[2].drive(speed - adjuster)
-                    instances[3].drive(speed + adjuster)
+                if threshold > theta > -threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(speed)
+                    wheels[2].drive(speed)
+                    wheels[3].drive(speed)
+                elif theta < threshold:
+                    wheels[0].drive(higher_speed)
+                    wheels[1].drive(lower_speed)
+                    wheels[2].drive(higher_speed)
+                    wheels[3].drive(lower_speed)
                 else:
-                    instances[0].drive(speed + adjuster)
-                    instances[1].drive(speed - adjuster)
-                    instances[2].drive(speed + adjuster)
-                    instances[3].drive(speed - adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                    wheels[0].drive(lower_speed)
+                    wheels[1].drive(higher_speed)
+                    wheels[2].drive(lower_speed)
+                    wheels[3].drive(higher_speed)
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
         elif condition == "!=":
             while (instance.current_value() != value) and (straight_timer.stop_timer(False) < millis):
-                if 10 > theta > -10:
-                    instances[0].drive(speed)
-                    instances[1].drive(speed)
-                    instances[2].drive(speed)
-                    instances[3].drive(speed)
-                elif theta > 10:
-                    instances[0].drive(speed - adjuster)
-                    instances[1].drive(speed + adjuster)
-                    instances[2].drive(speed - adjuster)
-                    instances[3].drive(speed + adjuster)
+                if threshold > theta > -threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(speed)
+                    wheels[2].drive(speed)
+                    wheels[3].drive(speed)
+                elif theta < threshold:
+                    wheels[0].drive(higher_speed)
+                    wheels[1].drive(lower_speed)
+                    wheels[2].drive(higher_speed)
+                    wheels[3].drive(lower_speed)
                 else:
-                    instances[0].drive(speed + adjuster)
-                    instances[1].drive(speed - adjuster)
-                    instances[2].drive(speed + adjuster)
-                    instances[3].drive(speed - adjuster)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                    wheels[0].drive(lower_speed)
+                    wheels[1].drive(higher_speed)
+                    wheels[2].drive(lower_speed)
+                    wheels[3].drive(higher_speed)
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
         else:
             log('Only "==" or "!=" is available for the condition!', important=True, in_exception=True)
             raise ValueError('Only "==" or "!=" is available for the condition!')
@@ -5427,20 +5564,20 @@ class Mecanum_Wheels_four(base_driver):
                 if first_run:
                     if time_end < self.get_light_sensor_distance_sec() / 2 and not pre_aligned:
                         black_line_found = self.line_time_turner(front_has_importance=front_importance,
-                                              leaning_side='right',
+                                              leaning_side='right',  # right or left does not matter since the max_duration is long enough for both directions
                                               max_duration=int(self.NINETY_DEGREES_SECS * 1000),
-                                              speed=speed)  # right or left does not matter since the max_duration is long enough for both directions
+                                              speed=speed)
                     else:
                         black_line_found = self.line_time_turner(front_has_importance=front_importance,
-                                              leaning_side='right',
+                                              leaning_side='right',  # right or left does not matter since the max_duration is long enough for both directions
                                               max_duration=short_turning_time,
-                                              speed=speed)  # right or left does not matter since the max_duration is long enough for both directions
+                                              speed=speed)
                     first_run = False
                 else:
                     black_line_found = self.line_time_turner(front_has_importance=front_importance,
-                                          leaning_side='right',
+                                          leaning_side='right',  # right or left does not matter since the max_duration is long enough for both directions
                                           max_duration=short_turning_time,
-                                          speed=speed)  # right or left does not matter since the max_duration is long enough for both directions
+                                          speed=speed)
                 self.break_all_motors()
 
                 if not black_line_found:

@@ -126,7 +126,6 @@ def fake_main_setup():  # see this as the call of the main function -> only exec
 def setup():
     try:
         Wifi_Setup()  # you can delete this line from now on, just as the function!
-        Util_Setup()
         # Comm_Setup()
         # Camera_Setup()  # if you want to use the camera
         FileR_Setup()

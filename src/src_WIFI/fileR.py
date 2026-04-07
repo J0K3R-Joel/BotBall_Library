@@ -74,11 +74,11 @@ class FileR:
 			str: Complete path to the desired file
 		"""
 		file_name = file_name.replace(self.forbidden_path_seperator, self.allowed_path_seperator)
-		if self.base_directory.endswith(self.allowed_path_seperator):
-			if file_name.find(self.allowed_path_seperator) == 0:
-				file_name = file_name[1:]
 
 		if file_name.find(self.base_directory) != 0:
+			if self.base_directory.endswith(self.allowed_path_seperator):
+				if file_name.find(self.allowed_path_seperator) == 0:
+					file_name = file_name[1:]
 			file_name = os.path.join(self.base_directory + file_name)
 
 		return file_name

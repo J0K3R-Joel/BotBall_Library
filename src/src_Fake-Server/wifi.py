@@ -36,7 +36,7 @@ class WifiConnector:
         self.file_path_mode = '/home/kipr/wombat-os/configFiles/wifiConnectionMode.txt'  # this file is from kipr themselves
         self.AP_MODE = 0  # fixed value (by kipr)
         self.CLIENT_MODE = 1  # fixed value (by kipr)
-        self.file_manager = FileR()
+        self.file_manager = FileR('/home/kipr/')
 
 
     # ======================== GET METHODS ========================

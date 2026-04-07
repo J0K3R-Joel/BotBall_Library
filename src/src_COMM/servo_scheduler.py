@@ -38,7 +38,6 @@ class ServoScheduler:
         self._commands = {}
         self._old_funcs = set()
         self._thread = threading.Thread(target=self._loop)
-        self._thread.start()
 
     def _setup_loop(self) -> None:
         """

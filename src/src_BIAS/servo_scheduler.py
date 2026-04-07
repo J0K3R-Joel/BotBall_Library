@@ -27,7 +27,7 @@ class ServoScheduler:
             None
         """
         self._lock = threading.RLock()
-        self._running = True
+        self._running = False
         self.last_activity = None
         self._last_tid = None
         self._last_valid_tid = None
@@ -38,7 +38,6 @@ class ServoScheduler:
         self._commands = {}
         self._old_funcs = set()
         self._thread = threading.Thread(target=self._loop)
-        self._thread.start()
 
     def _setup_loop(self) -> None:
         """
@@ -51,7 +50,8 @@ class ServoScheduler:
             None
         """
         self._running = True
-        self._thread = threading.Thread(target=self._loop).start()
+        self._thread = threading.Thread(target=self._loop)
+        self._thread.start()
 
     def _get_ID(self) -> str:
         """

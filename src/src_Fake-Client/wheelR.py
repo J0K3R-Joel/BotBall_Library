@@ -23,7 +23,7 @@ except Exception as e:
 class WheelR:
 
     def __init__(self, port: int, default_speed: int = 1400, max_speed: int = 1500, servo_like: bool = False):  # @TODO -> servo like motor
-        '''
+        """
         Class for motors. Uses the kipr method mav (move_at_velocity).
 
         Args:
@@ -31,7 +31,7 @@ class WheelR:
             default_speed (int, optional): how fast the wheel should turn if no speed is specified (default: 1400)
             max_speed (int, optional): The maximum speed which the robot can drive (since this robot uses move_at_velocity, the max_speed is capped at 1500 and can not exceed this speed whatsoever) (default:1500)
             servo_like (bool, optional): == NO LOGIC YET == Changes the motor functionality completely to a servo. (default: False)
-        '''
+        """
         self.port = port
         self.max_speed = max_speed
         self.d_speed = default_speed
@@ -40,15 +40,15 @@ class WheelR:
 
     # ======================== PRIVATE METHODS ========================
     def _base_speed_func(self, speed: int) -> None:
-        '''
+        """
         Function where you can tell the robot the base function of how to drive / with which function and functionality it should drive
 
         Args:
-            speed (int): The velocity the robot should go. currently with the mav function (values range: -1500 to 1500)
+            speed (int): The velocity the robot should go. Currently with the mav function (values range: -1500 to 1500)
 
         Returns:
             None
-        '''
+        """
         if speed < -self.max_speed:
             speed = -self.max_speed
         elif speed > self.max_speed:
@@ -58,7 +58,7 @@ class WheelR:
         MOTOR_SCHEDULER.set_speed(self.port, speed)
 
     def _hard_stop(self) -> None:
-        '''
+        """
         Immediately deletes all activity and future activity from the same thread for some time
 
         Args:
@@ -66,60 +66,75 @@ class WheelR:
 
         Returns:
             None
-        '''
+        """
         MOTOR_SCHEDULER.clear_list()
 
 
-    # ======================== GET METHODS ========================
+    # ======================== GETTER ========================
     def get_port(self) -> int:
-        '''
+        """
         Lets you see the port which this instance is assigned to
+
+        Args:
+             None
 
         Returns:
             int: port number of the motor
-        '''
+        """
         return self.port
 
     def get_max_speed(self) -> int:
-        '''
+        """
         Lets you see the current max speed
+
+        Args:
+            None
 
         Returns:
             int: maximum speed you are able to drive
-        '''
+        """
         return self.max_speed
 
     def get_default_speed(self) -> int:
-        '''
+        """
         Lets you see the default speed
+
+        Args:
+            None
 
         Returns:
             int: default speed you are able to drive
-        '''
+        """
         return self.d_speed
 
     def get_speed(self) -> int:
-        '''
+        """
         Lets you see the default speed
+
+        Args:
+            None
 
         Returns:
             int: default speed you are able to drive
-        '''
+        """
         return self.get_default_speed()
 
 
-    # ======================== SET METHODS ========================
+    # ======================== SETTER ========================
     def set_port(self, port_number: int) -> None:
-        '''
+        """
         Assign the instance to a new port
 
         Args:
             port_number (int): new port from the motor
-        '''
+
+        Returns:
+            None
+        """
         self.port = port_number
 
     def set_max_speed(self, max_speed: int) -> None:
-        '''
+        """
         Change the max speed to a new max speed
 
         Args:
@@ -127,11 +142,11 @@ class WheelR:
 
         Returns:
             None
-        '''
+        """
         self.max_speed = max_speed
 
     def set_default_speed(self, default_speed: int) -> None:
-        '''
+        """
         Change the default speed to a new default speed
 
         Args:
@@ -139,18 +154,24 @@ class WheelR:
 
         Returns:
             None
-        '''
+        """
         self.d_speed = default_speed
 
 
     # ======================== PUBLIC METHODS =======================
     def test_plugged_in(self) -> None:
-        '''
+        """
         Lets you test, if the motor is plugged in (will not test the correct direction!)
+
+        Args:
+            None
 
         Returns:
             None, but either throws an exception (if not plugged in) or prints a success message
-        '''
+
+        Raises:
+            Exception: If a motor is not plugged in
+        """
         k.cmpc(self.port)
         begin_counter = k.gmpc(self.port)
         self.drive_time(100, 100)
@@ -162,7 +183,7 @@ class WheelR:
         print(f'Success! Motor {self.port} plugged in.', flush=True)
 
     def fw(self, speed: int) -> None:
-        '''
+        """
         Function for driving forward (expects that the motor will move forwards when the value gets positive)
 
         Args:
@@ -170,7 +191,7 @@ class WheelR:
 
         Returns:
             None
-        '''
+        """
         if speed < 0:
             speed = -speed
 
@@ -178,7 +199,7 @@ class WheelR:
         self._base_speed_func(speed)
 
     def forward(self, speed: int) -> None:
-        '''
+        """
         Function for driving forward (expects that the motor will move forwards when the value gets positive)
 
         Args:
@@ -186,11 +207,11 @@ class WheelR:
 
         Returns:
             None
-        '''
+        """
         self.fw(speed)
 
     def forward_default(self) -> None:
-        '''
+        """
         Function for driving forward with default speed (expects that the motor will move forwards when the value gets positive)
 
         Args:
@@ -198,11 +219,11 @@ class WheelR:
 
         Returns:
             None
-        '''
+        """
         self.fw(self.d_speed)
 
     def forward_max(self):
-        '''
+        """
         Function for driving forward with maximum speed (expects that the motor will move forwards when the value gets positive)
 
         Args:
@@ -210,11 +231,11 @@ class WheelR:
 
         Returns:
             None
-        '''
+        """
         self.fw(self.max_speed)
 
     def bw(self, speed: int) -> None:
-        '''
+        """
         Function for driving backwards (expects that the motor will move backwards when the value gets negative)
 
         Args:
@@ -222,7 +243,7 @@ class WheelR:
 
         Returns:
             None
-        '''
+        """
         if speed > 0:
             speed = -speed
 
@@ -230,7 +251,7 @@ class WheelR:
         self._base_speed_func(speed)
 
     def backward(self, speed: int) -> None:
-        '''
+        """
         Function for driving backwards (expects that the motor will move backwards when the value gets negative)
 
         Args:
@@ -238,11 +259,11 @@ class WheelR:
 
         Returns:
             None
-        '''
+        """
         self.bw(-speed)
 
     def backward_default(self) -> None:
-        '''
+        """
         Function for driving backwards with default speed (expects that the motor will move backwards when the value gets negative)
 
         Args:
@@ -250,11 +271,11 @@ class WheelR:
 
         Returns:
             None
-        '''
+        """
         self.bw(-self.d_speed)
 
     def backward_max(self) -> None:
-        '''
+        """
         Function for driving backwards with maximum speed (expects that the motor will move backwards when the value gets negative)
 
         Args:
@@ -262,11 +283,11 @@ class WheelR:
 
         Returns:
             None
-        '''
+        """
         self.bw(-self.max_speed)
 
     def drive(self, speed: int):
-        '''
+        """
         Default Function for driving in any direction
 
         Args:
@@ -274,12 +295,12 @@ class WheelR:
 
         Returns:
             None
-        '''
+        """
         speed = int(speed)
         self._base_speed_func(speed)
 
     def drive_dfw(self, adjuster: int = None) -> None:
-        '''
+        """
         Function for driving forward with default speed (expects that the motor will move forwards when the value gets positive)
 
         Args:
@@ -287,7 +308,7 @@ class WheelR:
 
         Returns:
             None
-        '''
+        """
         if isinstance(adjuster, float):
             adjuster = int(adjuster)
         elif not isinstance(adjuster, int):
@@ -296,7 +317,7 @@ class WheelR:
         self.drive(self.d_speed + adjuster)
 
     def drive_dbw(self, adjuster: int = None) -> None:
-        '''
+        """
         Function for driving backward with default speed (expects that the motor will move backwards when the value gets negative)
 
         Args:
@@ -304,7 +325,7 @@ class WheelR:
 
         Returns:
             None
-        '''
+        """
         if isinstance(adjuster, float):
             adjuster = int(adjuster)
         elif not isinstance(adjuster, int):
@@ -313,7 +334,7 @@ class WheelR:
         self.drive(-self.d_speed + adjuster)
 
     def drive_mfw(self, adjuster: int = None) -> None:
-        '''
+        """
         Function for driving forward with maximum speed (expects that the motor will move forwards when the value gets positive)
 
         Args:
@@ -321,7 +342,7 @@ class WheelR:
 
         Returns:
             None
-        '''
+        """
         if isinstance(adjuster, float):
             adjuster = int(adjuster)
         elif not isinstance(adjuster, int):
@@ -333,7 +354,7 @@ class WheelR:
         self.drive(self.max_speed - adjuster)
 
     def drive_mbw(self, adjuster: int = None) -> None:
-        '''
+        """
         Function for driving backward with maximum speed (expects that the motor will move backwards when the value gets nedative)
 
         Args:
@@ -341,7 +362,7 @@ class WheelR:
 
         Returns:
             None
-        '''
+        """
         if isinstance(adjuster, float):
             adjuster = int(adjuster)
         elif not isinstance(adjuster, int):
@@ -353,7 +374,7 @@ class WheelR:
         self.drive(-self.max_speed + adjuster)
 
     def drive_time(self, speed: int, millis: int) -> None:
-        '''
+        """
         Default Function for driving in any direction for a certain amount of time (hint: it will not drive straight, if you use it for driving!)
 
         Args:
@@ -362,13 +383,13 @@ class WheelR:
 
         Returns:
             None
-        '''
+        """
         start_time = k.seconds()
         while k.seconds() - start_time < millis/1000:
             self.drive(speed)
 
     def stop(self) -> None:
-        '''
+        """
         Stopping this singular motor immediately
 
         Args:
@@ -376,11 +397,11 @@ class WheelR:
 
         Returns:
             None, but stops the motor immediately
-        '''
+        """
         MOTOR_SCHEDULER.stop_motor(self.port)
 
     def stop_all(self) -> None:
-        '''
+        """
         Stopping every motor immediately
 
         Args:
@@ -388,5 +409,5 @@ class WheelR:
 
         Returns:
             None, but stops the motors immediately
-        '''
+        """
         MOTOR_SCHEDULER.stop_all()

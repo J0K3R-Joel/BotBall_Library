@@ -882,7 +882,6 @@ class base_driver:
         """
         self.calibrate_hardware('gyro_z', 'gyro_y', 'gyro_x', 'accel_z', 'accel_y', 'accel_x', output=False)
         self.calibrate_degrees(output)
-        self.break_all_motors()
         self.save_degrees_time()  # needs to be outside since every new class needs their own degrees calibration and I simply cannot expect the future programmer to think of this to be implemented into the function
         if output:
             log('CALIBRATION DONE', important=True)
@@ -1702,11 +1701,11 @@ class Solarbotic_Wheels_two(base_driver):
         return True
 
     # ===================== CALIBRATE BIAS =====================
-    @DriveableFunction
+    @ForceDriveableFunction
     def calibrate_degrees(self, output: bool=True) -> None:
         """
         The wombat has to be aligned on the black line. Afterwards it turns 180 degrees to see how long it takes for a full 180 degrees turn
-        Improvement: Drives straight and after it recognizes a black line it turns right (or left) to be aligned with the line. Afterwards doing a full 180 degrees turn to know how long it takes for a 180B0 turn
+        Improvement: Drives straight, and after it recognizes a black line it turns right (or left) to be aligned with the line. Afterwards doing a full 180 degrees turn to know how long it takes for a 180B0 turn
 
         Args:
             None
@@ -1716,7 +1715,6 @@ class Solarbotic_Wheels_two(base_driver):
         """
         self.check_instance_light_sensors_middle()
         degree_timer = TimeR()
-        degree_timer.start_timer_sec()
         turning_time = self.ONEEIGHTY_DEGREES_SECS/2 if self.ONEEIGHTY_DEGREES_SECS else 1
 
         def sensor_checker():
@@ -1736,8 +1734,8 @@ class Solarbotic_Wheels_two(base_driver):
                     if self.light_sensor_back.sees_black():
                         back_found = True
 
-            t_front = KillableThread(target=white_front_valid)  # @TODO hier multiprocessing.Process ausprobieren
-            t_back = KillableThread(target=white_back_valid)  # @TODO hier multiprocessing.Process ausprobieren
+            t_front = multiprocessing.Process(target=white_front_valid)  # @TODO hier multiprocessing.Process ausprobieren
+            t_back = multiprocessing.Process(target=white_back_valid)  # @TODO hier multiprocessing.Process ausprobieren
             t_front.start()
             t_back.start()
 
@@ -1745,7 +1743,7 @@ class Solarbotic_Wheels_two(base_driver):
                 self.left_wheel.drive_dfw()
                 self.right_wheel.drive_dbw()
 
-
+        degree_timer.start_timer_sec()
         while degree_timer.stop_timer(False) < turning_time:
             self.left_wheel.drive_dfw()
             self.right_wheel.drive_dbw()
@@ -3712,6 +3710,7 @@ class Mecanum_Wheels_four(base_driver):
         return True
 
     # ===================== CALIBRATE BIAS =====================
+    @ForceDriveableFunction
     def calibrate_degrees(self, output:bool = True) -> None:
         """
         drive to the side until a black line was found and then slowly turn 180 degrees to know how long it takes to make one 180B0 turn

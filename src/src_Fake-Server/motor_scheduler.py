@@ -21,15 +21,15 @@ except Exception as e:
 class MotorScheduler:
     AUTO_STOP_TIMEOUT = 0.3  # 300ms  -> time after which the port will reduce its speed to 0
     AUTO_SHUTDOWN_TIMEOUT = 0.4  # 400ms  - > time after which every motor immediately will shut off when no valid ID sent a new request (it will boot up automatically again, when there is a new command)
-    TIME_RECOGNIZER = 0.5  # 500ms  -> time where a new tid will be created with the same thread id
+    TIME_RECOGNIZER = 0.5  # 500ms  -> time when a new tid will be created with the same thread id
 
     def __init__(self):
-        '''
-        Not for basic users! Schedules every motor which makes them threadsafe. Blocks old activities so only the newest calls can use the motor
+        """
+        Not for basic users! Schedules every motor that makes them threadsafe. Blocks old activities so only the newest calls can use the motor
 
         Args:
             None
-        '''
+        """
         self._lock = threading.RLock()
         self._commands = {}
         self._old_funcs = set()
@@ -47,7 +47,7 @@ class MotorScheduler:
 
     # ======================== PRIVATE METHODS ========================
     def _setup_loop(self):
-        '''
+        """
         Starting function for the loop, so you can (re)create the loop at any time.
 
         Args:
@@ -55,13 +55,13 @@ class MotorScheduler:
 
         Returns:
             None
-        '''
+        """
         self._running = True
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
 
     def _get_ID(self) -> str:
-        '''
+        """
         Creates an ID based of the current thread ID including a counter. The counter gets increased if the same thread is called again after some time (TIME_RECOGNIZER constant)
 
         Args:
@@ -69,7 +69,7 @@ class MotorScheduler:
 
         Returns:
             str: ID consisting of {thread_id}-{counter_of_thread}
-        '''
+        """
         tid = threading.current_thread().ident
 
         if self._last_valid_tid != tid and tid not in self.id_set and \
@@ -92,15 +92,15 @@ class MotorScheduler:
         return f'{tid}-{self._all_tid[tid][-1]}'
 
     def _loop(self) -> None:
-        '''
-        Loop which repeatedly calls a motor function but only if the ID is currently available and ignores every old ID. This makes it so only the latest command will get executed.
+        """
+        Loop which repeatedly calls a motor function, but only if the ID is currently available and ignores every old ID. This makes it so only the latest command will get executed.
 
         Args:
             None
 
         Returns:
             None
-        '''
+        """
         try:
             while self._running:
                 with self._lock:
@@ -130,8 +130,8 @@ class MotorScheduler:
 
 
     # ======================== PUBLIC METHODS =======================
-    def set_speed(self, port: int, speed: int) -> None:
-        '''
+    def set_speed(self, port: int, speed: int) -> bool:
+        """
         Sets the speed of a motor. The newest call has priority, no matter which kind of Thread you are in.
 
         Args:
@@ -139,14 +139,14 @@ class MotorScheduler:
             speed (int): the speed the motor should go
 
         Returns:
-            None
-        '''
+            bool: If the value is set (True) or if it is getting blocked from being set (False)
+        """
         try:
             now = time.time()
             with self._lock:
                 func_id = self._get_ID()
                 if func_id in self._old_funcs:
-                    return
+                    return False
 
                 if not self._running:
                     self._setup_loop()
@@ -163,7 +163,7 @@ class MotorScheduler:
                         'speed': speed,
                         'last_update': now
                     })
-                    return
+                    return True
                 for old_key, data in list(self._commands.items()):
                     if data['port'] == port and (data['speed'] != 0 or speed != 0):
                         self.clear_list_internal()
@@ -175,12 +175,13 @@ class MotorScheduler:
                     'func_id': func_id,
                     'last_update': now
                 }
+                return True
         except Exception as e:
             log(str(e), in_exception=True)
 
 
     def _stop_motor_internal(self, port: int) -> None:
-        '''
+        """
         Sets the speed to 0 of only this port and stops it immediately, so it will not move until the next call
 
         Args:
@@ -188,7 +189,7 @@ class MotorScheduler:
 
         Returns:
             None
-        '''
+        """
         try:
             with self._lock:
                 for key, data in list(self._commands.items()):
@@ -200,7 +201,7 @@ class MotorScheduler:
             log(str(e), in_exception=True)
 
     def stop_motor(self, port: int) -> None:
-        '''
+        """
         Sets the speed to 0 of only this port and stops it immediately, so it will not move until the next call
 
         Args:
@@ -208,7 +209,7 @@ class MotorScheduler:
 
         Returns:
             None
-        '''
+        """
         try:
             with self._lock:
                 commands_copy = self._commands.copy()
@@ -223,7 +224,7 @@ class MotorScheduler:
             log(str(e), in_exception=True)
 
     def _stop_all_internal(self) -> None:
-        '''
+        """
         Sets the speed to 0 of every registered port and stops it immediately, so they will not move until the next call
 
         Args:
@@ -231,7 +232,7 @@ class MotorScheduler:
 
         Returns:
             None
-        '''
+        """
         try:
             with self._lock:
                 for key, data in list(self._commands.items()):
@@ -241,7 +242,7 @@ class MotorScheduler:
             log(str(e), in_exception=True)
 
     def stop_all(self) -> None:
-        '''
+        """
         Sets the speed to 0 of every registered port and stops it immediately, so they will not move until the next call
 
         Args:
@@ -249,7 +250,7 @@ class MotorScheduler:
 
         Returns:
             None
-        '''
+        """
         try:
             with self._lock:
                 for key, data in list(self._commands.items()):
@@ -260,27 +261,27 @@ class MotorScheduler:
             log(str(e), in_exception=True)
 
     def shutdown(self) -> None:
-        '''
-        Let's you externally end the loop at any moment
+        """
+        Lets you externally end the loop at any moment
 
         Args:
             None
 
         Returns:
             None
-        '''
+        """
         self._running = False
 
     def clear_list_internal(self) -> None:
-        '''
-        Let's you wipe out everything. Everything stops and you need to call everything again. This acts as a kind of emergency break.
+        """
+        Lets you wipe out everything. Everything stops and you need to call everything again. This acts as a kind of emergency break.
 
         Args:
             None
 
         Returns:
             None
-        '''
+        """
         try:
             with self._lock:
                 if len(self._commands) != 0:
@@ -292,15 +293,15 @@ class MotorScheduler:
             log(str(e), in_exception=True)
 
     def clear_list(self) -> None:
-        '''
-        Let's you wipe out everything. Everything stops and you need to call everything again. This acts as a kind of emergency break.
+        """
+        Lets you wipe out everything. Everything stops and you need to call everything again. This acts as a kind of emergency break.
 
         Args:
             None
 
         Returns:
             None
-        '''
+        """
         try:
             with self._lock:
                 if len(self._commands) != 0:

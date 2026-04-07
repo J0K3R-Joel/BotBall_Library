@@ -17,16 +17,18 @@ except Exception as e:
 
 class Analog(Sensor):
     def __init__(self, port: int):
-        '''
+        """
         Class for every analog sensor available
 
         Args:
             port (int): The integer value from where it is plugged in (the hardware) e.g.: 1; 3; 4; 2.
-        '''
+        """
         self.port = port
 
+
+    # ======================== PUBLIC METHODS =======================
     def current_value(self) -> int:
-        '''
+        """
         get the current value of the distance sensor
 
         Args:
@@ -34,5 +36,5 @@ class Analog(Sensor):
 
        Returns:
             int: current value of the assigned analog Port of the distance sensor (int)
-        '''
+        """
         return k.analog(self.port)

@@ -20,7 +20,7 @@ subprocess.run(["sudo", "chmod", "-R", "777", LOG_FOLDER], check=True)
 
 
 def log(message: str, with_print: bool = True, important: bool = False, in_exception: bool = False) -> None:
-    '''
+    """
     write the message in the log file and print it to the screen
 
     Args:
@@ -31,7 +31,7 @@ def log(message: str, with_print: bool = True, important: bool = False, in_excep
 
     Returns:
         None
-    '''
+    """
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     frame = inspect.currentframe()
@@ -83,18 +83,20 @@ def log(message: str, with_print: bool = True, important: bool = False, in_excep
     if with_print:
         print(print_text, flush=True)
 
+    _log_handler()
 
-def __log_handler(max_entries: int = 10000, trim_size: int = 500) -> None:
-    '''
+
+def _log_handler(max_entries: int = 10000, trim_size: int = 500) -> None:
+    """
     handles the file, so there won't be too many entries, otherwise deletes the oldest entries
 
     Args:
         max_entries (int, optional): The maximum number of newlines
-        trim_size (int, optional): The amount of newlines getting deleted
+        trim_size (int, optional): The number of newlines getting deleted
 
     Returns:
         None
-    '''
+    """
     try:
         with open(LOG_FILE, 'r') as f:
             lines = f.readlines()
@@ -108,7 +110,7 @@ def __log_handler(max_entries: int = 10000, trim_size: int = 500) -> None:
 
 
 def backup_log() -> None:
-    '''
+    """
     backups the log file
 
     Args:
@@ -116,9 +118,10 @@ def backup_log() -> None:
 
     Returns:
         None
-    '''
+    """
     if not os.path.exists(LOG_FILE):
-        return ""
+        log('No backup file existing')
+        return
 
     backups = [f for f in os.listdir(LOG_FOLDER) if f.startswith("backup_log_file_")]
     numbers = []

@@ -35,7 +35,6 @@ class Digital(Sensor):
 
 
     # ======================== PUBLIC METHODS ========================
-
     def current_value(self) -> int:
         '''
         get the current value of the digital Port
@@ -87,6 +86,7 @@ class Digital(Sensor):
         return False
 
     def seperator(self, until_pressed: bool, millis_func_dict: dict = None) -> int:
+        # @TODO
         num = 1 if until_pressed else 0
         times_sorted = sorted(millis_func_dict.keys(), key=int, reverse=True)
         start_time = k.millis()

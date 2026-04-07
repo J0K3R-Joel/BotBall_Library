@@ -17,7 +17,7 @@ except Exception as e:
 class Sensor(ABC):
 
     @abstractmethod
-    def current_value(self):
+    def current_value(self) -> int:
         '''
         get the current value of the sensor
 
@@ -25,6 +25,6 @@ class Sensor(ABC):
             None
 
        Returns:
-            value of the sensor
+            int: value of the sensor
         '''
-        return
+        return 0

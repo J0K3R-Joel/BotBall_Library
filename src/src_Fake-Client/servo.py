@@ -23,14 +23,14 @@ except Exception as e:
 
 class ServoX:
     def __init__(self, port: int, max_value: int = 2047, min_value: int = 0):
-        '''
+        """
         Class for using the servos. HINT: You can use this class for micro servos as well, just set the min and max values to fit the micro servo
 
         Args:
             port (int): The integer value from where it is plugged in (the hardware) (e.g.: 1; 3; 4; 2).
             max_value (int, optional): The highest value which the servo can go to (default: 2047)
             min_value (int, optional): The lowest value which the servo can go to (default: 0)
-        '''
+        """
         self.port = port
         if min_value > max_value:
             self.max_value = min_value
@@ -46,7 +46,7 @@ class ServoX:
 
     # ======================== PRIVATE METHODS ========================
     def _valid_range(self, value:int) -> bool:
-        '''
+        """
         Verifies, if the value is inside the min and max value of the servo
 
         Args:
@@ -54,7 +54,7 @@ class ServoX:
 
         Returns:
             bool: If it is a valid number (True), else it raises an exception
-        '''
+        """
         in_range = self.min_value <= value <= self.max_value
         if not in_range:
             log(f"{value} is out of range, where the range is between {self.min_value} to {self.max_value}")
@@ -62,7 +62,7 @@ class ServoX:
         return in_range
 
     def _set_pos_internal(self, value: int) -> None:
-        '''
+        """
         Sets the position of the servo internally without a Lock, so you need to manage them
 
         Args:
@@ -70,19 +70,28 @@ class ServoX:
 
         Returns:
             None
-        '''
+        """
         if self._valid_range(value):
             SERVO_SCHEDULER.set_position(self.port, int(value))
         else:
             SERVO_SCHEDULER.set_position(self.port, self.new_pos_val)
 
     def _hard_stop(self) -> None:
+        """
+        Immediately stop all activity for the servos
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         SERVO_SCHEDULER.clear_list()
 
 
-    # ======================== GET METHODS ========================
+    # ======================== GETTER ========================
     def get_max_value(self) -> int:
-        '''
+        """
         Lets you see the highest value available for the servo
 
         Args:
@@ -90,11 +99,11 @@ class ServoX:
 
         Returns:
             int: highest value of the servo
-        '''
+        """
         return self.max_value
 
     def get_min_value(self) -> int:
-        '''
+        """
         Lets you see the lowest value available for the servo
 
         Args:
@@ -102,12 +111,12 @@ class ServoX:
 
         Returns:
             int: lowest value of the servo
-        '''
+        """
         return self.min_value
 
 
     def get_pos(self) -> int:
-        '''
+        """
         The position where the servo is set at the moment
 
         Args:
@@ -115,13 +124,13 @@ class ServoX:
 
         Returns:
             int: The position of the servo
-        '''
+        """
         return k.get_servo_position(self.port)
 
 
     # ======================== PUBLIC METHODS ========================
     def set_pos(self, value: int) -> None:
-        '''
+        """
         Sets the position of the servo
 
         Args:
@@ -129,12 +138,12 @@ class ServoX:
 
         Returns:
             None
-        '''
+        """
         self._set_pos_internal(value)
 
 
     def add_to_pos(self, value: int) -> None:
-        '''
+        """
         Adds the value to the current pos
 
         Args:
@@ -142,21 +151,21 @@ class ServoX:
 
         Returns:
             None
-        '''
+        """
         new_pos = self.get_pos() + value
         self._set_pos_internal(new_pos)
 
     def range_to_pos(self, value: int, multi: int = 2) -> None:
-        '''
+        """
         Changes the position smoothly from the current position to the position given
 
         Args:
             value (int): the value where it has to be at the end of the transition
-            multi (int, optional): the multiplicator on how fast it should get (hint: the higher the mutli, the faster but less smooth it gets) (default: 2)
+            multi (int, optional): the multiplicative on how fast it should get (hint: the higher the multi, the faster but less smooth it gets) (default: 2)
 
         Returns:
             None
-        '''
+        """
         curr_pos = self.get_pos()
 
         if multi < 1:
@@ -175,15 +184,15 @@ class ServoX:
 
 
     def range_from_to_pos(self, interval: list, multi: int = 2) -> None:
-        '''
+        """
         Changes the position smoothly from the first position in the interval to the second position in the interval
 
         Args:
             interval (list(int1, int2)): the values from where (int1 in the list) the servo has to go smoothly to (int2 in the list)
-            multi (int, optional): the multiplicator on how fast it should get (hint: the higher the mutli, the faster but less smooth it gets) (default: 2)
+            multi (int, optional): the multiplicative on how fast it should get (hint: the higher the multi, the faster but less smooth it gets) (default: 2)
 
         Returns:
             None
-        '''
+        """
         self.set_pos(interval[0])
         self.range_to_pos(interval[1], multi)

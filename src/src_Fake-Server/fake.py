@@ -29,13 +29,13 @@ except Exception as e:
 
 class FakeR():
     def __init__(self, pausR_instance: PausR = None, comm_instance: RobotCommunicator = None):
-        '''
+        """
         Not for the basic user! Class for high or new main priority (RoboComm - RobotCommunicator - Communication).
 
         Args (work in progress):
             pausR_instance (PausR, optional): Instance of a pause event
             comm_instance (RobotCommunicator, optional): Instance of the communicator
-        '''
+        """
         self.file_Manager = FileR()
 
         try:
@@ -65,7 +65,7 @@ class FakeR():
     # ======================== SET INSTANCES ========================
 
     def set_instance_thread(self, Instance_thread: Event) -> None:
-        '''
+        """
         Create or overwrite the existence of the thread instance
 
         Args:
@@ -73,11 +73,11 @@ class FakeR():
 
        Returns:
             None
-        '''
+        """
         self.thread_instance = Instance_thread
 
     def set_instance_comm(self, communication_instance: RobotCommunicator) -> None:
-        '''
+        """
         Create or overwrite the existence of the Communicator instance
 
         Args:
@@ -85,14 +85,14 @@ class FakeR():
 
        Returns:
             None
-        '''
+        """
         self.comm_instance = communication_instance
 
 
     # ======================== CHECK INSTANCES ========================
 
     def check_instance_thread(self) -> bool:
-        '''
+        """
         Inspect the existence of the thread instance
 
         Args:
@@ -100,14 +100,14 @@ class FakeR():
 
        Returns:
             if there is an instance of the thread sensor in existence
-        '''
+        """
         if not isinstance(self.thread_instance, Event):
             log('The thread instance is not initialized!', in_exception=True)
             raise TypeError('The thread instance is not initialized!')
         return True
 
     def check_instance_comm(self) -> bool:
-        '''
+        """
         Inspect the existence of the communication instance
 
         Args:
@@ -115,7 +115,7 @@ class FakeR():
 
         Returns:
             if there is an instance of the thread sensor in existence (True) or not (False)
-        '''
+        """
         if not isinstance(self.comm_instance, RobotCommunicator):
             log('The Communicator instance is not initialized!', in_exception=True)
             raise TypeError('The Communicator instance is not initialized!')
@@ -125,7 +125,7 @@ class FakeR():
     # ======================== PRIVATE METHODS ========================
 
     def _late_import(self, original:bool = True) -> None:
-        '''
+        """
         All the imports that have to be done after initializing of the class
 
         Args:
@@ -133,7 +133,7 @@ class FakeR():
 
         Returns:
             None
-       '''
+       """
         if original:
             wanted_dir = self.working_dir
         else:
@@ -149,7 +149,7 @@ class FakeR():
             self.fake_main = None
 
     def _extract_on_new_main_functions(self, code: str) -> list:
-        '''
+        """
         Extracts function names from all '.on_new_main(...)' calls in the given code.
 
         Args:
@@ -157,7 +157,7 @@ class FakeR():
 
         Returns:
             List[str]: A list of unique function names passed as first argument to `.on_new_main()`.
-        '''
+        """
         pattern = r'\.on_new_main\(\s*([a-zA-Z_][a-zA-Z0-9_]*)'
         matches = re.findall(pattern, code)
 
@@ -168,7 +168,7 @@ class FakeR():
         return list(seen)
 
     def _insert_valid_markers_in_file(self, file_path: str) -> None:
-        '''
+        """
         Inserts important markers inside the code
 
         Args:
@@ -176,7 +176,7 @@ class FakeR():
 
         Returns:
             None
-        '''
+        """
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 code = f.read()
@@ -240,7 +240,7 @@ class FakeR():
             log(str(e), important=True, in_exception=True)
 
     def _merge_functions_back_into_text(self, entire_text: str) -> str:
-        '''
+        """
         Reads each function file saved in self.another_main_file_names and replaces the original function definition in entire_text with the (possibly modified) function code from the file.
 
         Args:
@@ -248,7 +248,7 @@ class FakeR():
 
         Returns:
             str: The updated entire_text with functions replaced by their updated versions.
-        '''
+        """
         # split lines once for easier slicing
         lines = entire_text.splitlines()
 
@@ -309,7 +309,7 @@ class FakeR():
         return '\n'.join(lines)
 
     def _insert_beginning_in_code(self, code_str: str, is_new_main: bool = False) -> str:
-        '''
+        """
         Insert pre-defined code at the beginning of a code snippet.
 
         Args:
@@ -318,7 +318,7 @@ class FakeR():
 
         Returns:
             str: The changed code with the new pre-defined lines.
-        '''
+        """
         lines = code_str.splitlines()
         tree = ast.parse(code_str)
 
@@ -363,7 +363,7 @@ class FakeR():
         return code_str
 
     def _import_main_from_path(self, path_to_main_py : str) -> ModuleType:
-        '''
+        """
         Lets you import a main from another python file in another directory
 
         Args:
@@ -371,7 +371,7 @@ class FakeR():
 
         Returns:
            The module that needs to be imported
-        '''
+        """
         try:
             module_name = "fake_main"
             spec = importlib.util.spec_from_file_location(module_name, path_to_main_py)
@@ -386,7 +386,7 @@ class FakeR():
             log(str(e), important=True, in_exception=True)
 
     def _extract_params_and_assign(self, method) -> list:
-        '''
+        """
         Lets you see all the params of a method from another file
 
         Args:
@@ -394,7 +394,7 @@ class FakeR():
 
         Returns:
            List of parameter names
-        '''
+        """
         sig = inspect.signature(method)
         param_names = [name for name in sig.parameters if name != 'self']
 
@@ -404,7 +404,7 @@ class FakeR():
         return param_names
 
     def _get_param_names_from_text(self, code_str: str) -> list:
-        '''
+        """
         Lets you get all parameter names of a text (preferably one function only)
 
         Args:
@@ -412,14 +412,14 @@ class FakeR():
 
         Returns:
             List[str]: The parameters of the functions
-        '''
+        """
         tree = ast.parse(code_str)
         func_def = tree.body[0]
         params = [arg.arg for arg in func_def.args.args]
         return params
 
     def _save_functions_to_files(self, code: str, target_dir: str) -> None:
-        '''
+        """
         Saves each function from self.another_main_function_names as a separate file.
 
         Args:
@@ -428,7 +428,7 @@ class FakeR():
 
         Returns:
             None
-        '''
+        """
         tree = ast.parse(code)
         functions_found = {}
         for node in tree.body:
@@ -448,15 +448,15 @@ class FakeR():
                 f.write(func_code)
 
     def _resolve_import_alias(self, module_name: str, class_name: str, code: str) -> List[Optional[str]]:
-        '''
+        """
         Returns the alias of an import or the exact import path
 
         Return:
             [0, alias]                      -> with 'as'
-            [1, 'modulename.classname']     -> Class without alias
+            [1, 'modulename.class-name']    -> Class without alias
             [2, 'modulename']               -> Module without alias
             [3, None]                       -> Module nor class found
-        '''
+        """
         if class_name:
             pattern_with_as = rf'from\s+{re.escape(module_name)}\s+import\s+{re.escape(class_name)}\s+as\s+(\w+)'
             match = re.search(pattern_with_as, code)
@@ -484,7 +484,7 @@ class FakeR():
     # ======================== PUBLIC METHODS ========================
 
     def replace_exact_word(self, text: str, target: str, replacement: str) -> str:
-        '''
+        """
         replacing every (all) instance of a string occuring in a text with another instance
 
         Args:
@@ -494,12 +494,12 @@ class FakeR():
 
         Returns:
            The entire text with the replaced strings
-        '''
+        """
         pattern = r'(?<!\w)' + re.escape(target) + r'(?!\w)'
         return re.sub(pattern, replacement, text)
 
     def setup(self):
-        '''
+        """
         Setting up the main function in another file and modifying the file accordingly (for communication).
 
         Steps:
@@ -509,7 +509,7 @@ class FakeR():
             4. Merge updated new main functions back into entire text.
             5. Insert beginning code in main and new main functions as required.
             6. Write final main.py to target folder.
-        '''
+        """
         try:
             if self.working_dir != self.target_dir:
                 self.working_dir = os.path.join(self.working_dir, 'src')
@@ -623,7 +623,7 @@ class FakeR():
             log(str(e), important=True, in_exception=True)
 
     def get_current_path(self) -> str:  # not in use
-        '''
+        """
         Get the path of the current executing file
 
         Args:
@@ -631,7 +631,7 @@ class FakeR():
 
         Returns:
            The path of the current file that is being executed
-        '''
+        """
         try:
             result = subprocess.run(['pwd'], capture_output=True, text=True)
             path = result.stdout.strip()
@@ -644,7 +644,7 @@ class FakeR():
             log(str(e), important=True, in_exception=True)
 
     def start(self):
-        '''
+        """
         executing the "fake" main in the other directory
 
         Args:
@@ -652,7 +652,7 @@ class FakeR():
 
         Returns:
            None
-        '''
+        """
         try:
             self.check_instance_thread()
             self.check_instance_comm()
@@ -661,7 +661,6 @@ class FakeR():
                 log("main could not be found", important=True)
                 return
             if self.comm_wanted:
-                arguments = {'times': millis}
                 t = Thread(target=self.fake_main, args=(self.thread_instance, self.comm_instance,))
                 t.start()
                 t.join()

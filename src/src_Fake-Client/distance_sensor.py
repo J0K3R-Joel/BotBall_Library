@@ -22,19 +22,19 @@ os.makedirs(BIAS_FOLDER, exist_ok=True)
 
 class DistanceSensor(Analog):
     def __init__(self, port: int):
-        '''
-        Class for the distance sensor. The distance sensor can only see distances from at least 100mm to at most 800mm. Calibrate the distances inside of the driveR!
+        """
+        Class for the distance sensor. The distance sensor can only see distances from at least 100mm to at most 800mm. Calibrate the distances inside the driveR!
 
         Args:
             port (int): the integer value from where it is plugged in (the hardware). E.g.: 5; 2; 0; 4; 1; 3
-        '''
+        """
         super().__init__(port)
         self.dist_arr_file_name = BIAS_FOLDER + '/distances_arr.txt'
         self._run_lookup()
 
     # ===================== PRIVATE METHODS =====================
     def _run_lookup(self) -> None:
-        '''
+        """
         Method for checking if there is already the distance calibrated. If so, then create the lookup for all values
 
         Args:
@@ -42,7 +42,7 @@ class DistanceSensor(Analog):
 
         Returns:
             None
-        '''
+        """
         self.values, self.mm = self.get_distances()
 
         if not self.values:
@@ -52,9 +52,9 @@ class DistanceSensor(Analog):
         self.lookup = interp1d(self.values, self.mm, kind='linear', fill_value="extrapolate")
 
 
-    # ===================== GET METHODS =====================
+    # ===================== GETTER =====================
     def get_file_path(self) -> str:
-        '''
+        """
         Tells you, where the distances are saved at
 
         Args:
@@ -62,11 +62,11 @@ class DistanceSensor(Analog):
 
         Returns:
             str: string object of the absolute file path
-        '''
+        """
         return self.dist_arr_file_name
 
     def get_distances(self, raises_exception: bool = True) -> tuple:
-        '''
+        """
         Getting the distances from the distances_arr.txt file
 
         Args:
@@ -75,7 +75,7 @@ class DistanceSensor(Analog):
         Returns:
             tuple[list[int], list[int]]:
                 (values: list, mm: list)
-        '''
+        """
         try:
             if not os.path.exists(self.dist_arr_file_name):
                 if raises_exception:
@@ -99,15 +99,15 @@ class DistanceSensor(Analog):
             log(str(e), in_exception=True)
 
     def get_values(self) -> list:
-        '''
-        Receive all values which got saved in a file
+        """
+        Receive all values that got saved in a file
 
         Args:
             None
 
         Returns:
-            list[int]: all values which got saved into a file
-        '''
+            list[int]: all values that got saved into a file
+        """
         if isinstance(self.values, list):
             return self.values
 
@@ -115,15 +115,15 @@ class DistanceSensor(Analog):
         return self.values
 
     def get_mm(self) -> list:
-        '''
-        Receive all millimeters which got saved in a file
+        """
+        Receive all millimeters that got saved in a file
 
         Args:
             None
 
         Returns:
-            list[int]: every millimeter which got saved into a file
-        '''
+            list[int]: every millimeter that got saved into a file
+        """
         if isinstance(self.mm, list):
             return self.mm
 
@@ -131,7 +131,7 @@ class DistanceSensor(Analog):
         return self.mm
 
     def get_estimated_mm(self) -> int:
-        '''
+        """
         Tells you the current estimated distance (in millimeters) from the nearest object in front of the distance sensor. HINT: If you are very very close (<100mm) to the object, then the values become inconsistent. The values reach from at least 100mm to at most (!) 800mm
 
         Args:
@@ -139,14 +139,14 @@ class DistanceSensor(Analog):
 
         Returns:
             int: estimated distance in millimeters
-        '''
+        """
         try:
             return int(self.lookup(self.current_value()))
         except Exception as e:
             log(str(e), important=True, in_exception=True)
 
     def get_estimated_mm_value(self, millimeters: int) -> int:  # @TODO test this out
-        '''
+        """
         Receive the estimated value that corresponds to the millimeters
 
         Args:
@@ -154,7 +154,7 @@ class DistanceSensor(Analog):
 
         Returns:
             int: closest value to the millimeters which got saved
-        '''
+        """
         if millimeters < self.get_mm()[0] or millimeters > self.get_mm()[-1]:
             log(f'You can only get millimeters between {self.mm[0]} and {self.mm[-1]}!', in_exception=True)
             raise ValueError(f'You can only get millimeters between {self.mm[0]} and {self.mm[-1]}!')
@@ -166,18 +166,18 @@ class DistanceSensor(Analog):
 
     # ===================== PUBLIC METHODS =====================
     def higher_lower_distance(self, mm_to_check: int) -> str:
-        '''
-        Is telling you, if the current (estimated) distance is lower, higher or point on to the parameter you tell this function
+        """
+        Is telling you if the current (estimated) distance is lower, higher or point on to the parameter you tell this function
 
         Args:
             mm_to_check (int): the distance (in millimeters) you want to check for farness of the nearest object in front of the sensor
 
         Returns:
             str:
-                1. 'lower' if your distance to check is higher than the (estimated) actual value
-                2. 'higher' if your distance to check is lower than the (estimated) actual value
-                3. 'point on' if your distance to check matches up with the (estimated) actual value
-        '''
+                1. 'Lower' if your distance to check is higher than the (estimated) actual value
+                2. 'Higher' if your distance to check is lower than the (estimated) actual value
+                3. 'Point on' if your distance to check matches up with the (estimated) actual value
+        """
         dist = self.get_estimated_mm()
 
         if dist < mm_to_check:
@@ -187,7 +187,7 @@ class DistanceSensor(Analog):
         return 'point on'
 
     def distance_in_reach(self, mm_to_check: int, tolerance_percentage: float) -> bool:
-        '''
+        """
         Tells you, if the current (estimated) distance is in between your desired distance including your tolerance
 
         Args:
@@ -195,8 +195,8 @@ class DistanceSensor(Analog):
             tolerance_percentage (float): value between 0 and 1. It will calculate the higher percentage on its own. (e.g.: 0.9 -> 90%; 0.95 -> 95%)
 
         Returns:
-            bool: If the current (estimated) distance from the nearest object in front of the sensor is inside of the desired value (inclusive tolerance) (True) or not (False)
-        '''
+            bool: If the current (estimated) distance from the nearest object in front of the sensor is inside the desired value (inclusive tolerance) (True) or not (False)
+        """
         dist = self.get_estimated_mm()
 
         if tolerance_percentage > 1 or tolerance_percentage <= 0:
@@ -208,7 +208,7 @@ class DistanceSensor(Analog):
         return False
 
     def distance_in_reach_one_side(self, mm_to_check: int, tolerance_percentage: float, higher_lower: str) -> bool:
-        '''
+        """
         Tells you, if the current (estimated) distance is in your desired distance including your tolerance. It will only check one side (if the current estimated distance is higher or lower than the desired value inclusive tolerance)
 
         Args:
@@ -218,7 +218,7 @@ class DistanceSensor(Analog):
 
         Returns:
             bool: If the current estimated value is lower (or higher) than your desired distance inclusive tolerance (True), but only checked on one side (the higher or lower side)
-        '''
+        """
         dist = self.get_estimated_mm()
 
         if tolerance_percentage > 1 or tolerance_percentage <= 0:

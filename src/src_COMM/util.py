@@ -34,7 +34,7 @@ def Port_File_Logging(func):
         frame = inspect.stack()[1]
         module = inspect.getmodule(frame[0])
 
-        if FILE_PATH != module.__file__:  # other file than this one
+        if FILE_PATH != module.__file__:  # another file than this one
             port_file_logable_function_name = func.__name__  # only allow port file functions to log if they are the ones who got called
 
         result = func(*args, **kwargs)
@@ -48,30 +48,29 @@ class Util:
                  Instance_button_front_right: Digital = None,
                  Instance_light_sensor_start: LightSensor = None,
                  Instance_distance_sensor: DistanceSensor = None):
-        '''
+        """
         Class for some extra functionality which does not fit into any class
 
         Args:
             Instance_button_front_right (Digital, optional): The button instance where the button is mounted on the front right of the robot (default: None)
             Instance_light_sensor_start (LightSensor, optional): The light sensor instance which is responsible for starting the program when the light turn on (at the competition during "hands-off") (default: None)
             Instance_distance_sensor (DistanceSensor, optional): The distance sensor instance where the button is mounted on of the robot (default: None)
-        '''
+        """
         self.button_fr = Instance_button_front_right
         self.light_sensor_start = Instance_light_sensor_start
         self.distance_sensor = Instance_distance_sensor
 
-        self.file_manager = FileR()
-        self.port_file_name = UTIL_FOLDER + '/port_file.txt'
+        self.file_manager = FileR(UTIL_FOLDER)
+        self.port_file_name = 'port_file.txt'
         self.port_file_seperator = '{SEPERATOR}'
-        self.degree_file_name = BASE_FOLDER + '/bias_degrees.txt'
         self.isClose = False
         self.running_allowed = True
 
 
-    # ======================== GET INSTANCES ========================
+    # ======================== GETTER ========================
     @Port_File_Logging
     def get_port_file_entries(self, port_name: str = None, category: str = None, port_number: int = None):
-        '''
+        """
         Receive every data connected to every parameter
 
         Args:
@@ -82,7 +81,10 @@ class Util:
 
         Returns:
             Every combination of strings and integers, which are connected to the parameters
-        '''
+
+        Raises:
+            FileNotFoundError: If there is no entry that got created
+        """
         cat_exists = 1 if category else 0
         pname_exists = 1 if port_name else 0
         pnumber_exists = 1 if isinstance(port_number, int) else 0
@@ -90,7 +92,7 @@ class Util:
         counter = cat_exists + pname_exists + pnumber_exists
 
 
-        if not os.path.exists(self.port_file_name):
+        if not os.path.exists(self.file_manager.get_base_directory() + self.port_file_name):
             if port_file_logable_function_name == "get_port_file_entries":
                 log('No entries created just yet', in_exception=True)
             raise FileNotFoundError('No entries created just yet')
@@ -111,14 +113,14 @@ class Util:
                 if number == port_number and cat == category:
                     return name
             if port_file_logable_function_name == "get_port_file_entries":
-                log(f'Category "{category}" with port number #{port_number}" does not exist')
+                log(f'Category "{category}" with port number #{port_number}" does not exist', important=True)
 
         elif cat_exists and pname_exists:  # category and port name are given -> number is wanted
             for name, (number, cat) in port_names.items():
                 if port_name == name and cat == category:
                     return number
             if port_file_logable_function_name == "get_port_file_entries":
-                log(f'Category "{category}" with port name "{port_name}" does not exist')
+                log(f'Category "{category}" with port name "{port_name}" does not exist', important=True)
 
         elif cat_exists:  # category is given -> name and numbers are wanted
             res = dict()
@@ -132,9 +134,9 @@ class Util:
                 if port_name == name and number == port_number:
                     return cat
             if port_file_logable_function_name == "get_port_file_entries":
-                log(f'Port number #{port_number} with port name "{port_name}" does not exist')
+                log(f'Port number #{port_number} with port name "{port_name}" does not exist', important=True)
 
-        elif pnumber_exists:  # number is given -> category and port name are wanted
+        elif pnumber_exists:  # number is given -> category and port name is wanted
             res = dict()
             for name, (number, cat) in port_names.items():
                 if port_number == number:
@@ -145,20 +147,25 @@ class Util:
             if port_name in list(port_names.keys()):
                 return port_names[port_name]
             if port_file_logable_function_name == "get_port_file_entries":
-                log(f'Port name "{port_name}" does not exist')
+                log(f'Port name "{port_name}" does not exist', important=True)
 
 
     @Port_File_Logging
-    def get_port_file_categories(self) -> set:
-        '''
+    def get_port_file_categories(self) -> set[str]:
+        """
         Receive all categories you created
 
         Args:
             None
 
         Returns:
-            set: every category there is (as strings)
-        '''
+            set[
+                str: every category there is
+            ]: All categories
+
+        Raises:
+            FileNotFoundError: If there is no entry that got created
+        """
         if not os.path.exists(self.port_file_name):
             if port_file_logable_function_name == "get_port_file_categories":
                 log('No entries created just yet', in_exception=True)
@@ -176,16 +183,21 @@ class Util:
 
 
     @Port_File_Logging
-    def get_port_file_names(self) -> set:
-        '''
+    def get_port_file_names(self) -> set[str]:
+        """
         Receive all unique names that got created
 
         Args:
             None
 
         Returns:
-            set: All names (as strings)
-        '''
+            set[
+                str: The names of every saved port
+            ]: All names
+
+        Raises:
+            FileNotFoundError: If there is no entry that got created
+        """
         if not os.path.exists(self.port_file_name):
             if port_file_logable_function_name == "get_port_file_names":
                 log('No entries created just yet', in_exception=True)
@@ -201,85 +213,94 @@ class Util:
 
         return names
 
-    # ======================== SET INSTANCES ========================
+    # ======================== SETTER ========================
     def set_instance_distance_sensor(self, Instance_distance_sensor: DistanceSensor) -> None:
-        '''
-        create or overwrite the existance of the distance sensor
+        """
+        create or overwrite the existence of the distance sensor
 
         Args:
             Instance_distance_sensor (DistanceSensor): the instance of the distance sensor
 
-       Returns:
+        Returns:
             None
-        '''
+        """
         self.distance_sensor = Instance_distance_sensor
 
     def set_instance_light_sensor_start(self, Instance_light_sensor_start: LightSensor) -> None:
-        '''
-        create or overwrite the existance of the start light sensor
+        """
+        create or overwrite the existence of the start light sensor
 
         Args:
             Instance_light_sensor_start (LightSensor): the instance of the start light sensor
 
-       Returns:
+        Returns:
             None
-        '''
+        """
         self.light_sensor_start = Instance_light_sensor_start
 
     def set_instance_button_fr(self, Instance_button_front_right: Digital) -> None:
-        '''
-        create or overwrite the existance of the fr button
+        """
+        create or overwrite the existence of the front right button
 
         Args:
             Instance_button_front_right (Digital): the instance of the front right button
 
         Returns:
             None
-        '''
+        """
         self.button_fr = Instance_button_front_right
 
 
-    # ======================== CHECK INSTANCES ========================
+    # ======================== CHECKER ========================
     def check_instance_distance_sensor(self) -> bool:
-        '''
-        inspect the existance of the distance sensor
+        """
+        inspect the existence of the distance sensor
 
         Args:
             None
 
-       Returns:
-            if there is an instance of the distance sensor in existance
-        '''
+        Returns:
+            bool: if there is an instance of the distance sensor in existence
+
+        Raises:
+            TypeError: If the distance sensor is not initialized
+        """
         if not isinstance(self.distance_sensor, DistanceSensor):
             log('Distance sensor is not initialized!', in_exception=True)
-            raise TypeError('Distance sensor start is not initialized!')
+            raise TypeError('Distance sensor is not initialized!')
         return True
 
     def check_instance_light_sensor_start(self) -> bool:
-        '''
-        inspect the existance of the start light sensor
+        """
+        inspect the existence of the start light sensor
 
         Args:
             None
 
-       Returns:
-            if there is an instance of the start light sensor in existance
-        '''
+        Returns:
+            bool: if there is an instance of the start light sensor in existence
+
+        Raises:
+            TypeError: If the light sensor for the start is not initialized
+        """
         if not isinstance(self.light_sensor_start, LightSensor):
             log('Light sensor start is not initialized!', in_exception=True)
             raise TypeError('Light sensor start is not initialized!')
         return True
 
     def check_instance_button_fr(self) -> bool:
-        '''
-        inspect the existance of the fr button
+        """
+        inspect the existence of the front right button
 
         Args:
             None
 
-       Returns:
-            if there is an instance of the button fr in existance
-        '''
+        Returns:
+            bool: if there is an instance of the button front right in existence
+
+        Raises:
+            TypeError: If the button front right is not initialized
+        """
         if not isinstance(self.button_fr, Digital):
             log('Button front right is not initialized!', in_exception=True)
             raise TypeError('Button front right is not initialized!')
@@ -287,7 +308,7 @@ class Util:
 
     # ======================== PUBLIC METHODS =======================
     def wait_til_moved(self, waiting_millis: int, max_waiting_millis: int = 8000) -> None:
-        '''
+        """
         wait until the wallaby got touched a little bit
 
         Args:
@@ -296,7 +317,7 @@ class Util:
 
         Returns:
             None
-        '''
+        """
         startTime = k.seconds()
         touched: bool = False
         while (k.gyro_z() <= 20 and k.gyro_z() >= -20) and k.seconds() - startTime < max_waiting_millis / 1000:
@@ -312,22 +333,22 @@ class Util:
         if k.seconds() - startTime > max_waiting_millis / 1000:
             log('max time reached!')
 
-    def wait_for_light(self) -> None:  # you should frankly use the kipr made function, if you use this for starting the robot -> more consistent
-        '''
+    def wait_for_light(self) -> None:  # you should frankly use the kipr made function if you use this for starting the robot -> more consistent
+        """
         waits for the light to flash once (you should rather use the wait_for_light function of kipr)
 
         Args:
             None
 
-       Returns:
+        Returns:
             None
-        '''
+        """
         self.check_instance_light_sensor_start()
         while self.light_sensor_start.current_value() > 2000:
             continue
 
     def wait_for_button(self) -> None:
-        '''
+        """
         sleep as long as there is no button press
 
         Args:
@@ -335,7 +356,7 @@ class Util:
 
         Returns:
             None
-        '''
+        """
         self.check_instance_button_fr()
         log('waiting for button FR...')
         while not self.button_fr.is_pressed():
@@ -343,19 +364,19 @@ class Util:
 
 
     def toggle_local_test_variable(self) -> str:
-        '''
+        """
         Variable that toggles between "''" and "'1'". Can be useful because for test purpose you might want to change something every second run
 
         Args:
             None
 
         Returns:
-            str: '': Empty string which can be interpreted as False
-                 '1': String with some content which can be interpreted as True
-
-        '''
+            str:
+                '': Empty string, which can be interpreted as False
+                '1': String with some content that can be interpreted as True
+        """
         std_msg = ''
-        file_name = UTIL_FOLDER + '/local_test_variable.txt'
+        file_name = '/local_test_variable.txt'
         if not os.path.exists(file_name):
             self.file_manager.writer(file_name, 'w', std_msg)
             return std_msg
@@ -371,7 +392,7 @@ class Util:
 
     @Port_File_Logging
     def create_port_file_entry(self, port_name: str, category: str, port_number: int) -> None:
-        '''
+        """
         Create a global file to access everywhere the same port numbers. Also does not get deleted when re-installing the library
 
         Args:
@@ -381,7 +402,7 @@ class Util:
 
         Returns:
             None, but writes into a file
-        '''
+        """
         if not os.path.exists(self.port_file_name):
             self.file_manager.writer(self.port_file_name, 'w', '')
 
@@ -411,7 +432,7 @@ class Util:
 
     @Port_File_Logging
     def remove_port_file_entry(self, port_name: str = None, category: str = None, port_number: int = None) -> None:
-        '''
+        """
         Remove a previously stored port entry from the file
 
         Args:
@@ -421,7 +442,10 @@ class Util:
 
         Returns:
             None, but tells you if removing the entry was successful or not
-        '''
+
+        Raises:
+            ValueError: If there is too less information about an entry given
+        """
         if not port_name and (not category or not isinstance(port_number, int)):
             if port_file_logable_function_name == "remove_port_file_entry":
                 log('You need to either know the port name or at least two other parameters!', in_exception=True)
@@ -479,8 +503,8 @@ class Util:
 
     @Port_File_Logging
     def exist_port_file_entry(self, port_name: str = None, category: str = None, port_number: int = None) -> bool:
-        '''
-        Tells you, if the entry already exists or not
+        """
+        Tells you if the entry already exists or not
 
         Args:
             port_name (str, optional): Since the name is unique, you can only use this name to check for the entry (default: None)
@@ -489,7 +513,10 @@ class Util:
 
         Returns:
             bool: If there was a similar entry found (True -> you can either check for the port name OR the category and port number) or not (False)
-        '''
+
+        Raises:
+            ValueError: If there is too less information about an entry given
+        """
         if not port_name and (not category or not isinstance(port_number, int)):
             if port_file_logable_function_name == "exist_port_file_entry":
                 log('You need to either know the port name or at least two other parameters!', in_exception=True)
@@ -509,8 +536,8 @@ class Util:
         except Exception as e:
             return False
 
-    def shutdown_wombat(self):
-        '''
+    def shutdown_wombat(self) -> None:
+        """
         Shutting down the controller
 
         Args:
@@ -518,11 +545,11 @@ class Util:
 
         Returns:
             None
-        '''
+        """
         subprocess.run(['shutdown', '-h', 'now'])
 
-    def reboot_wombat(self):
-        '''
+    def reboot_wombat(self) -> None:
+        """
         Rebooting the controller
 
         Args:
@@ -531,5 +558,5 @@ class Util:
         Returns:
             None
 
-        '''
+        """
         subprocess.run(['shutdown', '-r', 'now'])

@@ -15,12 +15,12 @@ except Exception as e:
 
 class StopManager:
     def __init__(self):
-        '''
+        """
         Not for the basic user! Class for immediate stopping of motors and servos in every thread
 
         Args:
             None
-        '''
+        """
         self.wheels = []
         self.servos = []
         self._lock = threading.Lock()
@@ -38,7 +38,7 @@ class StopManager:
 
     # ======================== LAZY CLASS LOADING ========================
     def _load_wheel_classes(self):
-        '''
+        """
         lazy import of specific classes
 
         Args:
@@ -46,12 +46,12 @@ class StopManager:
 
         Returns:
             None
-        '''
+        """
         from wheelR import WheelR
         self.wheel_classes = [WheelR]
 
     def _load_servo_classes(self):
-        '''
+        """
         lazy import of specific classes
 
         Args:
@@ -59,91 +59,91 @@ class StopManager:
 
         Returns:
             None
-        '''
+        """
         from servo import ServoX
         self.servo_classes = [ServoX]
 
 
-    # ======================== CHECK INSTANCES ========================
-    def check_motor_instance(self, wheelr) -> None:
-        '''
+    # ======================== CHECKER ========================
+    def check_motor_instance(self, wheelR) -> None:
+        """
         Checks, if the wanted driver is a member of the driveR class
 
         Args:
-            driver (driveR.{class) instance): the class that should be checked
+            wheelR (WheelR instance): the class that should be checked
 
         Returns:
             Either a TypeError if invalid or None
-        '''
+        """
         if not self.wheel_classes:
             self._load_wheel_classes()
 
-        if not isinstance(wheelr, tuple(self.wheel_classes)):
+        if not isinstance(wheelR, tuple(self.wheel_classes)):
             valid = [cls.__name__ for cls in self.wheel_classes]
-            log(f"{wheelr} is not a valid driveR-class. Valid: {valid}", important=True, in_exception=True)
-            raise TypeError(f"{wheelr} is not a valid driveR-class. Valid: {valid}")
+            log(f"{wheelR} is not a valid WheelR-class. Valid: {valid}", important=True, in_exception=True)
+            raise TypeError(f"{wheelR} is not a valid WheelR-class. Valid: {valid}")
 
-    def check_servo_instance(self, servox) -> None:
-        '''
+    def check_servo_instance(self, servoX) -> None:
+        """
         Checks, if the wanted servo is a ServoX instance
 
         Args:
-            servox (ServoX instance): the class that should be checked
+            servoX (ServoX instance): the class that should be checked
 
         Returns:
             Either a TypeError if invalid or None
-        '''
+        """
         if not self.servo_classes:
             self._load_servo_classes()
 
-        if not isinstance(servox, tuple(self.servo_classes)):
+        if not isinstance(servoX, tuple(self.servo_classes)):
             valid = [cls.__name__ for cls in self.servo_classes]
-            log(f"{servox} is not a valid ServoX-class. Valid: {valid}", important=True, in_exception=True)
-            raise TypeError(f"{servox} is not a valid ServoX-class. Valid: {valid}")
+            log(f"{servoX} is not a valid ServoX-class. Valid: {valid}", important=True, in_exception=True)
+            raise TypeError(f"{servoX} is not a valid ServoX-class. Valid: {valid}")
 
 
     # ======================== PUBLIC METHODS ========================
-    def register_wheelr(self, wheelr) -> None:
-        '''
-        Let's you register a driveR class which has to stop if the emergency_stop() function gets executed
+    def register_wheelr(self, wheelR) -> None:
+        """
+        Lets you register a wheelR class which has to stop if the emergency_stop() function gets executed
 
         Args:
-            driver (driveR.{class) instance): the class which has to be registered
+            wheelR (WheelR instance): the class which has to be registered
 
         Returns:
             None
-        '''
-        self.check_motor_instance(wheelr)
+        """
+        self.check_motor_instance(wheelR)
         with self._lock:
-            self.wheels.append(wheelr)
+            self.wheels.append(wheelR)
 
     def register_servox(self, servox) -> None:
-        '''
-        Let's you register a servox class which has to stop if the emergency_stop() function gets executed
+        """
+        Lets you register a servox class which has to stop if the emergency_stop() function gets executed
 
         Args:
-            servox (ServoX.{class) instance): the class which has to be registered
+            servox (ServoX instance): the class which has to be registered
 
         Returns:
             None
-        '''
+        """
         self.check_servo_instance(servox)
         with self._lock:
             self.servos.append(servox)
 
     def emergency_stop(self) -> None:
-        '''
-        Stops all driveR and ServoX function from execution, if they are currently running
+        """
+        Stops all wheelR and ServoX function from execution if they are currently running
 
         Args:
             None
 
         Returns:
             None
-        '''
+        """
         for w in self.wheels:
             try:
-                w.stop()
+                w._hard_stop()
             except Exception as e:
                 log(f"Error stopping motor: {e}", important=True, in_exception=True)
 
@@ -156,39 +156,39 @@ class StopManager:
         log("Everything stopped!", important=True)
 
     def check_stopped(self) -> bool:
-        '''
-        Let's you see if the emergency_stop() function was executed
+        """
+        Lets you see if the emergency_stop() function was executed
 
         Args:
             None
 
         Returns:
             bool: If the emergency_stop() function was executed (True) or not (False)
-        '''
+        """
         return self.is_stopped
 
     def change_stopped(self, is_stopped:bool) -> None:
-        '''
-        Let's you change the state of the stopper
+        """
+        Lets you change the state of the stopper
 
         Args:
             is_stopped (bool): should it be stopped (True), or is it allowed to run (False)
 
         Returns:
             None
-        '''
+        """
         self.is_stopped = is_stopped
 
     def sys_end(self):
-        '''
+        """
         Removes the __pycache__ folder which gets created because of the FakeR class (setup() function). Also shuts down the entire program (use this function only, when everything is propperly shut off (like the camera, ...)
 
         Args:
             None
 
         Returns:
-            None. Shuts down the program though
-        '''
+            None. Will shut down the program though
+        """
         try:
             if os.path.exists(self.working_dir + '/src/__pycache__') and os.path.isdir(self.working_dir + '/src/__pycache__'):
                 shutil.rmtree(self.working_dir + '/src/__pycache__')

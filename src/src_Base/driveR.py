@@ -3947,7 +3947,7 @@ class Mecanum_Wheels_four(base_driver):
         threshold = 10
         last_bias = 0
 
-        adjuster = int(speed/15)  # 15 is just a value that worked the best
+        adjuster = int(speed/14)  # 15 is just a value that worked the best
         instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
 
         if direction == 'left':

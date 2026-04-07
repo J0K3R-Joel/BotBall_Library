@@ -1739,7 +1739,7 @@ class Solarbotic_Wheels_two(base_driver):
             t_front.start()
             t_back.start()
 
-            while not front_found and not back_found:
+            while t_front.is_alive() or t_back.is_alive():
                 self.left_wheel.drive_dfw()
                 self.right_wheel.drive_dbw()
 
@@ -3742,12 +3742,12 @@ class Mecanum_Wheels_four(base_driver):
                     if self.light_sensor_back.sees_black():
                         back_found = True
 
-            t_front = KillableThread(target=white_front_valid)
-            t_back = KillableThread(target=white_back_valid)
+            t_front = multiprocessing.Process(target=white_front_valid)
+            t_back = multiprocessing.Process(target=white_back_valid)
             t_front.start()
             t_back.start()
 
-            while not front_found or not back_found:
+            while t_front.is_alive() or t_front.is_alive():
                 self.fl_wheel.drive_dfw()
                 self.fr_wheel.drive_dbw()
                 self.bl_wheel.drive_dfw()

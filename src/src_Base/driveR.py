@@ -334,6 +334,7 @@ class base_driver:
 
         self.ONEEIGHTY_DEGREES_SECS = avg
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
+
         file_Manager.writer(file_name, 'w', str(avg))
 
 
@@ -1732,8 +1733,8 @@ class Solarbotic_Wheels_two(base_driver):
                     if self.light_sensor_back.sees_black():
                         back_found = True
 
-            t_front = multiprocessing.Process(target=white_front_valid, daemon=True)
-            t_back = multiprocessing.Process(target=white_back_valid, daemon=True)
+            t_front = KillableThread(target=white_front_valid, daemon=True)
+            t_back = KillableThread(target=white_back_valid, daemon=True)
             t_front.start()
             t_back.start()
 
@@ -3740,8 +3741,8 @@ class Mecanum_Wheels_four(base_driver):
                     if self.light_sensor_back.sees_black():
                         back_found = True
 
-            t_front = multiprocessing.Process(target=white_front_valid, daemon=True)
-            t_back = multiprocessing.Process(target=white_back_valid, daemon=True)
+            t_front = KillableThread(target=white_front_valid, daemon=True)
+            t_back = KillableThread(target=white_back_valid, daemon=True)
             t_front.start()
             t_back.start()
 
@@ -3942,6 +3943,7 @@ class Mecanum_Wheels_four(base_driver):
         theta_side = 0
         threshold = 10
         last_bias = 0
+        straight_speed = speed
 
         adjuster = int(speed/14)  # 15 is just a value that worked the best
         instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
@@ -3949,6 +3951,7 @@ class Mecanum_Wheels_four(base_driver):
         if direction == 'left':
             instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
             adjuster = -adjuster
+            straight_speed = -straight_speed
 
         side_timer.start_timer_millis()
         straight_timer.start_timer_millis()
@@ -3969,8 +3972,8 @@ class Mecanum_Wheels_four(base_driver):
                 instances[2].drive(-speed - adjuster)
                 instances[3].drive(speed + adjuster)
 
-            if straight_timer.stop_timer(False) > 70:
-                self.drive_straight(1, speed)
+            if straight_timer.stop_timer(False) > 77:
+                self.drive_straight(1, straight_speed)
                 straight_timer.start_timer_millis()
 
 

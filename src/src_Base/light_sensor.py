@@ -22,7 +22,7 @@ except Exception as e:
 class LightSensor(Analog):
     def __init__(self, position: str, port: int, value_white: int = None, value_black: int = None, bias: int = None):
         '''
-        Class for the analog light and brightness sensor. Both work similar, so they get the same class.
+        Class for the analog light and brightness sensor. Both work similarly, so they get the same class.
 
         Args:
             position (str): where it is located. This is for the file creation, so you can use the same values across different users and files. Keep the name the same for the same position of the sensor
@@ -59,7 +59,7 @@ class LightSensor(Analog):
             int | None: If the file exists, it returns an int, otherwise it returns None
         '''
         file_path = os.path.join(self.std_black_file_name + self.position + '.txt')
-        if os.path.exists(file_path):
+        if self.file_manager.exists(file_path):
             return self.file_manager.reader(file_path, 'int')
         return None  # You cannot raise an Exception here, since if you did not calibrate in the beginning, then you will always receive an exception
 
@@ -74,7 +74,7 @@ class LightSensor(Analog):
             int | None: If the file exists, it returns an int, otherwise it returns None
         '''
         file_path = os.path.join(self.std_white_file_name + self.position + '.txt')
-        if os.path.exists(file_path):
+        if self.file_manager.exists(file_path):
             return int(self.file_manager.reader(file_path, 'int'))
         return None  # You can not raise an Exception here, since if you did not calibrate in the beginning, then you will always receive an exception
 
@@ -141,7 +141,7 @@ class LightSensor(Analog):
 
         file_name = os.path.join(f'{self.std_black_file_name + self.position}.txt')
         try:
-            if os.path.exists(file_name):
+            if self.file_manager.exists(file_name):
                 old_val = self.file_manager.reader(file_name, 'int')
                 measured_value = (old_val + measured_value) // 2
             self.file_manager.writer(file_name, 'w', measured_value)
@@ -164,7 +164,7 @@ class LightSensor(Analog):
 
         file_name = os.path.join(f'{self.std_white_file_name + self.position}.txt')
         try:
-            if os.path.exists(file_name):
+            if self.file_manager.exists(file_name):
                 old_val = self.file_manager.reader(file_name, 'int')
                 measured_value = (old_val + measured_value) // 2
             self.file_manager.writer(file_name, 'w', measured_value)

@@ -58,7 +58,7 @@ utility = Util()
 
 
 # ======================== SETUP FUNCTIONS =======================
-def Instance_Setup():
+def Instancer_Setup():
     try:
         # ============ Ports Initializing ===========
         # ================ DIGITAL ===============
@@ -135,7 +135,7 @@ def main():
         print('uncomment to start. Do not forget to change the invalid params (like XX)', flush=True)
 
         # Step 0: Create the global instances
-        #Instance_Setup()  # you will need this all the time, so do not comment this line out!
+        #Instancer_Setup()  # you will need this all the time, so do not comment this line out!
 
         # Step 1: Basic calibrations (turning, driving straight and brightness sensors)
         #register_light_values()

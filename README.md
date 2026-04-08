@@ -153,7 +153,7 @@ git clone https://github.com/J0K3R-Joel/BotBall_Library.git
 
 8. Once the robot is flashed and ready, insert the USB stick.
 
-9. Navigate to the path of the USB stick on the robot.
+9. Navigate to the path of the USB stick on the robot inside of the terminal (you need to see all files inside of the "BotBall_Library" folder).
 
 10. Run the configuration script:
 

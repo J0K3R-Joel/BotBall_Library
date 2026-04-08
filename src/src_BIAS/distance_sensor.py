@@ -13,6 +13,7 @@ try:
     import time
     from scipy.interpolate import interp1d
     from analog import Analog  # selfmade
+    from fileR import FileR  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
@@ -29,7 +30,8 @@ class DistanceSensor(Analog):
             port (int): the integer value from where it is plugged in (the hardware). E.g.: 5; 2; 0; 4; 1; 3
         """
         super().__init__(port)
-        self.dist_arr_file_name = BIAS_FOLDER + '/distances_arr.txt'
+        self.dist_arr_file_name = 'distances_arr.txt'
+        self.file_manager = FileR(BIAS_FOLDER)
         self._run_lookup()
 
     # ===================== PRIVATE METHODS =====================
@@ -77,12 +79,12 @@ class DistanceSensor(Analog):
                 (values: list, mm: list)
         """
         try:
-            if not os.path.exists(self.dist_arr_file_name):
+            if not self.file_manager.exists(self.dist_arr_file_name):
                 if raises_exception:
                     log(f'{self.dist_arr_file_name} not found. Run calibration first.', in_exception=True)
                     raise FileNotFoundError(f'{self.dist_arr_file_name} not found. Run calibration first.')
 
-            with open(self.dist_arr_file_name, "r") as f:
+            with open(os.path.join(self.file_manager.get_base_directory() + '/' + self.dist_arr_file_name), "r") as f:
                 lines = f.readlines()
 
             values = []

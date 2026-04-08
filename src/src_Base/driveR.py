@@ -117,7 +117,7 @@ def BreakableFunction(func):
     def wrapper(*args, **kwargs):
         calling_function = sys._getframe().f_back.f_code.co_name
 
-        if calling_function == breakable_function_name:  # last valid function name  @TODO test out if this still works, since the name gets overwritten
+        if calling_function == breakable_function_name:  # last valid function name
             wrapper.__name__ = f'{func.__name__}#' + wrapper.__name__
             result = func(*args, **kwargs)
             return result
@@ -128,7 +128,6 @@ def BreakableFunction(func):
 
                 result = func(*args, **kwargs)
                 return result
-        print('breaking not allowed: ', calling_function, flush=True)
         return
 
     return wrapper
@@ -175,7 +174,7 @@ class base_driver:
         self.bias_gyro_z = self.get_bias_gyro_z()
         self.bias_gyro_y = self.get_bias_gyro_y()
         self.bias_gyro_x = self.get_bias_gyro_x()
-        self.bias_accel_z = self.get_bias_accel_z()  # There is no function where you can do anything with the accel y -> you need to invent them by yourself
+        self.bias_accel_z = self.get_bias_accel_z()  # There is no function where you can do anything with the accel z -> you need to invent them by yourself
         self.bias_accel_y = self.get_bias_accel_y()  # There is no function where you can do anything with the accel y -> you need to invent them by yourself
         self.bias_accel_x = self.get_bias_accel_x()  # There is no function where you can do anything with the accel y -> you need to invent them by yourself
         self._handle_standard_bias()
@@ -3939,6 +3938,7 @@ class Mecanum_Wheels_four(base_driver):
 
         speed = abs(speed)
         side_timer = TimeR()
+        straight_timer = TimeR()
         theta_side = 0
         threshold = 10
         last_bias = 0
@@ -3951,6 +3951,7 @@ class Mecanum_Wheels_four(base_driver):
             adjuster = -adjuster
 
         side_timer.start_timer_millis()
+        straight_timer.start_timer_millis()
         while side_timer.stop_timer(False) < millis:
             if threshold > theta_side > -threshold:
                 instances[0].drive(speed)
@@ -3958,15 +3959,20 @@ class Mecanum_Wheels_four(base_driver):
                 instances[2].drive(-speed)
                 instances[3].drive(speed)
             elif theta_side < threshold:
-                instances[0].drive(speed - adjuster)
+                instances[0].drive(speed + adjuster)
                 instances[1].drive(-speed - adjuster)
                 instances[2].drive(-speed + adjuster)
-                instances[3].drive(speed + adjuster)
+                instances[3].drive(speed - adjuster)
             else:
-                instances[0].drive(speed + adjuster)
+                instances[0].drive(speed - adjuster)
                 instances[1].drive(-speed + adjuster)
                 instances[2].drive(-speed - adjuster)
-                instances[3].drive(speed - adjuster)
+                instances[3].drive(speed + adjuster)
+
+            if straight_timer.stop_timer(False) > 70:
+                self.drive_straight(1, speed)
+                straight_timer.start_timer_millis()
+
 
             this_bias = self.get_current_standard_gyro()
             if last_bias != this_bias:

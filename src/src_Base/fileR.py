@@ -240,3 +240,16 @@ class FileR:
 		text = self.reader(file_path_from)
 		self.writer(file_path_to, 'w', text)
 		log(f'Successfully transferred text from {file_path_from} -> {file_path_to}')
+
+	def exists(self, file_name:str) -> bool:
+		"""
+		See if a certain file / folder is existing or not
+
+		Args:
+			file_name (str): The file which should get checked
+
+		Returns:
+			bool: If the folder/file exists (True) or not (False)
+		"""
+		file_path = self._build_file_path(file_name)
+		return os.path.exists(file_path)

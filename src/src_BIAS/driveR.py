@@ -117,7 +117,7 @@ def BreakableFunction(func):
     def wrapper(*args, **kwargs):
         calling_function = sys._getframe().f_back.f_code.co_name
 
-        if calling_function == breakable_function_name:  # last valid function name  @TODO test out if this still works, since the name gets overwritten
+        if calling_function == breakable_function_name:  # last valid function name
             wrapper.__name__ = f'{func.__name__}#' + wrapper.__name__
             result = func(*args, **kwargs)
             return result
@@ -128,7 +128,6 @@ def BreakableFunction(func):
 
                 result = func(*args, **kwargs)
                 return result
-        print('breaking not allowed: ', calling_function, flush=True)
         return
 
     return wrapper
@@ -175,7 +174,7 @@ class base_driver:
         self.bias_gyro_z = self.get_bias_gyro_z()
         self.bias_gyro_y = self.get_bias_gyro_y()
         self.bias_gyro_x = self.get_bias_gyro_x()
-        self.bias_accel_z = self.get_bias_accel_z()  # There is no function where you can do anything with the accel y -> you need to invent them by yourself
+        self.bias_accel_z = self.get_bias_accel_z()  # There is no function where you can do anything with the accel z -> you need to invent them by yourself
         self.bias_accel_y = self.get_bias_accel_y()  # There is no function where you can do anything with the accel y -> you need to invent them by yourself
         self.bias_accel_x = self.get_bias_accel_x()  # There is no function where you can do anything with the accel y -> you need to invent them by yourself
         self._handle_standard_bias()
@@ -1299,7 +1298,6 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             Instance_right_wheel (WheelR): Wheel of the right side from the robot. The front is where both wheels are moving straight when using positive values
             Instance_left_wheel (WheelR): Wheel of the side side from the robot. The front is where both wheels are moving straight when using positive values
-            controller_standing (bool): If the controller is standing on top of the metal chassis the robot is based on (True), or if it is laying down flat on the metal chassis (False)
             wheels_at_front (bool): If the wheels are located on the front half of the robot (True) or in the rear half (False)
             DS_SPEED (int, optional): The default speed the robot should drive, when no speed is set (default: 1400)
             Instance_button_front_right (Digital, optional): The button instance where the button is mounted on the front right of the robot (default: None)
@@ -1409,8 +1407,8 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             Instance_button_front_right (Digital): the instance of the front right button
             Instance_button_front_left (Digital): the instance of the front left button
-            Instance_button_back_left (Digital):  the instance of the back left button
-            Instance_button_back_right (Digital):  the instance of the back right button
+            Instance_button_back_left (Digital): the instance of the back left button
+            Instance_button_back_right (Digital): the instance of the back right button
 
         Returns:
             None
@@ -1734,8 +1732,8 @@ class Solarbotic_Wheels_two(base_driver):
                     if self.light_sensor_back.sees_black():
                         back_found = True
 
-            t_front = multiprocessing.Process(target=white_front_valid)  # @TODO hier multiprocessing.Process ausprobieren
-            t_back = multiprocessing.Process(target=white_back_valid)  # @TODO hier multiprocessing.Process ausprobieren
+            t_front = multiprocessing.Process(target=white_front_valid, daemon=True)
+            t_back = multiprocessing.Process(target=white_back_valid, daemon=True)
             t_front.start()
             t_back.start()
 
@@ -3742,8 +3740,8 @@ class Mecanum_Wheels_four(base_driver):
                     if self.light_sensor_back.sees_black():
                         back_found = True
 
-            t_front = multiprocessing.Process(target=white_front_valid)
-            t_back = multiprocessing.Process(target=white_back_valid)
+            t_front = multiprocessing.Process(target=white_front_valid, daemon=True)
+            t_back = multiprocessing.Process(target=white_back_valid, daemon=True)
             t_front.start()
             t_back.start()
 
@@ -3752,9 +3750,6 @@ class Mecanum_Wheels_four(base_driver):
                 self.fr_wheel.drive_dbw()
                 self.bl_wheel.drive_dfw()
                 self.br_wheel.drive_dbw()
-
-            t_back.kill()
-            t_front.kill()
 
         t_timer.start_timer_sec()
         while t_timer.stop_timer(False) < turning_time:
@@ -3943,11 +3938,12 @@ class Mecanum_Wheels_four(base_driver):
 
         speed = abs(speed)
         side_timer = TimeR()
+        straight_timer = TimeR()
         theta_side = 0
         threshold = 10
         last_bias = 0
 
-        adjuster = int(speed/15)  # 15 is just a value that worked the best
+        adjuster = int(speed/14)  # 15 is just a value that worked the best
         instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
 
         if direction == 'left':
@@ -3955,6 +3951,7 @@ class Mecanum_Wheels_four(base_driver):
             adjuster = -adjuster
 
         side_timer.start_timer_millis()
+        straight_timer.start_timer_millis()
         while side_timer.stop_timer(False) < millis:
             if threshold > theta_side > -threshold:
                 instances[0].drive(speed)
@@ -3962,15 +3959,20 @@ class Mecanum_Wheels_four(base_driver):
                 instances[2].drive(-speed)
                 instances[3].drive(speed)
             elif theta_side < threshold:
-                instances[0].drive(speed - adjuster)
+                instances[0].drive(speed + adjuster)
                 instances[1].drive(-speed - adjuster)
                 instances[2].drive(-speed + adjuster)
-                instances[3].drive(speed + adjuster)
+                instances[3].drive(speed - adjuster)
             else:
-                instances[0].drive(speed + adjuster)
+                instances[0].drive(speed - adjuster)
                 instances[1].drive(-speed + adjuster)
                 instances[2].drive(-speed - adjuster)
-                instances[3].drive(speed - adjuster)
+                instances[3].drive(speed + adjuster)
+
+            if straight_timer.stop_timer(False) > 70:
+                self.drive_straight(1, speed)
+                straight_timer.start_timer_millis()
+
 
             this_bias = self.get_current_standard_gyro()
             if last_bias != this_bias:

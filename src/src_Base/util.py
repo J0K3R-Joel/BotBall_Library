@@ -166,7 +166,7 @@ class Util:
         Raises:
             FileNotFoundError: If there is no entry that got created
         """
-        if not os.path.exists(self.port_file_name):
+        if not self.file_manager.exists(self.port_file_name):
             if port_file_logable_function_name == "get_port_file_categories":
                 log('No entries created just yet', in_exception=True)
             raise FileNotFoundError('No entries created just yet')
@@ -198,7 +198,7 @@ class Util:
         Raises:
             FileNotFoundError: If there is no entry that got created
         """
-        if not os.path.exists(self.port_file_name):
+        if not self.file_manager.exists(self.port_file_name):
             if port_file_logable_function_name == "get_port_file_names":
                 log('No entries created just yet', in_exception=True)
             raise FileNotFoundError('No entries created just yet')
@@ -403,7 +403,7 @@ class Util:
         Returns:
             None, but writes into a file
         """
-        if not os.path.exists(self.port_file_name):
+        if not self.file_manager.exists(self.port_file_name):
             self.file_manager.writer(self.port_file_name, 'w', '')
 
         if not self.exist_port_file_entry(port_name=port_name) and not self.exist_port_file_entry(category=category, port_number=port_number):

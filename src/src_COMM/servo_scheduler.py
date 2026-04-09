@@ -99,21 +99,25 @@ class ServoScheduler:
                 now = time.time()
                 with self._lock:
                     for key, data in list(self._commands.items()):
-                        port = data['port']
                         fid = key[1]
 
                         if fid in self._old_funcs:
                             continue
 
-                        if now - data['last_update'] > self.AUTO_STOP_TIMEOUT or not data['enabled']:
-                            if data['enabled']:
+                        port = data['port']
+                        enabled = data['enabled']
+                        last_update = data['last_update']
+                        to_sleep = data['millis']
+                        pos = data['pos']
+
+                        if now - last_update > self.AUTO_STOP_TIMEOUT or enabled:
+                            if enabled:
                                 self.disable_servo(port)
                             continue
 
-                        if data['enabled']:
+                        if enabled:
                             self.enable_servo(port)
-                            to_sleep = data['millis']
-                            k.set_servo_position(port, data['pos'])
+                            k.set_servo_position(port, pos)
                             k.msleep(to_sleep)
 
                 if self.last_activity and time.time() - self.last_activity > self.AUTO_SHUTDOWN_TIMEOUT:

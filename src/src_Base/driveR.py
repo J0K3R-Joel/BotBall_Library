@@ -1717,24 +1717,17 @@ class Solarbotic_Wheels_two(base_driver):
         turning_time = self.ONEEIGHTY_DEGREES_SECS/2 if self.ONEEIGHTY_DEGREES_SECS else 1
 
         def sensor_checker():
-            global front_found, back_found
-            front_found = False
-            back_found = False
 
             def white_front_valid():
-                global front_found
-                while not front_found:
-                    if self.light_sensor_front.sees_black():
-                        front_found = True
+                while not self.light_sensor_front.sees_black():
+                    continue
 
             def white_back_valid():
-                global back_found
-                while not back_found:
-                    if self.light_sensor_back.sees_black():
-                        back_found = True
+                while not self.light_sensor_back.sees_black():
+                    continue
 
-            t_front = KillableThread(target=white_front_valid, daemon=True)
-            t_back = KillableThread(target=white_back_valid, daemon=True)
+            t_front = KillableThread(target=white_front_valid)
+            t_back = KillableThread(target=white_back_valid)
             t_front.start()
             t_back.start()
 
@@ -1752,6 +1745,7 @@ class Solarbotic_Wheels_two(base_driver):
         self.break_all_motors()
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
 
+        self.save_degrees_time()
         if output:
             log('DEGREES CALIBRATED')
 
@@ -3725,32 +3719,42 @@ class Mecanum_Wheels_four(base_driver):
         turning_time = self.ONEEIGHTY_DEGREES_SECS / 2 if self.ONEEIGHTY_DEGREES_SECS else 1
 
         def sensor_checker():
-            global front_found, back_found
-            front_found = False
-            back_found = False
+            front_timer = TimeR()
+            back_timer = TimeR()
+            time_front = 0
+            time_back = 0
+
 
             def white_front_valid():
-                global front_found
-                while not front_found:
-                    if self.light_sensor_front.sees_black():
-                        front_found = True
+                    while not self.light_sensor_front.sees_black():
+                        continue
 
             def white_back_valid():
-                global back_found
-                while not back_found:
-                    if self.light_sensor_back.sees_black():
-                        back_found = True
+                    while not self.light_sensor_back.sees_black():
+                        continue
 
-            t_front = KillableThread(target=white_front_valid, daemon=True)
-            t_back = KillableThread(target=white_back_valid, daemon=True)
+            t_front = KillableThread(target=white_front_valid)
+            t_back = KillableThread(target=white_back_valid)
+
+            front_timer.start_timer_sec()
             t_front.start()
+            back_timer.start_timer_sec()
             t_back.start()
 
-            while t_front.is_alive() or t_front.is_alive():
+            while True:
+                if not t_front.is_alive() and not time_front:
+                    time_front = front_timer.stop_timer()
+                if not t_back.is_alive() and not time_back:
+                    time_back = back_timer.stop_timer()
+                if time_front and time_back:
+                    break
                 self.fl_wheel.drive_dfw()
                 self.fr_wheel.drive_dbw()
                 self.bl_wheel.drive_dfw()
                 self.br_wheel.drive_dbw()
+
+            return abs(time_front - time_back)/2
+
 
         t_timer.start_timer_sec()
         while t_timer.stop_timer(False) < turning_time:
@@ -3759,11 +3763,12 @@ class Mecanum_Wheels_four(base_driver):
             self.bl_wheel.drive_dfw()
             self.br_wheel.drive_dbw()
 
-        sensor_checker()
-        self.ONEEIGHTY_DEGREES_SECS = t_timer.stop_timer()
+        sensor_diff_time = sensor_checker()
+        self.ONEEIGHTY_DEGREES_SECS = t_timer.stop_timer() - sensor_diff_time
         self.break_all_motors()
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
 
+        self.save_degrees_time()
         if output:
             log('DEGREES CALIBRATED')
 
@@ -3943,45 +3948,68 @@ class Mecanum_Wheels_four(base_driver):
         theta_side = 0
         threshold = 10
         last_bias = 0
-        straight_speed = speed
+        straight_speed = -speed
+        straight_speed_adjuster = straight_speed//2
+        higher_straight_speed = straight_speed - straight_speed_adjuster
+        lower_straight_speed = straight_speed + straight_speed_adjuster
 
-        adjuster = int(speed/14)  # 15 is just a value that worked the best
-        instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
+        adjuster = speed//2  # 15 is just a value that worked the best
+        wheels = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
 
         if direction == 'left':
-            instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
+            wheels = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
             adjuster = -adjuster
             straight_speed = -straight_speed
+            higher_straight_speed = -higher_straight_speed
+            lower_straight_speed = -lower_straight_speed
 
         side_timer.start_timer_millis()
         straight_timer.start_timer_millis()
         while side_timer.stop_timer(False) < millis:
-            if threshold > theta_side > -threshold:
-                instances[0].drive(speed)
-                instances[1].drive(-speed)
-                instances[2].drive(-speed)
-                instances[3].drive(speed)
-            elif theta_side < threshold:
-                instances[0].drive(speed + adjuster)
-                instances[1].drive(-speed - adjuster)
-                instances[2].drive(-speed + adjuster)
-                instances[3].drive(speed - adjuster)
-            else:
-                instances[0].drive(speed - adjuster)
-                instances[1].drive(-speed + adjuster)
-                instances[2].drive(-speed - adjuster)
-                instances[3].drive(speed + adjuster)
-
-            if straight_timer.stop_timer(False) > 77:
-                self.drive_straight(1, straight_speed)
+            if straight_timer.stop_timer(False) > 50:
+                if threshold > theta_side > -threshold:
+                    wheels[0].drive(straight_speed)
+                    wheels[1].drive(straight_speed)
+                    wheels[2].drive(straight_speed)
+                    wheels[3].drive(straight_speed)
+                elif theta_side < threshold:
+                    wheels[0].drive(higher_straight_speed)
+                    wheels[1].drive(lower_straight_speed)
+                    wheels[2].drive(higher_straight_speed)
+                    wheels[3].drive(lower_straight_speed)
+                else:
+                    wheels[0].drive(lower_straight_speed)
+                    wheels[1].drive(higher_straight_speed)
+                    wheels[2].drive(lower_straight_speed)
+                    wheels[3].drive(higher_straight_speed)
+                k.msleep(10)
                 straight_timer.start_timer_millis()
+
+            if threshold > theta_side > -threshold:
+                wheels[0].drive(speed)
+                wheels[1].drive(-speed)
+                wheels[2].drive(-speed)
+                wheels[3].drive(speed)
+            elif theta_side < threshold:
+                wheels[0].drive(speed)
+                wheels[1].drive(-speed - adjuster)
+                wheels[2].drive(-speed)
+                wheels[3].drive(speed - adjuster)
+            else:  # right
+                wheels[0].drive(speed)
+                wheels[1].drive(-speed + adjuster)
+                wheels[2].drive(-speed)
+                wheels[3].drive(speed + adjuster)
 
 
             this_bias = self.get_current_standard_gyro()
             if last_bias != this_bias:
                 last_bias = this_bias
-                theta_side += this_bias - self.standard_bias_gyro
+            theta_side += this_bias - self.standard_bias_gyro
+
             print(theta_side, flush=True)
+
+
 
         self.break_all_motors()
 

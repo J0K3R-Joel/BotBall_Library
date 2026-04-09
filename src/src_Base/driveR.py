@@ -3949,16 +3949,15 @@ class Mecanum_Wheels_four(base_driver):
         threshold = 10
         last_bias = 0
         straight_speed = -speed
-        straight_speed_adjuster = straight_speed//2
+        straight_speed_adjuster = straight_speed//2  # 2 is just a value that worked the best
         higher_straight_speed = straight_speed - straight_speed_adjuster
         lower_straight_speed = straight_speed + straight_speed_adjuster
 
-        adjuster = speed//2  # 15 is just a value that worked the best
+        adjuster = speed//2  # 2 is just a value that worked the best
         wheels = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
 
         if direction == 'left':
-            wheels = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
-            adjuster = -adjuster
+            speed = -speed
             straight_speed = -straight_speed
             higher_straight_speed = -higher_straight_speed
             lower_straight_speed = -lower_straight_speed
@@ -3966,7 +3965,7 @@ class Mecanum_Wheels_four(base_driver):
         side_timer.start_timer_millis()
         straight_timer.start_timer_millis()
         while side_timer.stop_timer(False) < millis:
-            if straight_timer.stop_timer(False) > 50:
+            if straight_timer.stop_timer(False) > 100:
                 if threshold > theta_side > -threshold:
                     wheels[0].drive(straight_speed)
                     wheels[1].drive(straight_speed)
@@ -3982,8 +3981,13 @@ class Mecanum_Wheels_four(base_driver):
                     wheels[1].drive(higher_straight_speed)
                     wheels[2].drive(lower_straight_speed)
                     wheels[3].drive(higher_straight_speed)
-                k.msleep(10)
+                k.msleep(8)
                 straight_timer.start_timer_millis()
+
+            this_bias = self.get_current_standard_gyro()
+            if last_bias != this_bias:
+                last_bias = this_bias
+            theta_side += this_bias - self.standard_bias_gyro
 
             if threshold > theta_side > -threshold:
                 wheels[0].drive(speed)
@@ -4001,15 +4005,10 @@ class Mecanum_Wheels_four(base_driver):
                 wheels[2].drive(-speed)
                 wheels[3].drive(speed + adjuster)
 
-
             this_bias = self.get_current_standard_gyro()
             if last_bias != this_bias:
                 last_bias = this_bias
             theta_side += this_bias - self.standard_bias_gyro
-
-            print(theta_side, flush=True)
-
-
 
         self.break_all_motors()
 
@@ -5001,58 +5000,217 @@ class Mecanum_Wheels_four(base_driver):
 
         speed = abs(speed)
         side_timer = TimeR()
-        side_timer.start_timer_millis()
+        straight_timer = TimeR()
         theta_side = 0
-        adjuster = int(speed / 14)  # 14 is just a value that worked the best
-        instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
+        threshold = 10
+        last_bias = 0
+        straight_speed = -speed
+        straight_speed_adjuster = straight_speed // 2  # 2 is just a value that worked the best
+        higher_straight_speed = straight_speed - straight_speed_adjuster
+        lower_straight_speed = straight_speed + straight_speed_adjuster
+
+        adjuster = speed // 2  # 2 is just a value that worked the best
+        wheels = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
 
         if direction == 'left':
-            instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
-            adjuster = -adjuster
+            speed = -speed
+            straight_speed = -straight_speed
+            higher_straight_speed = -higher_straight_speed
+            lower_straight_speed = -lower_straight_speed
 
-        def driving_on_side():
-            if 100 >= theta_side >= -100:
-                instances[0].drive(speed)
-                instances[1].drive(-speed)
-                instances[2].drive(-speed)
-                instances[3].drive(speed)
-            elif theta_side < -100:
-                instances[0].drive(speed + adjuster)
-                instances[1].drive(-speed - adjuster)
-                instances[2].drive(-speed - adjuster)
-                instances[3].drive(speed + adjuster)
-            elif theta_side > 100:
-                instances[0].drive(speed - adjuster)
-                instances[1].drive(-speed + adjuster)
-                instances[2].drive(-speed + adjuster)
-                instances[3].drive(speed - adjuster)
 
+        side_timer.start_timer_millis()
+        straight_timer.start_timer_millis()
         if condition == 'let' or condition == '<=':  # let -> less or equal than
             while (instance.current_value() <= value) and (side_timer.stop_timer(False) < millis):
-                theta_side += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                if straight_timer.stop_timer(False) > 100:
+                    if threshold > theta_side > -threshold:
+                        wheels[0].drive(straight_speed)
+                        wheels[1].drive(straight_speed)
+                        wheels[2].drive(straight_speed)
+                        wheels[3].drive(straight_speed)
+                    elif theta_side < threshold:
+                        wheels[0].drive(higher_straight_speed)
+                        wheels[1].drive(lower_straight_speed)
+                        wheels[2].drive(higher_straight_speed)
+                        wheels[3].drive(lower_straight_speed)
+                    else:
+                        wheels[0].drive(lower_straight_speed)
+                        wheels[1].drive(higher_straight_speed)
+                        wheels[2].drive(lower_straight_speed)
+                        wheels[3].drive(higher_straight_speed)
+                    k.msleep(8)
+                    straight_timer.start_timer_millis()
 
-                driving_on_side()
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                theta_side += this_bias - self.standard_bias_gyro
+
+                if threshold > theta_side > -threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed)
+                elif theta_side < threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed - adjuster)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed - adjuster)
+                else:  # right
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed + adjuster)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed + adjuster)
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                theta_side += this_bias - self.standard_bias_gyro
 
 
         elif condition == 'het' or condition == '>=':  # het -> higher or equal than
             while (instance.current_value() >= value) and (side_timer.stop_timer(False) < millis):
-                theta_side += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                if straight_timer.stop_timer(False) > 100:
+                    if threshold > theta_side > -threshold:
+                        wheels[0].drive(straight_speed)
+                        wheels[1].drive(straight_speed)
+                        wheels[2].drive(straight_speed)
+                        wheels[3].drive(straight_speed)
+                    elif theta_side < threshold:
+                        wheels[0].drive(higher_straight_speed)
+                        wheels[1].drive(lower_straight_speed)
+                        wheels[2].drive(higher_straight_speed)
+                        wheels[3].drive(lower_straight_speed)
+                    else:
+                        wheels[0].drive(lower_straight_speed)
+                        wheels[1].drive(higher_straight_speed)
+                        wheels[2].drive(lower_straight_speed)
+                        wheels[3].drive(higher_straight_speed)
+                    k.msleep(8)
+                    straight_timer.start_timer_millis()
 
-                driving_on_side()
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                theta_side += this_bias - self.standard_bias_gyro
+
+                if threshold > theta_side > -threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed)
+                elif theta_side < threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed - adjuster)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed - adjuster)
+                else:  # right
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed + adjuster)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed + adjuster)
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                theta_side += this_bias - self.standard_bias_gyro
 
 
         elif condition == 'ht' or condition == '>':  # ht -> higher than
             while (instance.current_value() > value) and (side_timer.stop_timer(False) < millis):
-                theta_side += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                if straight_timer.stop_timer(False) > 100:
+                    if threshold > theta_side > -threshold:
+                        wheels[0].drive(straight_speed)
+                        wheels[1].drive(straight_speed)
+                        wheels[2].drive(straight_speed)
+                        wheels[3].drive(straight_speed)
+                    elif theta_side < threshold:
+                        wheels[0].drive(higher_straight_speed)
+                        wheels[1].drive(lower_straight_speed)
+                        wheels[2].drive(higher_straight_speed)
+                        wheels[3].drive(lower_straight_speed)
+                    else:
+                        wheels[0].drive(lower_straight_speed)
+                        wheels[1].drive(higher_straight_speed)
+                        wheels[2].drive(lower_straight_speed)
+                        wheels[3].drive(higher_straight_speed)
+                    k.msleep(8)
+                    straight_timer.start_timer_millis()
 
-                driving_on_side()
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                theta_side += this_bias - self.standard_bias_gyro
+
+                if threshold > theta_side > -threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed)
+                elif theta_side < threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed - adjuster)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed - adjuster)
+                else:  # right
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed + adjuster)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed + adjuster)
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                theta_side += this_bias - self.standard_bias_gyro
 
 
         elif condition == 'lt' or condition == '<':  # lt -> less than
             while (instance.current_value() < value) and (side_timer.stop_timer(False) < millis):
-                theta_side += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                if straight_timer.stop_timer(False) > 100:
+                    if threshold > theta_side > -threshold:
+                        wheels[0].drive(straight_speed)
+                        wheels[1].drive(straight_speed)
+                        wheels[2].drive(straight_speed)
+                        wheels[3].drive(straight_speed)
+                    elif theta_side < threshold:
+                        wheels[0].drive(higher_straight_speed)
+                        wheels[1].drive(lower_straight_speed)
+                        wheels[2].drive(higher_straight_speed)
+                        wheels[3].drive(lower_straight_speed)
+                    else:
+                        wheels[0].drive(lower_straight_speed)
+                        wheels[1].drive(higher_straight_speed)
+                        wheels[2].drive(lower_straight_speed)
+                        wheels[3].drive(higher_straight_speed)
+                    k.msleep(8)
+                    straight_timer.start_timer_millis()
 
-                driving_on_side()
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                theta_side += this_bias - self.standard_bias_gyro
+
+                if threshold > theta_side > -threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed)
+                elif theta_side < threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed - adjuster)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed - adjuster)
+                else:  # right
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed + adjuster)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed + adjuster)
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                theta_side += this_bias - self.standard_bias_gyro
 
 
         else:
@@ -5085,45 +5243,123 @@ class Mecanum_Wheels_four(base_driver):
             raise ValueError(
                 'drive_side_condition_analog() Exception: Only "right" or "left" are valid arguments for the direction parameter! ')
 
+        speed = abs(speed)
         side_timer = TimeR()
-        side_timer.start_timer_millis()
+        straight_timer = TimeR()
         theta_side = 0
-        adjuster = int(speed / 14)  # 14 is just a value that worked the best
-        instances = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
+        threshold = 10
+        last_bias = 0
+        straight_speed = -speed
+        straight_speed_adjuster = straight_speed // 2  # 2 is just a value that worked the best
+        higher_straight_speed = straight_speed - straight_speed_adjuster
+        lower_straight_speed = straight_speed + straight_speed_adjuster
+
+        adjuster = speed // 2  # 2 is just a value that worked the best
+        wheels = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
 
         if direction == 'left':
-            instances = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
-            adjuster = -adjuster
+            speed = -speed
+            straight_speed = -straight_speed
+            higher_straight_speed = -higher_straight_speed
+            lower_straight_speed = -lower_straight_speed
 
-        def driving_on_side():
-            if 100 >= theta_side >= -100:
-                instances[0].drive(speed)
-                instances[1].drive(-speed)
-                instances[2].drive(-speed)
-                instances[3].drive(speed)
-            elif theta_side < -100:
-                instances[0].drive(speed + adjuster)
-                instances[1].drive(-speed - adjuster)
-                instances[2].drive(-speed - adjuster)
-                instances[3].drive(speed + adjuster)
-            elif theta_side > 100:
-                instances[0].drive(speed - adjuster)
-                instances[1].drive(-speed + adjuster)
-                instances[2].drive(-speed + adjuster)
-                instances[3].drive(speed - adjuster)
+        side_timer.start_timer_millis()
+        straight_timer.start_timer_millis()
 
         if condition == '==':
             while (instance.current_value() == value) and (side_timer.stop_timer(False) < millis):
-                theta_side += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                if straight_timer.stop_timer(False) > 100:
+                    if threshold > theta_side > -threshold:
+                        wheels[0].drive(straight_speed)
+                        wheels[1].drive(straight_speed)
+                        wheels[2].drive(straight_speed)
+                        wheels[3].drive(straight_speed)
+                    elif theta_side < threshold:
+                        wheels[0].drive(higher_straight_speed)
+                        wheels[1].drive(lower_straight_speed)
+                        wheels[2].drive(higher_straight_speed)
+                        wheels[3].drive(lower_straight_speed)
+                    else:
+                        wheels[0].drive(lower_straight_speed)
+                        wheels[1].drive(higher_straight_speed)
+                        wheels[2].drive(lower_straight_speed)
+                        wheels[3].drive(higher_straight_speed)
+                    k.msleep(8)
+                    straight_timer.start_timer_millis()
 
-                driving_on_side()
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                theta_side += this_bias - self.standard_bias_gyro
+
+                if threshold > theta_side > -threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed)
+                elif theta_side < threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed - adjuster)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed - adjuster)
+                else:  # right
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed + adjuster)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed + adjuster)
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                theta_side += this_bias - self.standard_bias_gyro
 
 
         elif condition == '!=':
             while (instance.current_value() != value) and (side_timer.stop_timer(False) < millis):
-                theta_side += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+                if straight_timer.stop_timer(False) > 100:
+                    if threshold > theta_side > -threshold:
+                        wheels[0].drive(straight_speed)
+                        wheels[1].drive(straight_speed)
+                        wheels[2].drive(straight_speed)
+                        wheels[3].drive(straight_speed)
+                    elif theta_side < threshold:
+                        wheels[0].drive(higher_straight_speed)
+                        wheels[1].drive(lower_straight_speed)
+                        wheels[2].drive(higher_straight_speed)
+                        wheels[3].drive(lower_straight_speed)
+                    else:
+                        wheels[0].drive(lower_straight_speed)
+                        wheels[1].drive(higher_straight_speed)
+                        wheels[2].drive(lower_straight_speed)
+                        wheels[3].drive(higher_straight_speed)
+                    k.msleep(8)
+                    straight_timer.start_timer_millis()
 
-                driving_on_side()
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                theta_side += this_bias - self.standard_bias_gyro
+
+                if threshold > theta_side > -threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed)
+                elif theta_side < threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed - adjuster)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed - adjuster)
+                else:  # right
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed + adjuster)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed + adjuster)
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                theta_side += this_bias - self.standard_bias_gyro
         else:
             log('Only "==" or "!=" is available for the condition!', important=True, in_exception=True)
             raise ValueError('Only "==" or "!=" is available for the condition!')

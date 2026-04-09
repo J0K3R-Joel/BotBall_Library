@@ -147,7 +147,7 @@ git clone https://github.com/J0K3R-Joel/BotBall_Library.git
 
 5. Go to the [KIPR Wombat firmware](https://www.kipr.org/kipr/hardware-software/kipr-wombat-firmware) page
 
-6. Download the latest "KIPR Wombat OS Image" (scroll down!).
+6. Download the latest **"KIPR Wombat OS Image" (scroll down!).**
 
 7. Flash the image onto the robot following the instructions on the KIPR website. Use a software like [Raspberry Pi Imager](https://www.raspberrypi.com/software) for flashing the image file onto the micro SD card of the controller (You need to unscrew the "shell" of the controller to get to the micro SD card)
 

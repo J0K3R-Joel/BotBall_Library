@@ -3981,7 +3981,7 @@ class Mecanum_Wheels_four(base_driver):
                     wheels[1].drive(higher_straight_speed)
                     wheels[2].drive(lower_straight_speed)
                     wheels[3].drive(higher_straight_speed)
-                k.msleep(8)
+                k.msleep(10)
                 straight_timer.start_timer_millis()
 
             this_bias = self.get_current_standard_gyro()
@@ -4948,7 +4948,7 @@ class Mecanum_Wheels_four(base_driver):
         self.check_instances_buttons_back()
         align_back_timer = TimeR()
         align_back_timer.start_timer_millis()
-        while align_back_timer.stop_timer() < max_millis:
+        while align_back_timer.stop_timer(False) < max_millis:
             if self.button_br.is_pressed() and self.button_bl.is_pressed():
                 break
             elif self.button_br.is_pressed():
@@ -5039,7 +5039,7 @@ class Mecanum_Wheels_four(base_driver):
                         wheels[1].drive(higher_straight_speed)
                         wheels[2].drive(lower_straight_speed)
                         wheels[3].drive(higher_straight_speed)
-                    k.msleep(8)
+                    k.msleep(10)
                     straight_timer.start_timer_millis()
 
                 this_bias = self.get_current_standard_gyro()
@@ -5087,7 +5087,7 @@ class Mecanum_Wheels_four(base_driver):
                         wheels[1].drive(higher_straight_speed)
                         wheels[2].drive(lower_straight_speed)
                         wheels[3].drive(higher_straight_speed)
-                    k.msleep(8)
+                    k.msleep(10)
                     straight_timer.start_timer_millis()
 
                 this_bias = self.get_current_standard_gyro()
@@ -5135,7 +5135,7 @@ class Mecanum_Wheels_four(base_driver):
                         wheels[1].drive(higher_straight_speed)
                         wheels[2].drive(lower_straight_speed)
                         wheels[3].drive(higher_straight_speed)
-                    k.msleep(8)
+                    k.msleep(10)
                     straight_timer.start_timer_millis()
 
                 this_bias = self.get_current_standard_gyro()
@@ -5183,7 +5183,7 @@ class Mecanum_Wheels_four(base_driver):
                         wheels[1].drive(higher_straight_speed)
                         wheels[2].drive(lower_straight_speed)
                         wheels[3].drive(higher_straight_speed)
-                    k.msleep(8)
+                    k.msleep(10)
                     straight_timer.start_timer_millis()
 
                 this_bias = self.get_current_standard_gyro()
@@ -5284,7 +5284,7 @@ class Mecanum_Wheels_four(base_driver):
                         wheels[1].drive(higher_straight_speed)
                         wheels[2].drive(lower_straight_speed)
                         wheels[3].drive(higher_straight_speed)
-                    k.msleep(8)
+                    k.msleep(10)
                     straight_timer.start_timer_millis()
 
                 this_bias = self.get_current_standard_gyro()
@@ -5332,7 +5332,7 @@ class Mecanum_Wheels_four(base_driver):
                         wheels[1].drive(higher_straight_speed)
                         wheels[2].drive(lower_straight_speed)
                         wheels[3].drive(higher_straight_speed)
-                    k.msleep(8)
+                    k.msleep(10)
                     straight_timer.start_timer_millis()
 
                 this_bias = self.get_current_standard_gyro()

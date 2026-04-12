@@ -50,10 +50,6 @@ class ServoScheduler:
             None
         """
         self._running = True
-        k.enable_servo(0)
-        k.enable_servo(1)
-        k.enable_servo(2)
-        k.enable_servo(3)
         self._thread = threading.Thread(target=self._loop)
         self._thread.start()
 
@@ -115,31 +111,39 @@ class ServoScheduler:
                         pos = data['pos']
                         already_set = data['already_set']
 
-                        # if time.time() - last_update > self.AUTO_STOP_TIMEOUT and enabled:
-                        #     self.disable_servo(port)
-                        #     continue
-                        #log(f'{pos, port, to_sleep}')
+                        log(f'{pos, port, to_sleep}')
 
                         if enabled and not already_set:
                             #log('here')
-                            #self.enable_servo(port)
+                            self.enable_servo(port)
                             k.set_servo_position(port, pos)
                             k.msleep(to_sleep)
-                            self.last_activity -= to_sleep/1000  # -> to_sleep is in milliseconds and you need to convert it into seconds
-                            #self._commands.pop(key)
-                            self._commands.update({
-                                'already_set': True
+                            #self.last_activity -= to_sleep/1000  # -> to_sleep is in milliseconds and you need to convert it into seconds
+                            self.disable_servo(port)
+                            self._commands[key].update({
+                                'already_set': True,
+                                'enabled': False
                             })
+                        elif last_update - time.time() > self.AUTO_STOP_TIMEOUT:
+                            self.disable_servo(port)
+                            self._commands.pop(key)
 
 
                 if self.last_activity and time.time() - self.last_activity > self.AUTO_SHUTDOWN_TIMEOUT:
                     print(time.time(), self.last_activity, time.time() - self.last_activity, flush=True)
-                    #log('dead', important=True)
+                    log('dead', important=True)
                     self.disable_all()
                     self._running = False
 
         except Exception as e:
             log(str(e), in_exception=True)
+
+    def set_pos(self, port: int, pos: int):
+        millis = int((abs(k.get_servo_position(port) - pos)))
+
+        k.enable_servo(port)
+        k.set_servo_position(port, pos)
+        k.msleep(millis)
 
     def set_position(self, port: int, pos: int) -> bool:
         """
@@ -154,48 +158,46 @@ class ServoScheduler:
         """
 
         try:
-            #with self._lock:
-            func_id = self._get_ID()
-            if func_id in self._old_funcs:
-                log('old', important=True)
-                return False
+            with self._lock:
+                func_id = self._get_ID()
+                if func_id in self._old_funcs:
+                    log('old', important=True)
+                    return False
 
-            if not self._running:
-                self._setup_loop()
+                if not self._running:
+                    self._setup_loop()
 
-            key = (port, func_id)
-            self.last_activity = time.time()
+                key = (port, func_id)
+                self.last_activity = time.time()
 
-            millis = int((abs(k.get_servo_position(port) - pos))) # +20 to increase the time it is allowed to take.
-            if millis == 0:
-                millis = 1
+                millis = int((abs(k.get_servo_position(port) - pos)))
 
-            if key in self._commands:
-                self._commands[key].update({
+                if key in self._commands:
+                    self._commands[key].update({
+                        'pos': pos,
+                        'millis': millis,
+                        'last_update': self.last_activity,
+                        'enabled': True,
+                        'already_set': False
+                    })
+                    return True
+                for old_key, data in list(self._commands.items()):
+                    if data['port'] == port:
+                        log('old', important=True)
+                        self._old_funcs.add(data['func_id'])
+                        self.disable_all()
+                        break
+
+                self._commands[key] = {
+                    'port': port,
                     'pos': pos,
                     'millis': millis,
-                    'last_update': self.last_activity,
+                    'func_id': func_id,
                     'enabled': True,
-                    'already_set': False
-                })
+                    'already_set': False,
+                    'last_update': self.last_activity
+                }
                 return True
-            for old_key, data in list(self._commands.items()):
-                if data['port'] == port:
-                    log('old', important=True)
-                    self._old_funcs.add(data['func_id'])
-                    self.disable_all()
-                    break
-
-            self._commands[key] = {
-                'port': port,
-                'pos': pos,
-                'millis': millis,
-                'func_id': func_id,
-                'enabled': True,
-                'already_set': False,
-                'last_update': self.last_activity
-            }
-            return True
         except Exception as e:
             log(str(e), in_exception=True)
 
@@ -209,7 +211,7 @@ class ServoScheduler:
         Returns:
             None
         """
-        log(f'enabled: {port}')
+        #log(f'enabled: {port}')
         try:
             with self._lock:
                 for key, data in list(self._commands.items()):
@@ -230,7 +232,7 @@ class ServoScheduler:
         Returns:
             None
         """
-        log('disabled', important=True)
+        #log('disabled', important=True)
         with self._lock:
             for key, data in list(self._commands.items()):
                 if data['port'] == port:

@@ -22,7 +22,7 @@ except Exception as e:
 class LightSensor(Analog):
     def __init__(self, position: str, port: int, value_white: int = None, value_black: int = None, bias: int = None):
         '''
-        Class for the analog light and brightness sensor. Both work similar, so they get the same class.
+        Class for the analog light and brightness sensor. Both work similarly, so they get the same class.
 
         Args:
             position (str): where it is located. This is for the file creation, so you can use the same values across different users and files. Keep the name the same for the same position of the sensor

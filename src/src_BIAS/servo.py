@@ -72,9 +72,9 @@ class ServoX:
             None
         """
         if self._valid_range(value):
-            SERVO_SCHEDULER.set_position(self.port, int(value))
+            (SERVO_SCHEDULER.set_pos(self.port, int(value)))
         else:
-            SERVO_SCHEDULER.set_position(self.port, self.new_pos_val)
+            SERVO_SCHEDULER.set_pos(self.port, self.new_pos_val)
 
     def _hard_stop(self) -> None:
         """
@@ -153,7 +153,8 @@ class ServoX:
             None
         """
         new_pos = self.get_pos() + value
-        self._set_pos_internal(new_pos)
+        position = new_pos if self._valid_range(new_pos) else self.new_pos_val
+        self._set_pos_internal(position)
 
     def range_to_pos(self, value: int, multi: int = 2) -> None:
         """
@@ -167,21 +168,24 @@ class ServoX:
             None
         """
         curr_pos = self.get_pos()
+        value = value if self._valid_range(value) else self.new_pos_val
 
         if multi < 1:
             multi = 1
 
-        if abs(multi) > abs(value - curr_pos):
-            multi = abs(value - curr_pos)
-
         if value-curr_pos < 0:
             multi = -multi
 
+        if (curr_pos == self.max_value and multi > 0) or (curr_pos == self.min_value and multi < 0):
+            return
+
         counter = int(multi)
-
-        while self.get_pos() < value:
-            self.add_to_pos(counter)
-
+        if multi > 0:
+            while self.get_pos() < value:
+                self.add_to_pos(counter)
+        else:
+            while self.get_pos() > value:
+                self.add_to_pos(counter)
 
     def range_from_to_pos(self, interval: list, multi: int = 2) -> None:
         """

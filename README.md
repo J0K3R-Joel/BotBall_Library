@@ -139,22 +139,14 @@ git clone https://github.com/J0K3R-Joel/BotBall_Library.git
 ```
 
 2. Copy the repository to an USB-stick.
-
-3. Go in [./src/WIFI_FOR_INSTALLATION/main.py](./src/WIFI_FOR_INSTALLATION/main.py) and change the SSID and PASS inside the `wifi_setup()` to a wifi that grants you internet access, so libraries can get installed 
-
-4. Go in [./LOCAL_STD_WIFI.conf](./LOCAL_STD_WIFI.conf) and type in the SSID and password of your local router. The local router should be a private router you got from home, so no one can intercept the communication. Internet access is NOT required. 
+3. Go in [./LOCAL_STD_WIFI.conf](./LOCAL_STD_WIFI.conf) and type in the SSID and password of your local router. The local router should be a private router you got from home, so no one can intercept the communication. Internet access is NOT required. 
    **HINT**: every space, every character and everything after the "=" counts as either the SSID or password (depends on the line you are writing in), so be aware of spaces and other characters you fill in.
-
+4. Go in [./src/WIFI_FOR_INSTALLATION/main.py](./src/WIFI_FOR_INSTALLATION/main.py) and change the SSID and PASS inside the `wifi_setup()` to a wifi that grants you internet access, so libraries can get installed 
 5. Go to the [KIPR Wombat firmware](https://www.kipr.org/kipr/hardware-software/kipr-wombat-firmware) page
-
 6. Download the latest **"KIPR Wombat OS Image" (scroll down!).**
-
 7. Flash the image onto the robot following the instructions on the KIPR website. Use a software like [Raspberry Pi Imager](https://www.raspberrypi.com/software) for flashing the image file onto the micro SD card of the controller (You need to unscrew the "shell" of the controller to get to the micro SD card)
-
 8. Once the robot is flashed and ready, insert the USB stick.
-
 9. Navigate to the path of the USB stick on the robot inside of the terminal (you need to see all files inside of the "BotBall_Library" folder).
-
 10. Run the configuration script:
 
 ```bash

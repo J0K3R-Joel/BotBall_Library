@@ -72,9 +72,9 @@ class ServoX:
             None
         """
         if self._valid_range(value):
-            SERVO_SCHEDULER.set_position(self.port, int(value))
+            (SERVO_SCHEDULER.set_pos(self.port, int(value)))
         else:
-            SERVO_SCHEDULER.set_position(self.port, self.new_pos_val)
+            SERVO_SCHEDULER.set_pos(self.port, self.new_pos_val)
 
     def _hard_stop(self) -> None:
         """

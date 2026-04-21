@@ -178,6 +178,7 @@ class base_driver:
         self.bias_accel_y = self.get_bias_accel_y()  # There is no function where you can do anything with the accel y -> you need to invent them by yourself
         self.bias_accel_x = self.get_bias_accel_x()  # There is no function where you can do anything with the accel y -> you need to invent them by yourself
         self._set_threshold_strength()
+        self._set_adjuster()
         self._handle_standard_bias()
 
     def _handle_standard_bias(self):
@@ -209,6 +210,10 @@ class base_driver:
             self.standard_axis_function = None
 
 
+    def _set_adjuster(self):
+        self.adjuster = file_Manager.reader('adjuster_file.txt', 'int')
+
+
     def _set_threshold_strength(self):
         self._threshold_strength = file_Manager.reader('threshold_file.txt').strip()
 
@@ -219,7 +224,8 @@ class base_driver:
         self._set_threshold_strength()
 
 
-
+    def _save_adjuster(self):
+        file_Manager.writer('adjuster_file.txt', 'w', str(self.adjuster))
 
 
     # ======================= SAVE BIAS ========================
@@ -1140,47 +1146,131 @@ class base_driver:
 
 
     # ======================== PUBLIC METHODS =======================
-    def threshold_identification(self, millis: int = 2000) -> None:
-        global collected_gyro_value, currently_driving_for_threshold
+    def threshold_identification(self, millis: int = 2000, required_percent: float = 2) -> None:
         globals()['collected_gyro_value'], globals()['currently_driving_for_threshold'] = 0, True
-        first_gyro_value, second_gyro_value = 0, 0
+        first_gyro_percentage, second_gyro_percentage = 0, 0
+        def collect_gyro():
+            global collected_gyro_value, currently_driving_for_threshold
+            currently_driving_for_threshold = True
+            collected_gyro_value = 0
+            last_bias = 0
+            while currently_driving_for_threshold:
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    collected_gyro_value += this_bias - self.standard_bias_gyro
+
+        @ForceDriveableFunction
+        def create_test(speed):
+            global collected_gyro_value, currently_driving_for_threshold
+            t1 = KillableThread(target=collect_gyro)
+
+            t1.start()
+            self.drive_straight(millis=millis, speed=speed)
+            self.break_all_motors()
+            currently_driving_for_threshold = False
+            while t1.is_alive():
+                continue
+            first_gyro_value = abs(collected_gyro_value)
+            self._reverse_threshold_strength()
+
+            t1 = KillableThread(target=collect_gyro)
+
+            t1.start()
+            self.drive_straight(millis=millis, speed=-speed)
+            self.break_all_motors()
+            currently_driving_for_threshold = False
+            while t1.is_alive():
+                continue
+            second_gyro_value = abs(collected_gyro_value)
+            self._reverse_threshold_strength()
+
+            total = first_gyro_value + second_gyro_value
+            return first_gyro_value/total, second_gyro_value/total  # get the percentages
+
+        run = 1
+        speed = self.ds_speed
+        while True:
+            v1, v2 = create_test(-speed if run % 2 == 0 else speed)
+            run += 1
+            first_gyro_percentage += v1
+            second_gyro_percentage += v2
+            print(min(first_gyro_percentage, second_gyro_percentage) * required_percent, max(first_gyro_percentage, second_gyro_percentage), flush=True)
+            if min(first_gyro_percentage, second_gyro_percentage) * required_percent < max(first_gyro_percentage, second_gyro_percentage):
+                break
+
+
+        if first_gyro_percentage > second_gyro_percentage:
+            self._reverse_threshold_strength()
+        log('Threshold identified')
+
+
+    def adjuster_identification(self, millis: int = 2000):
+        globals()['collected_gyro_value'], globals()['currently_driving_for_threshold'] = 0, True
+        exclusive_adjustment_percentage, inclusive_adjustment_percentage = 0, 0
+
 
         def collect_gyro():
             global collected_gyro_value, currently_driving_for_threshold
+            collected_gyro_value = 0
+            currently_driving_for_threshold = True
             while currently_driving_for_threshold:
                 collected_gyro_value += self.get_current_standard_gyro()
-            log('end', important=True)
 
-        t1 = KillableThread(target=collect_gyro)
+        @ForceDriveableFunction
+        def create_test(speed):
+            global collected_gyro_value, currently_driving_for_threshold
 
-        t1.start()
-        self.drive_straight(millis=millis, speed=self.ds_speed)
-        self.break_all_motors()
-        currently_driving_for_threshold = False
-        t1.kill()
-        k.msleep(1000)
-        log(t1.is_alive())
-        first_gyro_value = abs(collected_gyro_value)
-        collected_gyro_value = 0
+            t1 = KillableThread(target=collect_gyro)
 
-        self._reverse_threshold_strength()
+            t1.start()
+            self.drive_straight(millis=millis, speed=speed)
+            self.break_all_motors()
+            currently_driving_for_threshold = False
+            while t1.is_alive():
+                continue
 
-        currently_driving_for_threshold = True
-        t1 = KillableThread(target=collect_gyro)
-        t1.start()
-        self.drive_straight(millis=millis, speed=-self.ds_speed)
-        self.break_all_motors()
-        currently_driving_for_threshold = False
-        t1.kill()
-        k.msleep(1000)
-        log(t1.is_alive())
-        second_gyro_value = abs(collected_gyro_value)
+            return abs(collected_gyro_value)
 
-        log(f'{first_gyro_value = }')
-        log(f'{second_gyro_value = }')
 
-        if first_gyro_value < second_gyro_value:
-            self._reverse_threshold_strength()
+        run = 1
+        speed = self.ds_speed
+        toggler = 'lower'
+        last_toggle_counter = 0
+        toggle_counter = 0
+        last_gyro_value = 0
+
+        while True:
+            gyro_value = create_test(-speed if run % 2 == 0 else speed)
+            log(f'{gyro_value = }')
+            run += 1
+
+            if run % 5 == 0:
+                self._save_adjuster()  # save in between, so if it takes too long to calibrate you do not loose all your progress
+
+            if last_gyro_value < gyro_value:  # lower was better
+                self.adjuster -= 1
+                toggle_counter += 1 if toggler == 'higher' else 0
+                toggler = 'lower'
+
+            else:  # higher is better
+                self.adjuster += 1
+                toggle_counter += 1 if toggler == 'lower' else 0
+                toggler = 'higher'
+
+            last_gyro_value = gyro_value
+
+            if last_toggle_counter != toggle_counter:
+                last_toggle_counter = toggle_counter
+                print('changed: ', toggle_counter, self.adjuster, flush=True)
+
+            if toggle_counter >= 5:
+                break
+            # print(min(exclusive_adjustment_percentage, inclusive_adjustment_percentage) * percentage_difference_allowed, max(exclusive_adjustment_percentage, inclusive_adjustment_percentage), flush=True)
+            # if min(exclusive_adjustment_percentage, inclusive_adjustment_percentage) * percentage_difference_allowed < max(exclusive_adjustment_percentage, inclusive_adjustment_percentage):
+            #     break
+        self._save_adjuster()
+        log('Adjuster identified')
 
 
 
@@ -1275,9 +1365,6 @@ class base_driver:
                     break
 
             #  add them together (the absolute value since you do not know how the controller is mounted and therefore you do not know the sign for the values
-            log(f'{gyro_x_value + x1 = }')
-            log(f'{gyro_y_value + y1 = }')
-            log(f'{gyro_z_value + z1 = }')
             total_x = abs(gyro_x_value) + abs(x1)
             total_y = abs(gyro_y_value) + abs(y1)
             total_z = abs(gyro_z_value) + abs(z1)
@@ -4027,11 +4114,11 @@ class Mecanum_Wheels_four(base_driver):
         threshold = 10
         last_bias = 0
         straight_speed = -speed
-        straight_speed_adjuster = straight_speed//2  # 2 is just a value that worked the best
-        higher_straight_speed = straight_speed - straight_speed_adjuster
-        lower_straight_speed = straight_speed + straight_speed_adjuster
+        straight_speed_adjuster = -(straight_speed// self.adjuster)
+        higher_straight_speed = -(straight_speed - straight_speed_adjuster)
+        lower_straight_speed = -(straight_speed + straight_speed_adjuster)
 
-        adjuster = speed//2  # 2 is just a value that worked the best
+        adjuster = speed // self.adjuster
         wheels = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
 
         if direction == 'left':
@@ -4043,7 +4130,7 @@ class Mecanum_Wheels_four(base_driver):
         side_timer.start_timer_millis()
         straight_timer.start_timer_millis()
         while side_timer.stop_timer(False) < millis:
-            if straight_timer.stop_timer(False) > 100:
+            if straight_timer.stop_timer(False) > 50:
                 if threshold > theta_side > -threshold:
                     wheels[0].drive(straight_speed)
                     wheels[1].drive(straight_speed)
@@ -4059,7 +4146,6 @@ class Mecanum_Wheels_four(base_driver):
                     wheels[1].drive(higher_straight_speed)
                     wheels[2].drive(lower_straight_speed)
                     wheels[3].drive(higher_straight_speed)
-                k.msleep(10)
                 straight_timer.start_timer_millis()
 
             this_bias = self.get_current_standard_gyro()
@@ -4074,14 +4160,14 @@ class Mecanum_Wheels_four(base_driver):
                 wheels[3].drive(speed)
             elif self.check_threshold_strength(theta_side, threshold):
                 wheels[0].drive(speed)
-                wheels[1].drive(-speed - adjuster)
-                wheels[2].drive(-speed)
-                wheels[3].drive(speed - adjuster)
-            else:
-                wheels[0].drive(speed)
                 wheels[1].drive(-speed + adjuster)
                 wheels[2].drive(-speed)
                 wheels[3].drive(speed + adjuster)
+            else:
+                wheels[0].drive(speed)
+                wheels[1].drive(-speed - adjuster)
+                wheels[2].drive(-speed)
+                wheels[3].drive(speed - adjuster)
 
             this_bias = self.get_current_standard_gyro()
             if last_bias != this_bias:
@@ -4113,14 +4199,12 @@ class Mecanum_Wheels_four(base_driver):
         theta = 0
         threshold = 10
         last_bias = 0
-
-        adjuster = abs(speed) // 15
-        lower_speed = abs(speed) - adjuster
-        higher_speed = abs(speed) + adjuster
-        wheels = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
+        counter_steer = speed//self.adjuster
+        lower_speed = abs(speed) - counter_steer
+        higher_speed = abs(speed) + counter_steer
+        wheels = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
 
         if speed < 0:
-            wheels = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
             lower_speed = -lower_speed
             higher_speed = -higher_speed
 
@@ -4184,26 +4268,23 @@ class Mecanum_Wheels_four(base_driver):
         last_bias = 0
         theta = 0
         diagonal_timer = TimeR()
-        adjuster = int(speed/15)  # 15 is just a value that worked the best
+        adjuster = -speed // self.adjuster  # 15 is just a value that worked the best
 
-        if side == 'left':
+        if side == 'right':
             adjuster = -adjuster
 
         instances_left = [self.fr_wheel, self.bl_wheel]
         instances_right = [self.fl_wheel, self.br_wheel]
-        wheels = instances_left
-
-        if side == 'right':
-            wheels = instances_right
-        if end == 'back':
-            speed = -speed
-            if self.fr_wheel in wheels:  # it's associated to the left
-                wheels = instances_right
-            else:
-                wheels = instances_left
+        wheels = instances_left if side == 'left' else instances_right
 
         if points != 2 or points != 0:
             wheels[0], wheels[1] = wheels[1], wheels[0]
+
+        if end == 'back':
+            speed = -speed
+            wheels = instances_right if self.fr_wheel in wheels else instances_left
+
+
 
         diagonal_timer.start_timer_millis()
         while diagonal_timer.stop_timer(False) < millis:
@@ -4211,11 +4292,11 @@ class Mecanum_Wheels_four(base_driver):
                 wheels[0].drive(speed)
                 wheels[1].drive(speed)
             elif self.check_threshold_strength(theta, threshold):
-                wheels[0].drive(speed)
-                wheels[1].drive(speed - adjuster)
+                wheels[1].drive(speed)
+                wheels[0].drive(speed - adjuster)
             else:
-                wheels[0].drive(speed)
-                wheels[1].drive(speed - adjuster)
+                wheels[1].drive(speed)
+                wheels[0].drive(speed - adjuster)
 
             this_bias = self.get_current_standard_gyro()
             if last_bias != this_bias:
@@ -4223,6 +4304,8 @@ class Mecanum_Wheels_four(base_driver):
                 theta += this_bias - self.standard_bias_gyro
 
         self.break_all_motors()
+
+
 
     def drift(self, front_drift: bool, drift_side: str, degree: int, speed: int = None):
         # @TODO try this function out
@@ -4646,7 +4729,7 @@ class Mecanum_Wheels_four(base_driver):
         return 181  # if it was not found in the right amount of time, it took the robot more than 180 degrees
 
     @DriveableFunction
-    def drive_side_til_mm_found(self, mm_to_object: int, direction: str, speed: int = None) -> None:
+    def drive_side_til_mm_found(self, mm_to_object: int, direction: str, speed: int = None, millis: int = 9999999) -> None:
         """
         turn the number of degrees given, to take a turn with basically only two, resulting in a turn not on the spot
         This function might be unreliable! keep track of the distances!
@@ -4670,21 +4753,34 @@ class Mecanum_Wheels_four(base_driver):
             raise ValueError('You need to calibrate the distance using the calibrate_distance function first!')
 
         self.isClose = False
-        theta = 0
-        t = 10
-        adjuster = int(speed/15)  # 15 is just a value that worked the best
-        lower_theta = 500
-        higher_theta = 3000
-        speed = abs(speed)
         combination = dict(zip(self.distance_far_mm, self.distance_far_values))
         next_step = min(combination, key=lambda x: abs(x - mm_to_object))
         next_value = combination[next_step]
 
+        speed = abs(speed)
+        side_timer = TimeR()
+        straight_timer = TimeR()
+        theta_side = 0
+        threshold = 10
+        last_bias = 0
+        straight_speed = -speed
+        straight_speed_adjuster = -(straight_speed // self.adjuster)
+        higher_straight_speed = -(straight_speed - straight_speed_adjuster)
+        lower_straight_speed = -(straight_speed + straight_speed_adjuster)
+
+        adjuster = speed // self.adjuster
+        wheels = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
+
+        if direction == 'left':
+            speed = -speed
+            straight_speed = -straight_speed
+            higher_straight_speed = -higher_straight_speed
+            lower_straight_speed = -lower_straight_speed
+
         def distance_stopper():
             tolerance = mm_to_object / 20  # /20 makes it that it is 90% accurate
             try:
-                lookup = interp1d(self.distance_far_values, self.distance_far_mm, kind='linear',
-                                  fill_value="extrapolate")
+                lookup = interp1d(self.distance_far_values, self.distance_far_mm, kind='linear', fill_value="extrapolate")
             except Exception as e:
                 log(str(e), important=True, in_exception=True)
 
@@ -4704,68 +4800,53 @@ class Mecanum_Wheels_four(base_driver):
                     sys.exit()
                     break
 
+        side_timer.start_timer_millis()
         threading.Thread(target=distance_stopper).start()
-        if direction == 'right':
-            while not self.isClose:
-                if lower_theta > theta > -lower_theta:
-                    self.fl_wheel.drive(speed)
-                    self.fr_wheel.drive(-speed)
-                    self.bl_wheel.drive(-speed)
-                    self.br_wheel.drive(speed)
-                elif -lower_theta > theta > -higher_theta:
-                    self.fl_wheel.drive(speed - adjuster)
-                    self.fr_wheel.drive(-speed - adjuster)
-                    self.bl_wheel.drive(-speed + adjuster)
-                    self.br_wheel.drive(speed - adjuster)
-                elif lower_theta < theta < higher_theta:
-                    self.fl_wheel.drive(speed + adjuster)
-                    self.fr_wheel.drive(-speed - adjuster)
-                    self.bl_wheel.drive(-speed + adjuster)
-                    self.br_wheel.drive(speed + adjuster)
-                elif theta < -higher_theta:
-                    k.ao()
-                    self.fr_wheel.drive_mfw()
-                    self.br_wheel.drive_mbw()
-                    theta = 0
-                elif theta > higher_theta:
-                    k.ao()
-                    self.fl_wheel.drive_mbw()
-                    self.bl_wheel.drive_mbw()
-                    theta = 0
+        while not self.isClose and side_timer.stop_timer(False) < millis:
+            if straight_timer.stop_timer(False) > 50:
+                if threshold > theta_side > -threshold:
+                    wheels[0].drive(straight_speed)
+                    wheels[1].drive(straight_speed)
+                    wheels[2].drive(straight_speed)
+                    wheels[3].drive(straight_speed)
+                elif self.check_threshold_strength(theta_side, threshold):
+                    wheels[0].drive(higher_straight_speed)
+                    wheels[1].drive(lower_straight_speed)
+                    wheels[2].drive(higher_straight_speed)
+                    wheels[3].drive(lower_straight_speed)
+                else:
+                    wheels[0].drive(lower_straight_speed)
+                    wheels[1].drive(higher_straight_speed)
+                    wheels[2].drive(lower_straight_speed)
+                    wheels[3].drive(higher_straight_speed)
+                straight_timer.start_timer_millis()
 
-                k.msleep(t)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+            this_bias = self.get_current_standard_gyro()
+            if last_bias != this_bias:
+                last_bias = this_bias
+            theta_side += this_bias - self.standard_bias_gyro
 
-        elif direction == 'left':
-            while not self.isClose:
-                if lower_theta > theta > -lower_theta:
-                    self.fl_wheel.drive(-speed)
-                    self.fr_wheel.drive(speed)
-                    self.bl_wheel.drive(speed)
-                    self.br_wheel.drive(-speed)
-                elif -lower_theta > theta > -higher_theta:
-                    self.fl_wheel.drive(-speed + adjuster)
-                    self.fr_wheel.drive(speed + adjuster)
-                    self.bl_wheel.drive(speed - adjuster)
-                    self.br_wheel.drive(-speed + adjuster)
-                elif lower_theta < theta < higher_theta:
-                    self.fl_wheel.drive(-speed - adjuster)
-                    self.fr_wheel.drive(speed + adjuster)
-                    self.bl_wheel.drive(speed - adjuster)
-                    self.br_wheel.drive(-speed - adjuster)
-                elif theta < -higher_theta:
-                    k.ao()
-                    self.fr_wheel.drive_mbw()
-                    self.br_wheel.drive_mfw()
-                    theta = 0
-                elif theta > higher_theta:
-                    k.ao()
-                    self.fl_wheel.drive_mfw()
-                    self.bl_wheel.drive_mfw()
-                    theta = 0
+            if threshold > theta_side > -threshold:
+                wheels[0].drive(speed)
+                wheels[1].drive(-speed)
+                wheels[2].drive(-speed)
+                wheels[3].drive(speed)
+            elif self.check_threshold_strength(theta_side, threshold):
+                wheels[0].drive(speed)
+                wheels[1].drive(-speed + adjuster)
+                wheels[2].drive(-speed)
+                wheels[3].drive(speed + adjuster)
+            else:
+                wheels[0].drive(speed)
+                wheels[1].drive(-speed - adjuster)
+                wheels[2].drive(-speed)
+                wheels[3].drive(speed - adjuster)
 
-                k.msleep(t)
-                theta += (self.get_current_standard_gyro() - self.standard_bias_gyro) * 3
+            this_bias = self.get_current_standard_gyro()
+            if last_bias != this_bias:
+                last_bias = this_bias
+            theta_side += this_bias - self.standard_bias_gyro
+
         self.break_all_motors()
 
 
@@ -5101,11 +5182,11 @@ class Mecanum_Wheels_four(base_driver):
         threshold = 10
         last_bias = 0
         straight_speed = -speed
-        straight_speed_adjuster = straight_speed // 2  # 2 is just a value that worked the best
-        higher_straight_speed = straight_speed - straight_speed_adjuster
-        lower_straight_speed = straight_speed + straight_speed_adjuster
+        straight_speed_adjuster = -(straight_speed // self.adjuster)
+        higher_straight_speed = -(straight_speed - straight_speed_adjuster)
+        lower_straight_speed = -(straight_speed + straight_speed_adjuster)
 
-        adjuster = speed // 2  # 2 is just a value that worked the best
+        adjuster = speed // self.adjuster
         wheels = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
 
         if direction == 'left':
@@ -5118,7 +5199,7 @@ class Mecanum_Wheels_four(base_driver):
         straight_timer.start_timer_millis()
         if condition == 'let' or condition == '<=':  # let -> less or equal than
             while (instance.current_value() <= value) and (side_timer.stop_timer(False) < millis):
-                if straight_timer.stop_timer(False) > 100:
+                if straight_timer.stop_timer(False) > 50:
                     if threshold > theta_side > -threshold:
                         wheels[0].drive(straight_speed)
                         wheels[1].drive(straight_speed)
@@ -5134,7 +5215,6 @@ class Mecanum_Wheels_four(base_driver):
                         wheels[1].drive(higher_straight_speed)
                         wheels[2].drive(lower_straight_speed)
                         wheels[3].drive(higher_straight_speed)
-                    k.msleep(10)
                     straight_timer.start_timer_millis()
 
                 this_bias = self.get_current_standard_gyro()
@@ -5149,14 +5229,14 @@ class Mecanum_Wheels_four(base_driver):
                     wheels[3].drive(speed)
                 elif self.check_threshold_strength(theta_side, threshold):
                     wheels[0].drive(speed)
-                    wheels[1].drive(-speed - adjuster)
-                    wheels[2].drive(-speed)
-                    wheels[3].drive(speed - adjuster)
-                else:
-                    wheels[0].drive(speed)
                     wheels[1].drive(-speed + adjuster)
                     wheels[2].drive(-speed)
                     wheels[3].drive(speed + adjuster)
+                else:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed - adjuster)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed - adjuster)
 
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
@@ -5166,7 +5246,7 @@ class Mecanum_Wheels_four(base_driver):
 
         elif condition == 'het' or condition == '>=':  # het -> higher or equal than
             while (instance.current_value() >= value) and (side_timer.stop_timer(False) < millis):
-                if straight_timer.stop_timer(False) > 100:
+                if straight_timer.stop_timer(False) > 50:
                     if threshold > theta_side > -threshold:
                         wheels[0].drive(straight_speed)
                         wheels[1].drive(straight_speed)
@@ -5182,7 +5262,6 @@ class Mecanum_Wheels_four(base_driver):
                         wheels[1].drive(higher_straight_speed)
                         wheels[2].drive(lower_straight_speed)
                         wheels[3].drive(higher_straight_speed)
-                    k.msleep(10)
                     straight_timer.start_timer_millis()
 
                 this_bias = self.get_current_standard_gyro()
@@ -5197,14 +5276,14 @@ class Mecanum_Wheels_four(base_driver):
                     wheels[3].drive(speed)
                 elif self.check_threshold_strength(theta_side, threshold):
                     wheels[0].drive(speed)
-                    wheels[1].drive(-speed - adjuster)
-                    wheels[2].drive(-speed)
-                    wheels[3].drive(speed - adjuster)
-                else:  # right
-                    wheels[0].drive(speed)
                     wheels[1].drive(-speed + adjuster)
                     wheels[2].drive(-speed)
                     wheels[3].drive(speed + adjuster)
+                else:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed - adjuster)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed - adjuster)
 
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
@@ -5214,7 +5293,7 @@ class Mecanum_Wheels_four(base_driver):
 
         elif condition == 'ht' or condition == '>':  # ht -> higher than
             while (instance.current_value() > value) and (side_timer.stop_timer(False) < millis):
-                if straight_timer.stop_timer(False) > 100:
+                if straight_timer.stop_timer(False) > 50:
                     if threshold > theta_side > -threshold:
                         wheels[0].drive(straight_speed)
                         wheels[1].drive(straight_speed)
@@ -5230,7 +5309,6 @@ class Mecanum_Wheels_four(base_driver):
                         wheels[1].drive(higher_straight_speed)
                         wheels[2].drive(lower_straight_speed)
                         wheels[3].drive(higher_straight_speed)
-                    k.msleep(10)
                     straight_timer.start_timer_millis()
 
                 this_bias = self.get_current_standard_gyro()
@@ -5245,14 +5323,14 @@ class Mecanum_Wheels_four(base_driver):
                     wheels[3].drive(speed)
                 elif self.check_threshold_strength(theta_side, threshold):
                     wheels[0].drive(speed)
-                    wheels[1].drive(-speed - adjuster)
-                    wheels[2].drive(-speed)
-                    wheels[3].drive(speed - adjuster)
-                else:
-                    wheels[0].drive(speed)
                     wheels[1].drive(-speed + adjuster)
                     wheels[2].drive(-speed)
                     wheels[3].drive(speed + adjuster)
+                else:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed - adjuster)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed - adjuster)
 
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
@@ -5262,7 +5340,7 @@ class Mecanum_Wheels_four(base_driver):
 
         elif condition == 'lt' or condition == '<':  # lt -> less than
             while (instance.current_value() < value) and (side_timer.stop_timer(False) < millis):
-                if straight_timer.stop_timer(False) > 100:
+                if straight_timer.stop_timer(False) > 50:
                     if threshold > theta_side > -threshold:
                         wheels[0].drive(straight_speed)
                         wheels[1].drive(straight_speed)
@@ -5278,7 +5356,6 @@ class Mecanum_Wheels_four(base_driver):
                         wheels[1].drive(higher_straight_speed)
                         wheels[2].drive(lower_straight_speed)
                         wheels[3].drive(higher_straight_speed)
-                    k.msleep(10)
                     straight_timer.start_timer_millis()
 
                 this_bias = self.get_current_standard_gyro()
@@ -5293,14 +5370,14 @@ class Mecanum_Wheels_four(base_driver):
                     wheels[3].drive(speed)
                 elif self.check_threshold_strength(theta_side, threshold):
                     wheels[0].drive(speed)
-                    wheels[1].drive(-speed - adjuster)
-                    wheels[2].drive(-speed)
-                    wheels[3].drive(speed - adjuster)
-                else:
-                    wheels[0].drive(speed)
                     wheels[1].drive(-speed + adjuster)
                     wheels[2].drive(-speed)
                     wheels[3].drive(speed + adjuster)
+                else:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed - adjuster)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed - adjuster)
 
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
@@ -5345,11 +5422,11 @@ class Mecanum_Wheels_four(base_driver):
         threshold = 10
         last_bias = 0
         straight_speed = -speed
-        straight_speed_adjuster = straight_speed // 2  # 2 is just a value that worked the best
-        higher_straight_speed = straight_speed - straight_speed_adjuster
-        lower_straight_speed = straight_speed + straight_speed_adjuster
+        straight_speed_adjuster = -(straight_speed // self.adjuster)
+        higher_straight_speed = -(straight_speed - straight_speed_adjuster)
+        lower_straight_speed = -(straight_speed + straight_speed_adjuster)
 
-        adjuster = speed // 2  # 2 is just a value that worked the best
+        adjuster = speed // self.adjuster
         wheels = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
 
         if direction == 'left':
@@ -5363,7 +5440,7 @@ class Mecanum_Wheels_four(base_driver):
 
         if condition == '==':
             while (instance.current_value() == value) and (side_timer.stop_timer(False) < millis):
-                if straight_timer.stop_timer(False) > 100:
+                if straight_timer.stop_timer(False) > 50:
                     if threshold > theta_side > -threshold:
                         wheels[0].drive(straight_speed)
                         wheels[1].drive(straight_speed)
@@ -5379,7 +5456,6 @@ class Mecanum_Wheels_four(base_driver):
                         wheels[1].drive(higher_straight_speed)
                         wheels[2].drive(lower_straight_speed)
                         wheels[3].drive(higher_straight_speed)
-                    k.msleep(10)
                     straight_timer.start_timer_millis()
 
                 this_bias = self.get_current_standard_gyro()
@@ -5394,14 +5470,14 @@ class Mecanum_Wheels_four(base_driver):
                     wheels[3].drive(speed)
                 elif self.check_threshold_strength(theta_side, threshold):
                     wheels[0].drive(speed)
-                    wheels[1].drive(-speed - adjuster)
-                    wheels[2].drive(-speed)
-                    wheels[3].drive(speed - adjuster)
-                else:
-                    wheels[0].drive(speed)
                     wheels[1].drive(-speed + adjuster)
                     wheels[2].drive(-speed)
                     wheels[3].drive(speed + adjuster)
+                else:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed - adjuster)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed - adjuster)
 
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
@@ -5411,7 +5487,7 @@ class Mecanum_Wheels_four(base_driver):
 
         elif condition == '!=':
             while (instance.current_value() != value) and (side_timer.stop_timer(False) < millis):
-                if straight_timer.stop_timer(False) > 100:
+                if straight_timer.stop_timer(False) > 50:
                     if threshold > theta_side > -threshold:
                         wheels[0].drive(straight_speed)
                         wheels[1].drive(straight_speed)
@@ -5427,7 +5503,6 @@ class Mecanum_Wheels_four(base_driver):
                         wheels[1].drive(higher_straight_speed)
                         wheels[2].drive(lower_straight_speed)
                         wheels[3].drive(higher_straight_speed)
-                    k.msleep(10)
                     straight_timer.start_timer_millis()
 
                 this_bias = self.get_current_standard_gyro()
@@ -5442,14 +5517,14 @@ class Mecanum_Wheels_four(base_driver):
                     wheels[3].drive(speed)
                 elif self.check_threshold_strength(theta_side, threshold):
                     wheels[0].drive(speed)
-                    wheels[1].drive(-speed - adjuster)
-                    wheels[2].drive(-speed)
-                    wheels[3].drive(speed - adjuster)
-                else:
-                    wheels[0].drive(speed)
                     wheels[1].drive(-speed + adjuster)
                     wheels[2].drive(-speed)
                     wheels[3].drive(speed + adjuster)
+                else:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(-speed - adjuster)
+                    wheels[2].drive(-speed)
+                    wheels[3].drive(speed - adjuster)
 
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
@@ -5482,16 +5557,15 @@ class Mecanum_Wheels_four(base_driver):
         self.check_instances_buttons()
         theta = 0.0
         straight_timer = TimeR()
-        wheels = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
         threshold = 10
         last_bias = 0
 
-        adjuster = abs(speed) // 15
-        lower_speed = abs(speed) - adjuster
-        higher_speed = abs(speed) + adjuster
+        counter_steer = speed // self.adjuster
+        lower_speed = abs(speed) - counter_steer
+        higher_speed = abs(speed) + counter_steer
+        wheels = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
 
         if speed < 0:
-            wheels = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
             lower_speed = -lower_speed
             higher_speed = -higher_speed
 
@@ -5597,7 +5671,7 @@ class Mecanum_Wheels_four(base_driver):
     def drive_straight_condition_digital(self, instance: Digital, condition: str, value: int, millis: int = 9999999,
                                          speed: int = None):
         """
-        drive straight until an digital value gets reached for the desired instance
+        drive straight until a digital value gets reached for the desired instance
 
         Args:
             instance (Digital): just has to be from something digital (buttons)
@@ -5611,19 +5685,18 @@ class Mecanum_Wheels_four(base_driver):
         """
         if speed is None:
             speed = self.ds_speed
+
         theta = 0
         threshold = 10
         last_bias = 0
-
-        adjuster = abs(speed) // 15
-        lower_speed = abs(speed) - adjuster
-        higher_speed = abs(speed) + adjuster
         straight_timer = TimeR()
 
-        wheels = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
+        counter_steer = speed // self.adjuster
+        lower_speed = abs(speed) - counter_steer
+        higher_speed = abs(speed) + counter_steer
+        wheels = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
 
         if speed < 0:
-            wheels = self.fr_wheel, self.fl_wheel, self.br_wheel, self.bl_wheel
             lower_speed = -lower_speed
             higher_speed = -higher_speed
 

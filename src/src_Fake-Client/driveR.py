@@ -148,7 +148,6 @@ class base_driver:
         self._motor_stoppers = {}
         self._next_motor_id = 0
         self.max_speed = 1500
-        file_Manager.writer('adjuster_file.txt', 'w', '10')
         self.mm_per_sec_file = 'mm_per_sec.txt'
         self.axis_importance_file = 'axis_importance_level.txt'
         self.pseudo_distanceR = DistanceSensor(99999999999)  # just an imaginary port, which will never exist
@@ -2103,7 +2102,7 @@ class Solarbotic_Wheels_two(base_driver):
         self.check_instances_buttons()
 
         theta = 0
-        adjuster = speed//15  # 15 is just a value that worked the best
+        adjuster = speed//self.adjuster
         hit = False
         threshold = 10
         last_bias = 0
@@ -2132,9 +2131,9 @@ class Solarbotic_Wheels_two(base_driver):
                     instances[0].drive(speed)
                 elif self.check_threshold_strength(theta, threshold):
                     instances[1].drive(speed + adjuster)
-                    instances[0].drive(speed - adjuster * 3)
+                    instances[0].drive(speed - adjuster)
                 else:
-                    instances[1].drive(speed - adjuster * 3)
+                    instances[1].drive(speed - adjuster)
                     instances[0].drive(speed + adjuster)
 
                 this_bias = self.get_current_standard_gyro()
@@ -2168,7 +2167,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         speed = abs(speed)
         theta = 0
-        adjuster = speed//15  # 15 is just a value that worked the best
+        adjuster = speed//self.adjuster
         hit = False
         threshold = 10
         last_bias = 0
@@ -2193,10 +2192,10 @@ class Solarbotic_Wheels_two(base_driver):
                     self.right_wheel.drive(speed)
                     self.left_wheel.drive(speed)
                 elif self.check_threshold_strength(theta, threshold):
-                    self.right_wheel.drive(speed - adjuster*3)
+                    self.right_wheel.drive(speed - adjuster)
                     self.left_wheel.drive(speed + adjuster)
                 else:
-                    self.left_wheel.drive(speed - adjuster*3)
+                    self.left_wheel.drive(speed - adjuster)
                     self.right_wheel.drive(speed + adjuster)
 
                 this_bias = self.get_current_standard_gyro()
@@ -2270,7 +2269,7 @@ class Solarbotic_Wheels_two(base_driver):
         theta = 0
         last_bias = 0
         threshold = 10
-        adjuster = speed//15  # 15 is just a value that worked the best
+        adjuster = speed//self.adjuster
         straight_timer = TimeR()
 
         instances = self.left_wheel, self.right_wheel
@@ -2285,10 +2284,10 @@ class Solarbotic_Wheels_two(base_driver):
                     instances[1].drive(speed)
                 elif self.check_threshold_strength(theta, threshold):
                     instances[0].drive(speed + adjuster)
-                    instances[1].drive(speed - adjuster * 3)
+                    instances[1].drive(speed - adjuster)
                 else:
                     instances[1].drive(speed + adjuster)
-                    instances[0].drive(speed - adjuster * 3)
+                    instances[0].drive(speed - adjuster)
 
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
@@ -2301,10 +2300,10 @@ class Solarbotic_Wheels_two(base_driver):
                     instances[1].drive(speed)
                 elif self.check_threshold_strength(theta, threshold):
                     instances[0].drive(speed + adjuster)
-                    instances[1].drive(speed - adjuster * 3)
+                    instances[1].drive(speed - adjuster)
                 else:
                     instances[1].drive(speed + adjuster)
-                    instances[0].drive(speed - adjuster * 3)
+                    instances[0].drive(speed - adjuster)
 
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
@@ -2336,7 +2335,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         theta = 0.0
         straight_timer = TimeR()
-        adjuster = speed//15  # 15 is just a value that worked the best
+        adjuster = speed//self.adjuster
         last_bias = 0
         threshold = 10
 
@@ -2352,10 +2351,10 @@ class Solarbotic_Wheels_two(base_driver):
                     instances[1].drive(speed)
                 elif self.check_threshold_strength(theta, threshold):
                     instances[0].drive(speed + adjuster)
-                    instances[1].drive(speed - adjuster * 3)
+                    instances[1].drive(speed - adjuster)
                 else:
                     instances[1].drive(speed + adjuster)
-                    instances[0].drive(speed - adjuster * 3)
+                    instances[0].drive(speed - adjuster)
 
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
@@ -2369,10 +2368,10 @@ class Solarbotic_Wheels_two(base_driver):
                     instances[1].drive(speed)
                 elif self.check_threshold_strength(theta, threshold):
                     instances[0].drive(speed + adjuster)
-                    instances[1].drive(speed - adjuster * 3)
+                    instances[1].drive(speed - adjuster)
                 else:
                     instances[1].drive(speed + adjuster)
-                    instances[0].drive(speed - adjuster * 3)
+                    instances[0].drive(speed - adjuster)
 
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
@@ -2386,10 +2385,10 @@ class Solarbotic_Wheels_two(base_driver):
                     instances[1].drive(speed)
                 elif self.check_threshold_strength(theta, threshold):
                     instances[0].drive(speed + adjuster)
-                    instances[1].drive(speed - adjuster * 3)
+                    instances[1].drive(speed - adjuster)
                 else:
                     instances[1].drive(speed + adjuster)
-                    instances[0].drive(speed - adjuster * 3)
+                    instances[0].drive(speed - adjuster)
 
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
@@ -2403,10 +2402,10 @@ class Solarbotic_Wheels_two(base_driver):
                     instances[1].drive(speed)
                 elif self.check_threshold_strength(theta, threshold):
                     instances[0].drive(speed + adjuster)
-                    instances[1].drive(speed - adjuster * 3)
+                    instances[1].drive(speed - adjuster)
                 else:
                     instances[1].drive(speed + adjuster)
-                    instances[0].drive(speed - adjuster * 3)
+                    instances[0].drive(speed - adjuster)
 
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
@@ -2796,7 +2795,7 @@ class Solarbotic_Wheels_two(base_driver):
         theta = 0.0
         threshold = 10
         last_bias = 0
-        adjuster = speed//15  # 15 is just a value that worked the best
+        adjuster = speed//self.adjuster
         instances = self.left_wheel, self.right_wheel
 
         if speed < 0:
@@ -2809,9 +2808,9 @@ class Solarbotic_Wheels_two(base_driver):
                 instances[1].drive(speed)
             elif self.check_threshold_strength(theta, threshold):
                 instances[0].drive(speed + adjuster)
-                instances[1].drive(speed - adjuster * 3)
+                instances[1].drive(speed - adjuster)
             else:
-                instances[0].drive(speed - adjuster * 3)
+                instances[0].drive(speed - adjuster)
                 instances[1].drive(speed + adjuster)
 
             this_bias = self.get_current_standard_gyro()
@@ -2980,7 +2979,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         self.isClose = False
         theta = 0.0
-        adjuster = speed//15  # 15 is just a value that worked the best
+        adjuster = speed//self.adjuster
         last_bias = 0
         threshold = 10
         instances = self.left_wheel, self.right_wheel
@@ -2995,10 +2994,10 @@ class Solarbotic_Wheels_two(base_driver):
                     instances[0].drive(-speed)
                     instances[1].drive(-speed)
                 elif self.check_threshold_strength(theta, threshold):
-                    instances[0].drive(-speed + adjuster * 3)
+                    instances[0].drive(-speed + adjuster)
                     instances[1].drive(-speed - adjuster)
                 else:
-                    instances[1].drive(-speed + adjuster * 3)
+                    instances[1].drive(-speed + adjuster)
                     instances[0].drive(-speed - adjuster)
 
                 this_bias = self.get_current_standard_gyro()
@@ -3047,10 +3046,10 @@ class Solarbotic_Wheels_two(base_driver):
                         instances[1].drive(speed)
                     elif self.check_threshold_strength(theta, threshold):
                         instances[0].drive(speed + adjuster)
-                        instances[1].drive(speed - adjuster * 3)
+                        instances[1].drive(speed - adjuster)
                     else:
                         instances[1].drive(speed + adjuster)
-                        instances[0].drive(speed - adjuster * 3)
+                        instances[0].drive(speed - adjuster)
 
                     this_bias = self.get_current_standard_gyro()
                     if last_bias != this_bias:
@@ -3070,10 +3069,10 @@ class Solarbotic_Wheels_two(base_driver):
                         instances[1].drive(speed)
                     elif self.check_threshold_strength(theta, threshold):
                         instances[0].drive(speed + adjuster)
-                        instances[1].drive(speed - adjuster * 3)
+                        instances[1].drive(speed - adjuster)
                     else:
                         instances[1].drive(speed + adjuster)
-                        instances[0].drive(speed - adjuster * 3)
+                        instances[0].drive(speed - adjuster)
 
                     this_bias = self.get_current_standard_gyro()
                     if last_bias != this_bias:
@@ -3089,10 +3088,10 @@ class Solarbotic_Wheels_two(base_driver):
                         instances[1].drive(speed)
                     elif self.check_threshold_strength(theta, threshold):
                         instances[0].drive(speed + adjuster)
-                        instances[1].drive(speed - adjuster * 3)
+                        instances[1].drive(speed - adjuster)
                     else:
                         instances[1].drive(speed + adjuster)
-                        instances[0].drive(speed - adjuster * 3)
+                        instances[0].drive(speed - adjuster)
 
                     this_bias = self.get_current_standard_gyro()
                     if last_bias != this_bias:
@@ -4899,7 +4898,7 @@ class Mecanum_Wheels_four(base_driver):
 
         self.isClose = False
         theta = 0.0
-        adjuster = -(abs(speed) // 15)
+        adjuster = -(abs(speed) // self.adjuster)
         lower_speed = -(abs(speed) - adjuster)
         higher_speed = -(abs(speed) + adjuster)
         last_bias = 0

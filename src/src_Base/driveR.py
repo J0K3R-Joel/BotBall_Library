@@ -148,6 +148,7 @@ class base_driver:
         self._motor_stoppers = {}
         self._next_motor_id = 0
         self.max_speed = 1500
+        file_Manager.writer('adjuster_file.txt', 'w', '10')
         self.mm_per_sec_file = 'mm_per_sec.txt'
         self.axis_importance_file = 'axis_importance_level.txt'
         self.pseudo_distanceR = DistanceSensor(99999999999)  # just an imaginary port, which will never exist
@@ -1149,11 +1150,13 @@ class base_driver:
     def threshold_identification(self, millis: int = 2000, required_percent: float = 2) -> None:
         globals()['collected_gyro_value'], globals()['currently_driving_for_threshold'] = 0, True
         first_gyro_percentage, second_gyro_percentage = 0, 0
+
         def collect_gyro():
             global collected_gyro_value, currently_driving_for_threshold
             currently_driving_for_threshold = True
             collected_gyro_value = 0
             last_bias = 0
+
             while currently_driving_for_threshold:
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
@@ -1195,82 +1198,104 @@ class base_driver:
             run += 1
             first_gyro_percentage += v1
             second_gyro_percentage += v2
-            print(min(first_gyro_percentage, second_gyro_percentage) * required_percent, max(first_gyro_percentage, second_gyro_percentage), flush=True)
             if min(first_gyro_percentage, second_gyro_percentage) * required_percent < max(first_gyro_percentage, second_gyro_percentage):
                 break
-
 
         if first_gyro_percentage > second_gyro_percentage:
             self._reverse_threshold_strength()
         log('Threshold identified')
 
 
-    def adjuster_identification(self, millis: int = 2000):
+    def adjuster_identification(self, millis: int = 2000, times: int = 5):
         globals()['collected_gyro_value'], globals()['currently_driving_for_threshold'] = 0, True
         exclusive_adjustment_percentage, inclusive_adjustment_percentage = 0, 0
-
 
         def collect_gyro():
             global collected_gyro_value, currently_driving_for_threshold
             collected_gyro_value = 0
             currently_driving_for_threshold = True
+            last_bias = 0
+
             while currently_driving_for_threshold:
-                collected_gyro_value += self.get_current_standard_gyro()
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    collected_gyro_value += this_bias - self.standard_bias_gyro
 
         @ForceDriveableFunction
-        def create_test(speed):
+        def create_test(increaser):
             global collected_gyro_value, currently_driving_for_threshold
 
             t1 = KillableThread(target=collect_gyro)
 
             t1.start()
-            self.drive_straight(millis=millis, speed=speed)
+            self.drive_straight(millis=millis, speed=self.ds_speed)
+            t1.kill()
             self.break_all_motors()
             currently_driving_for_threshold = False
             while t1.is_alive():
                 continue
 
-            return abs(collected_gyro_value)
+            first_gyro_value = abs(collected_gyro_value)
+            self.drive_straight(millis=millis, speed=-self.ds_speed)
+            self.break_all_motors()
 
+            self.adjuster += increaser
+            t1 = KillableThread(target=collect_gyro)
+
+            t1.start()
+            self.drive_straight(millis=millis, speed=self.ds_speed)
+            t1.kill()
+            self.break_all_motors()
+            currently_driving_for_threshold = False
+            while t1.is_alive():
+                continue
+
+            second_gyro_value = abs(collected_gyro_value)
+            self.drive_straight(millis=millis, speed=-self.ds_speed)
+            self.break_all_motors()
+
+            log(f'{first_gyro_value = }')
+            log(f'{second_gyro_value = }')
+
+            self.adjuster += -increaser*2 if first_gyro_value < second_gyro_value else 0
+            return 'first' if first_gyro_value < second_gyro_value else 'second'
 
         run = 1
-        speed = self.ds_speed
-        toggler = 'lower'
+        toggler = 'first'
         last_toggle_counter = 0
         toggle_counter = 0
-        last_gyro_value = 0
+        adjuster_list = list()
 
         while True:
-            gyro_value = create_test(-speed if run % 2 == 0 else speed)
-            log(f'{gyro_value = }')
-            run += 1
+            prefered_gyro_value = create_test(2)
 
-            if run % 5 == 0:
-                self._save_adjuster()  # save in between, so if it takes too long to calibrate you do not loose all your progress
+            if run % 2 == 0:
+                self._save_adjuster()  # save in between, so you won't lose all your progress if it takes too long to calibrate
 
-            if last_gyro_value < gyro_value:  # lower was better
-                self.adjuster -= 1
-                toggle_counter += 1 if toggler == 'higher' else 0
-                toggler = 'lower'
-
-            else:  # higher is better
-                self.adjuster += 1
-                toggle_counter += 1 if toggler == 'lower' else 0
-                toggler = 'higher'
-
-            last_gyro_value = gyro_value
+            if prefered_gyro_value == 'first':
+                toggle_counter += 1 if toggler == 'second' else 0
+                toggler = 'first'
+            else:
+                toggle_counter += 1 if toggler == 'first' else 0
+                toggler = 'second'
 
             if last_toggle_counter != toggle_counter:
                 last_toggle_counter = toggle_counter
-                print('changed: ', toggle_counter, self.adjuster, flush=True)
+                adjuster_list.append(self.adjuster)
 
-            if toggle_counter >= 5:
+            if toggle_counter >= times or self.adjuster <= 2:
                 break
-            # print(min(exclusive_adjustment_percentage, inclusive_adjustment_percentage) * percentage_difference_allowed, max(exclusive_adjustment_percentage, inclusive_adjustment_percentage), flush=True)
-            # if min(exclusive_adjustment_percentage, inclusive_adjustment_percentage) * percentage_difference_allowed < max(exclusive_adjustment_percentage, inclusive_adjustment_percentage):
-            #     break
-        self._save_adjuster()
-        log('Adjuster identified')
+
+            run += 1
+
+        if self.adjuster <= 2:
+            log('Something went wrong, retrying...', important=True)
+            self.adjuster_identification(millis, times)
+        else:
+            print(self.adjuster, flush=True)
+            self._save_adjuster()
+            log('Adjuster identified')
 
 
 
@@ -4117,7 +4142,6 @@ class Mecanum_Wheels_four(base_driver):
         straight_speed_adjuster = -(straight_speed// self.adjuster)
         higher_straight_speed = -(straight_speed - straight_speed_adjuster)
         lower_straight_speed = -(straight_speed + straight_speed_adjuster)
-
         adjuster = speed // self.adjuster
         wheels = self.fl_wheel, self.fr_wheel, self.bl_wheel, self.br_wheel
 
@@ -4225,7 +4249,6 @@ class Mecanum_Wheels_four(base_driver):
                 wheels[1].drive(higher_speed)
                 wheels[2].drive(lower_speed)
                 wheels[3].drive(higher_speed)
-
             this_bias = self.get_current_standard_gyro()
             if last_bias != this_bias:
                 last_bias = this_bias
@@ -4268,23 +4291,20 @@ class Mecanum_Wheels_four(base_driver):
         last_bias = 0
         theta = 0
         diagonal_timer = TimeR()
-        adjuster = -speed // self.adjuster  # 15 is just a value that worked the best
-
-        if side == 'right':
-            adjuster = -adjuster
-
+        adjuster = -speed // self.adjuster
         instances_left = [self.fr_wheel, self.bl_wheel]
         instances_right = [self.fl_wheel, self.br_wheel]
         wheels = instances_left if side == 'left' else instances_right
 
-        if points != 2 or points != 0:
-            wheels[0], wheels[1] = wheels[1], wheels[0]
+        if side == 'right':
+            adjuster = -adjuster
 
         if end == 'back':
             speed = -speed
             wheels = instances_right if self.fr_wheel in wheels else instances_left
 
-
+        if points == 2 or points == 0:
+            adjuster = -adjuster
 
         diagonal_timer.start_timer_millis()
         while diagonal_timer.stop_timer(False) < millis:

@@ -135,15 +135,16 @@ def main():
         print('uncomment to start. Do not forget to change the invalid params (like XX)', flush=True)
 
         # Step 0: Create the global instances
-        # HINT: you will need this all the time, so do not comment the next line out!
+        # HINT: You will need this all the time, so do not comment the next line out!
+        # HINT: After execution of a function - except the next one ("Instancer_Setup") - you can comment it out so you do not get distracted
         #Instancer_Setup()
 
         # Step 1: Register the light values for the front, back and side brightness sensor to know when it should see black / white
-        # HINT: if you mess up once, you should rather execute the next function 5 times
+        # HINT: If you mess up once, you should rather execute the next function ("register_light_values") 5 times
         #register_light_values()
 
         # Step 2: Look at how off the IMU is, so that you are able to turn and drive in a line
-        # HINT: place the robot on top of a black line (brightness sensor front and brightness sensor back need to see black!)
+        # HINT: Place the robot on top of a black line (brightness sensor front and brightness sensor back need to see black!)
         # HINT: DO NOT TOUCH THE ROBOT WHILE THE PROGRAM EXECUTES
         #RubberWheeler.auto_calibration(times=5)
 
@@ -152,31 +153,28 @@ def main():
         # HINT: If the robot does not turn well, there is no need to execute any other function, except the said ones
         #RubberWheeler.turn_degrees('left', 180)
 
-        # Step 4: Identify the orientation of the controller
-        # HINT: you can place the robot on the floor to get more space
-        # HINT: make sure that the robot will NOT bump into / interfere with anything -> DO NOT TOUCH IT
-        #RubberWheeler.hardware_orientation_identification()
-
-        # Step 5: Identify how you need to adjust based on the controller position (e.g.: driving forward)
-        # HINT: you can place the robot on the floor to get more space
-        # HINT: make sure that the robot will NOT bump into / interfere with anything -> DO NOT TOUCH IT
+        # Step 4: Identify how you need to adjust based on the controller position (e.g.: driving forward)
+        # HINT: You can place the robot on the floor to have more space
+        # HINT: Make sure that the robot will NOT bump into / interfere with anything -> DO NOT TOUCH IT
         #RubberWheeler.threshold_identification()
 
-        # Step 6: Identify how much you need to adjust / counter-steer to drive in a line
-        # HINT: you can place the robot on the floor
-        # HINT: make sure that the robot will NOT bump into / interfere with anything -> DO NOT TOUCH IT
+        # Step 5: Identify how much you need to adjust / counter-steer to drive in a line
+        # HINT: You can place the robot on the floor
+        # HINT: Make sure that the robot will NOT bump into / interfere with anything -> DO NOT TOUCH IT
         #RubberWheeler.adjuster_identification()
 
-        # Step 7: Calibrate the distance between front and back brightness sensor
+        # Step 6: Calibrate the distance between front and back brightness sensor
+        # HINT: The robot needs to face a black line, it will drive forward until the front (and back) brightness sensor(s) detect a black line
+        # HINT: Align the robot as good as possible parallel a black line, facing the black line
         #RubberWheeler.calibrate_light_sensor_distance_sec()
 
-        # Step 8: Calibrate the time it takes the robot to drive for some time (default: 5000 milliseconds)
+        # Step 7: Calibrate the time it takes the robot to drive for some time (default: 5000 milliseconds)
         #RubberWheeler.calibrate_mm_per_sec()
 
-        # Step 9: Calibrate the ET distance sensor corresponding to the wheels
+        # Step 8: Calibrate the ET distance sensor corresponding to the wheels
         #RubberWheeler.calibrate_distance(XX)
 
-        # Step 10: Try the distance calibration out
+        # Step 9: Try the distance calibration out
         #RubberWheeler.drive_til_distance(XXX)
 
     except Exception as e:

@@ -28,7 +28,7 @@ class WheelR:
 
         Args:
             port (int): The integer value from where it is plugged in (the hardware) e.g.: 1; 3; 4; 2.
-            default_speed (int, optional): how fast the wheel should turn if no speed is specified (default: 1400)
+            default_speed (int, optional): How fast the wheel should turn if no speed is specified (default: 1400)
             max_speed (int, optional): The maximum speed which the robot can drive (since this robot uses move_at_velocity, the max_speed is capped at 1500 and can not exceed this speed whatsoever) (default:1500)
             servo_like (bool, optional): == NO LOGIC YET == Changes the motor functionality completely to a servo. (default: False)
         """
@@ -176,7 +176,7 @@ class WheelR:
         begin_counter = k.gmpc(self.port)
         self.drive_time(100, 100)
 
-        if k.gpmc(self.port) - begin_counter == 0:
+        if k.gmpc(self.port) - begin_counter == 0:
             log(f'Motor on port {self.port} is not plugged in!', in_exception=True)
             raise Exception(f'Motor on port {self.port} is not plugged in!')
 

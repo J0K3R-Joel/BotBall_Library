@@ -148,6 +148,7 @@ class base_driver:
         self._motor_stoppers = {}
         self._next_motor_id = 0
         self.max_speed = 1500
+        self.utility = Util()
         self.mm_per_sec_file = 'mm_per_sec.txt'
         self.axis_importance_file = 'axis_importance_level.txt'
         self.pseudo_distanceR = DistanceSensor(99999999999)  # just an imaginary port, which will never exist
@@ -191,7 +192,7 @@ class base_driver:
         Returns:
             None
         """
-        most_important_axis = self.get_most_important_axis()
+        most_important_axis = self.get_axis_importance()
 
         if most_important_axis.upper() == 'x'.upper():
             self.standard_bias_gyro = self.bias_gyro_x
@@ -226,6 +227,16 @@ class base_driver:
 
     def _save_adjuster(self):
         file_Manager.writer('adjuster_file.txt', 'w', str(self.adjuster))
+
+    def _hardware_orientation_identification(self, output: bool = True):
+        x = abs(k.accel_x())
+        y = abs(k.accel_y())
+        z = abs(k.accel_z())
+
+        axis = max(x, y, z)
+        axis_name = 'Y' if axis == y else 'X' if axis == x else 'Z'
+        log(f'Needed axis: {axis_name}', with_print=output, important=True)
+        file_Manager.writer(self.axis_importance_file, 'w', axis_name)
 
 
     # ======================= SAVE BIAS ========================
@@ -395,7 +406,7 @@ class base_driver:
         """
         if self.standard_axis_function:
             return self.standard_axis_function()
-        raise ValueError('No axis calibration done. Execute the "hardware_orientation_identification" function first')
+        raise ValueError('No axis calibration done. Execute the "auto_calibration" function first')
 
     def get_degrees_time(self) -> float:
         """
@@ -582,7 +593,7 @@ class base_driver:
         except Exception as e:
             log(str(e), important=True, in_exception=True)
 
-    def get_axis_importance(self) -> list[str]:
+    def get_axis_importance(self) -> str:
         """
         Receive all gyro sorted by importance
 
@@ -592,54 +603,7 @@ class base_driver:
         Returns:
             list[str]: List with all axis sorted by importance (first element -> most important; last element -> least important)
         """
-        axis_text: str = file_Manager.reader(self.axis_importance_file)
-        return axis_text.split('\n')
-
-    def get_axis_importance_by_level(self, level: int) -> str:
-        """
-        Receive the desired axis value by level of importance (lower number means more important)
-
-        Args:
-            level (int): Number of how important the wanted axis value is (e.g.: 0 -> this means most important)
-
-        Returns:
-            str: The axis by level of importance (e.g.: 'x')
-
-        Raises:
-            @TODO
-        """
-        axis_importance = self.get_axis_importance()
-        if level < len(axis_importance) < level:
-            log(f'You can only get a level from 0 - {len(axis_importance)}!', in_exception=True)
-            raise ValueError(f'You can only get a level from 0 - {len(axis_importance)}!')
-
-        return axis_importance[level]
-
-    def get_most_important_axis(self) -> str:
-        """
-        Receive the most necessary axis for the current build of the controller
-
-        Args:
-            None
-
-        Returns:
-            str: The most important axis (e.g.: 'y')
-        """
-        axis_importance = self.get_axis_importance()
-        return axis_importance[0]
-
-    def get_least_important_axis(self) -> str:
-        """
-        Receive the most unnecessary axis for the current build of the controller
-
-        Args:
-            None
-
-        Returns:
-            str: The least important axis (e.g.: 'z')
-        """
-        axis_importance = self.get_axis_importance()
-        return axis_importance[len(axis_importance)-1]
+        return file_Manager.reader(self.axis_importance_file).strip()
 
 
     # ======================== SETTER ========================
@@ -1102,27 +1066,27 @@ class base_driver:
 
         for arg in args:
             if arg == 'gyro_z' or arg == 'gz':
-                t1 = multiprocessing.Process(target=self.calibrate_gyro_z, kwargs=arguments, name='gyro_z', daemon=True)
+                t1 = multiprocessing.Process(target=self.calibrate_gyro_z, kwargs=arguments, name='gyro_z')
                 #t1 = KillableThread(target=self.calibrate_gyro_z, kwargs=arguments, name='gyro_z')
                 calibrations.append(t1)
             elif arg == 'gyro_y' or arg == 'gy':
-                t1 = multiprocessing.Process(target=self.calibrate_gyro_y, kwargs=arguments, name='gyro_y', daemon=True)
+                t1 = multiprocessing.Process(target=self.calibrate_gyro_y, kwargs=arguments, name='gyro_y')
                 #t1 = KillableThread(target=self.calibrate_gyro_y, kwargs=arguments, name='gyro_y')
                 calibrations.append(t1)
             elif arg == 'gyro_x' or arg == 'gx':
-                t1 = multiprocessing.Process(target=self.calibrate_gyro_x, kwargs=arguments, name='gyro_x', daemon=True)
+                t1 = multiprocessing.Process(target=self.calibrate_gyro_x, kwargs=arguments, name='gyro_x')
                 #t1 = KillableThread(target=self.calibrate_gyro_x, kwargs=arguments, name='gyro_x')
                 calibrations.append(t1)
             elif arg == 'accel_z' or arg == 'az':
-                t1 = multiprocessing.Process(target=self.calibrate_accel_z, kwargs=arguments, name='accel_z', daemon=True)
+                t1 = multiprocessing.Process(target=self.calibrate_accel_z, kwargs=arguments, name='accel_z')
                 #t1 = KillableThread(target=self.calibrate_accel_z, kwargs=arguments, name='accel_z')
                 calibrations.append(t1)
             elif arg == 'accel_y' or arg == 'ay':
-                t1 = multiprocessing.Process(target=self.calibrate_accel_y, kwargs=arguments, name='accel_y', daemon=True)
+                t1 = multiprocessing.Process(target=self.calibrate_accel_y, kwargs=arguments, name='accel_y')
                 #t1 = KillableThread(target=self.calibrate_accel_y, kwargs=arguments, name='accel_y')
                 calibrations.append(t1)
             elif arg == 'accel_x' or arg == 'ax':
-                t1 = multiprocessing.Process(target=self.calibrate_accel_x, kwargs=arguments, name='accel_x', daemon=True)
+                t1 = multiprocessing.Process(target=self.calibrate_accel_x, kwargs=arguments, name='accel_x')
                 #t1 = KillableThread(target=self.calibrate_accel_x, kwargs=arguments, name='accel_x')
                 calibrations.append(t1)
             else:
@@ -1149,6 +1113,7 @@ class base_driver:
     def threshold_identification(self, millis: int = 2000, required_percent: float = 2) -> None:
         globals()['collected_gyro_value'], globals()['currently_driving_for_threshold'] = 0, True
         first_gyro_percentage, second_gyro_percentage = 0, 0
+        self._hardware_orientation_identification(False)
 
         def collect_gyro():
             global collected_gyro_value, currently_driving_for_threshold
@@ -1254,9 +1219,6 @@ class base_driver:
             self.drive_straight(millis=millis, speed=-self.ds_speed)
             self.break_all_motors()
 
-            log(f'{first_gyro_value = }')
-            log(f'{second_gyro_value = }')
-
             self.adjuster += -increaser*2 if first_gyro_value < second_gyro_value else 0
             return 'first' if first_gyro_value < second_gyro_value else 'second'
 
@@ -1291,151 +1253,12 @@ class base_driver:
         if self.adjuster <= 2:
             log('Something went wrong, retrying...', important=True)
             self.adjuster_identification(millis, times)
+        elif self.adjuster <= 10:
+            log(f'Adjuster of {self.adjuster} is too inaccurate, retrying...', important=True)
+            self.adjuster_identification(millis, times)
         else:
-            print(self.adjuster, flush=True)
             self._save_adjuster()
-            log('Adjuster identified')
-
-
-
-    def hardware_orientation_identification(self, identification_count: int = 10, identification_millis: int = 500, required_percent: float = 1.2):
-        globals()['gyro_x_value'], globals()['gyro_y_value'], globals()['gyro_z_value'] = 0, 0, 0
-        globals()['gyro_x_weight'], globals()['gyro_y_weight'], globals()['gyro_z_weight'] = 0, 0, 0
-        x_importance, y_importance, z_importance = 0, 0, 0
-
-        @ForceDriveableFunction
-        def create_test():
-            identification_timer = TimeR()
-            identify_timer = TimeR()
-
-            def identify_percentage():
-                global gyro_x_weight, gyro_y_weight, gyro_z_weight
-
-                bias_gyro_x = 0
-                bias_gyro_y = 0
-                bias_gyro_z = 0
-
-                identify_timer.start_timer_millis()
-                while identify_timer.stop_timer(False) < identification_millis:
-                    bias_gyro_x += k.gyro_x()
-                    bias_gyro_y += k.gyro_y()
-                    bias_gyro_z += k.gyro_z()
-                    k.msleep(1)
-
-                # create the bias which will be created in the identification_millis time
-                stopped_at = identify_timer.stop_timer()
-                gyro_x_weight = bias_gyro_x / stopped_at
-                gyro_y_weight = bias_gyro_y / stopped_at
-                gyro_z_weight = bias_gyro_z / stopped_at
-
-            def reset_gyro_values():
-                global gyro_x_value, gyro_y_value, gyro_z_value
-                gyro_x_value = 0
-                gyro_y_value = 0
-                gyro_z_value = 0
-
-            def look_at_gyro_values():
-                global gyro_x_value, gyro_y_value, gyro_z_value, gyro_x_weight, gyro_y_weight, gyro_z_weight
-                gyro_x_value += k.gyro_x() - gyro_x_weight
-                gyro_y_value += k.gyro_y() - gyro_y_weight
-                gyro_z_value += k.gyro_z() - gyro_z_weight
-
-            def forward_identification():
-                identification_timer.start_timer_millis()
-                while identification_timer.stop_timer(False) < identification_millis:
-                    for motor in self.motors:
-                        motor.drive_mfw()
-                        look_at_gyro_values()
-
-                identification_timer.start_timer_millis()
-                while identification_timer.stop_timer(False) < identification_millis:
-                    for motor in self.motors:
-                        motor.drive_mbw()
-            def backward_identification():
-                identification_timer.start_timer_millis()
-                while identification_timer.stop_timer(False) < identification_millis:
-                    for motor in self.motors:
-                        motor.drive_mfw()
-
-                identification_timer.start_timer_millis()
-                while identification_timer.stop_timer(False) < identification_millis:
-                    for motor in self.motors:
-                        motor.drive_mbw()
-                        look_at_gyro_values()
-
-            identify_percentage()
-            while True:
-                forward_identification()  # firstly, look at the bias you create when driving forward
-                self.break_all_motors()
-                three_largest_dimensions = heapq.nlargest(3, [abs(gyro_x_value), abs(gyro_y_value), abs(gyro_z_value)])  # sort the gyro values from highest to lowest (value)
-
-                # exit if the bigger value is 20% higher than the second-highest value
-                if three_largest_dimensions[0] > three_largest_dimensions[1] * required_percent and three_largest_dimensions[1] > three_largest_dimensions[2] * required_percent:
-                    break
-
-            #  safe the values you just created
-            x1 = gyro_x_value
-            y1 = gyro_y_value
-            z1 = gyro_z_value
-
-            reset_gyro_values()  # clean value start
-            while True:
-                backward_identification()  # secondly, look at the bias you create when driving backward
-                self.break_all_motors()
-                three_largest_dimensions = heapq.nlargest(3, [abs(gyro_x_value), abs(gyro_y_value), abs(gyro_z_value)])  # sort the gyro values from highest to lowest (value)
-
-                # exit if the bigger value is 20% higher than the second-highest value
-                if three_largest_dimensions[0] > three_largest_dimensions[1] * required_percent and three_largest_dimensions[1] > three_largest_dimensions[2] * required_percent:
-                    break
-
-            #  add them together (the absolute value since you do not know how the controller is mounted and therefore you do not know the sign for the values
-            total_x = abs(gyro_x_value) + abs(x1)
-            total_y = abs(gyro_y_value) + abs(y1)
-            total_z = abs(gyro_z_value) + abs(z1)
-
-            #  add them together, so you can receive the percentage of how much the gyros are needed
-            total = abs(total_x) + abs(total_y) + abs(total_z)
-            gyro_x_percentage = abs(total_x)/total
-            gyro_y_percentage = abs(total_y)/total
-            gyro_z_percentage = abs(total_z)/total
-
-            return gyro_x_percentage, gyro_y_percentage, gyro_z_percentage
-
-        log('YOU NEED TO BE SURE THAT THE ROBOT WILL NOT BUMP INTO ANY OBSTACLE BEFORE RUNNING THIS FUNCTION! DO NOT TOUCH THE ROBOT WHILE EXECUTION', important=True)
-        for i in range(identification_count):
-            log(f'{i + 1} / {identification_count} identification runs')
-            x, y, z = create_test()
-            x_importance += x
-            y_importance += y
-            z_importance += z
-
-        # calculate (in percent) how important every gyro value is after identification_count runs
-        x_importance /= identification_count
-        y_importance /= identification_count
-        z_importance /= identification_count
-
-        # display the results
-        print('=' * 100, flush=True)
-        message = ''
-        three_largest_dimensions = heapq.nlargest(3, [x_importance, y_importance, z_importance])  # sort the results
-        for key, dimension in enumerate(three_largest_dimensions, start=0):
-            if dimension == x_importance:
-                log(f'AXIS X has an importance level of: {key} with {x_importance * 100}% accuracy')
-                message += 'x\n'
-            elif dimension == y_importance:
-                log(f'AXIS Y has an importance level of: {key} with {y_importance * 100}% accuracy')
-                message += 'y\n'
-            elif dimension == z_importance:
-                log(f'AXIS Z has an importance level of: {key} with {z_importance * 100}% accuracy')
-                message += 'z\n'
-
-        message = message.strip('\n')
-        log('\nNote: \n'
-            '\t-The lower the importance level the more important the calculated gyro is (e.g.: 0 -> most important | 2-> least important)\n'
-            '\t-If the accuracy between level 0 and 1 is too low (e.g.: <15%), consider recalculating\n'
-            '\t-The difference between accuracy of importance level 1 and 2 does not matter\n', important=True)
-
-        file_Manager.writer(self.axis_importance_file, 'w', message)  # save the importance level in a file
+            log(f'Adjuster identified: {self.adjuster}')
 
 
     def break_all_motors(self):
@@ -1501,6 +1324,11 @@ class Solarbotic_Wheels_two(base_driver):
 
         """
         super().__init__(DS_SPEED, Instance_right_wheel, Instance_left_wheel)
+
+        if not wheels_at_front:
+            log('Wheels need to be on the front, since the class did not get penetration-tested with wheels at the back!', in_exception=True)
+            raise ValueError('Wheels need to be on the front, since the class did not get penetration-tested with wheels at the back!')
+
         self.right_wheel = Instance_right_wheel
         self.left_wheel = Instance_left_wheel
 
@@ -1665,20 +1493,12 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             None
 
-       Returns:
+        Returns:
             if there is an instance of all light sensor in existence
         """
-        if not isinstance(self.light_sensor_front, LightSensor):
-            log('Light sensor front is not initialized!', in_exception=True)
-            raise TypeError('Light sensor front is not initialized!')
+        self.check_instance_light_sensors_middle()
+        self.check_instance_light_sensor_side()
 
-        if not isinstance(self.light_sensor_back, LightSensor):
-            log('Light sensor back is not initialized!', in_exception=True)
-            raise TypeError('Light sensor back is not initialized!')
-
-        if not isinstance(self.light_sensor_side, LightSensor):
-            log('Light sensor side is not initialized!', in_exception=True)
-            raise TypeError('Light sensor side is not initialized!')
         return True
 
     def check_instance_light_sensors_middle(self) -> bool:
@@ -1688,16 +1508,12 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             None
 
-       Returns:
+        Returns:
             if there is an instance of the middle light sensors in existence
         """
-        if not isinstance(self.light_sensor_front, LightSensor):
-            log('Light sensor front is not initialized!', in_exception=True)
-            raise TypeError('Light sensor front is not initialized!')
+        self.check_instance_light_sensor_front()
+        self.check_instance_light_sensor_back()
 
-        if not isinstance(self.light_sensor_back, LightSensor):
-            log('Light sensor back is not initialized!', in_exception=True)
-            raise TypeError('Light sensor back is not initialized!')
         return True
 
     def check_instance_light_sensor_front(self) -> bool:
@@ -1707,7 +1523,7 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             None
 
-       Returns:
+        Returns:
             if there is an instance of the front light sensor in existence
         """
         if not isinstance(self.light_sensor_front, LightSensor):
@@ -1722,7 +1538,7 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             None
 
-       Returns:
+        Returns:
             if there is an instance of the back light sensor in existence
         """
         if not isinstance(self.light_sensor_back, LightSensor):
@@ -1737,8 +1553,8 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             None
 
-       Returns:
-            if there is an instance of the side light sensor in existence
+        Returns:
+            bool: if there is an instance of the side light sensor in existence (True) or not (raises TypeError)
         """
         if not isinstance(self.light_sensor_side, LightSensor):
             log('Light sensor side is not initialized!', in_exception=True)
@@ -1752,8 +1568,8 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             None
 
-       Returns:
-            if there is an instance of the distance sensor in existence
+        Returns:
+            bool: if there is an instance of the distance in existence (True) or not (raises TypeError)
         """
         if not isinstance(self.distance_sensor, DistanceSensor):
             log('Distance sensor is not initialized!', in_exception=True)
@@ -1767,8 +1583,8 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             None
 
-       Returns:
-            if there is an instance of the front left button in existence
+        Returns:
+            bool: if there is an instance of the front left button in existence (True) or not (raises TypeError)
         """
         if not isinstance(self.button_fl, Digital):
             log('Button front left is not initialized!', in_exception=True)
@@ -1782,8 +1598,8 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             None
 
-       Returns:
-            if there is an instance of the front right button in existence
+        Returns:
+            bool: if there is an instance of the front right button in existence (True) or not (raises TypeError)
         """
         if not isinstance(self.button_fr, Digital):
             log('Button front right is not initialized!', in_exception=True)
@@ -1797,8 +1613,8 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             None
 
-       Returns:
-            if there is an instance of the back left button in existence
+        Returns:
+            bool: if there is an instance of the back left button in existence (True) or not (raises TypeError)
         """
         if not isinstance(self.button_bl, Digital):
             log('Button back left is not initialized!', in_exception=True)
@@ -1812,8 +1628,8 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             None
 
-       Returns:
-            if there is an instance of the back right button in existence
+        Returns:
+            bool: if there is an instance of the back right button in existence (True) or not (raises TypeError)
         """
         if not isinstance(self.button_br, Digital):
             log('Button back right is not initialized!', in_exception=True)
@@ -1827,16 +1643,11 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             None
 
-       Returns:
-            if there is an instance of the front buttons in existence
+        Returns:
+            bool: if there is an instance of the front buttons in existence (True) or not (raises TypeError)
         """
-        if not isinstance(self.button_fl, Digital):
-            log('Button front left is not initialized!', in_exception=True)
-            raise TypeError('Button front left is not initialized!')
-
-        if not isinstance(self.button_fr, Digital):
-            log('Button front right is not initialized!', in_exception=True)
-            raise TypeError('Button front right is not initialized!')
+        self.check_instance_button_fr()
+        self.check_instance_button_fl()
 
         return True
 
@@ -1847,16 +1658,11 @@ class Solarbotic_Wheels_two(base_driver):
         Args:
             None
 
-       Returns:
-            if there is an instance of the back buttons in existence
+        Returns:
+            bool: if there is an instance of all buttons in existence (True) or not (raises TypeError)
         """
-        if not isinstance(self.button_bl, Digital):
-            log('Button back left is not initialized!', in_exception=True)
-            raise TypeError('Button back left is not initialized!')
-
-        if not isinstance(self.button_br, Digital):
-            log('Button back right is not initialized!', in_exception=True)
-            raise TypeError('Button back right is not initialized!')
+        self.check_instance_button_br()
+        self.check_instance_button_bl()
 
         return True
 
@@ -1868,23 +1674,10 @@ class Solarbotic_Wheels_two(base_driver):
             None
 
         Returns:
-            if there is an instance of all buttons in existence
+            bool: if there is an instance of all buttons in existence (True) or not (raises TypeError)
         """
-        if not isinstance(self.button_fl, Digital):
-            log('Button front left is not initialized!', in_exception=True)
-            raise TypeError('Button front left is not initialized!')
-
-        if not isinstance(self.button_fr, Digital):
-            log('Button front right is not initialized!', in_exception=True)
-            raise TypeError('Button front right is not initialized!')
-
-        if not isinstance(self.button_bl, Digital):
-            log('Button back left is not initialized!', in_exception=True)
-            raise TypeError('Button back left is not initialized!')
-
-        if not isinstance(self.button_br, Digital):
-            log('Button back right is not initialized!', in_exception=True)
-            raise TypeError('Button back right is not initialized!')
+        self.check_instances_buttons_front()
+        self.check_instances_buttons_back()
 
         return True
 
@@ -1906,6 +1699,10 @@ class Solarbotic_Wheels_two(base_driver):
         turning_time = self.ONEEIGHTY_DEGREES_SECS/2 if self.ONEEIGHTY_DEGREES_SECS else 1
 
         def sensor_checker():
+            front_timer = TimeR()
+            back_timer = TimeR()
+            time_front = 0
+            time_back = 0
 
             def white_front_valid():
                 while not self.light_sensor_front.sees_black():
@@ -1917,20 +1714,30 @@ class Solarbotic_Wheels_two(base_driver):
 
             t_front = KillableThread(target=white_front_valid)
             t_back = KillableThread(target=white_back_valid)
-            t_front.start()
-            t_back.start()
 
-            while t_front.is_alive() or t_back.is_alive():
+            t_front.start()
+            front_timer.start_timer_sec()
+            t_back.start()
+            back_timer.start_timer_sec()
+
+            while True:
+                if not t_front.is_alive() and not time_front:
+                    time_front = front_timer.stop_timer()
+                if not t_back.is_alive() and not time_back:
+                    time_back = back_timer.stop_timer()
+                if time_front and time_back:
+                    break
                 self.left_wheel.drive_dfw()
                 self.right_wheel.drive_dbw()
+            return abs(time_front - time_back) / 2
 
         degree_timer.start_timer_sec()
         while degree_timer.stop_timer(False) < turning_time:
             self.left_wheel.drive_dfw()
             self.right_wheel.drive_dbw()
 
-        sensor_checker()
-        self.ONEEIGHTY_DEGREES_SECS = degree_timer.stop_timer()
+        sensor_diff_time = sensor_checker()
+        self.ONEEIGHTY_DEGREES_SECS = degree_timer.stop_timer() - sensor_diff_time
         self.break_all_motors()
         self.NINETY_DEGREES_SECS = self.ONEEIGHTY_DEGREES_SECS / 2
 
@@ -2256,7 +2063,7 @@ class Solarbotic_Wheels_two(base_driver):
 
         Args:
             instance (Digital): just has to be from something digital (buttons)
-            condition (str): should it match ("==") or not ("!=")
+            condition (str): either "==" or "!=", indicating if the current value of the button should be equal or unequal to the value given
             value (int): The value that the current value gets compared to and has to be reached / not matched
             millis (int, optional): The maximum amount of time (in milliseconds) which can be taken (default: 9999999)
             speed (int, optional): The speed it drives straight (default: ds_speed)
@@ -3671,17 +3478,9 @@ class Mecanum_Wheels_four(base_driver):
         Returns:
             if there is an instance of all light sensor in existence
         """
-        if not isinstance(self.light_sensor_front, LightSensor):
-            log('Light sensor front is not initialized!', in_exception=True)
-            raise TypeError('Light sensor front is not initialized!')
+        self.check_instance_light_sensors_middle()
+        self.check_instance_light_sensor_side()
 
-        if not isinstance(self.light_sensor_back, LightSensor):
-            log('Light sensor back is not initialized!', in_exception=True)
-            raise TypeError('Light sensor back is not initialized!')
-
-        if not isinstance(self.light_sensor_side, LightSensor):
-            log('Light sensor side is not initialized!', in_exception=True)
-            raise TypeError('Light sensor side is not initialized!')
         return True
 
     def check_instance_light_sensors_middle(self) -> bool:
@@ -3694,13 +3493,9 @@ class Mecanum_Wheels_four(base_driver):
         Returns:
             if there is an instance of the middle light sensors in existence
         """
-        if not isinstance(self.light_sensor_front, LightSensor):
-            log('Light sensor front is not initialized!', in_exception=True)
-            raise TypeError('Light sensor front is not initialized!')
+        self.check_instance_light_sensor_front()
+        self.check_instance_light_sensor_back()
 
-        if not isinstance(self.light_sensor_back, LightSensor):
-            log('Light sensor back is not initialized!', in_exception=True)
-            raise TypeError('Light sensor back is not initialized!')
         return True
 
     def check_instance_light_sensor_front(self) -> bool:
@@ -3833,13 +3628,8 @@ class Mecanum_Wheels_four(base_driver):
         Returns:
             bool: if there is an instance of the front buttons in existence (True) or not (raises TypeError)
         """
-        if not isinstance(self.button_fl, Digital):
-            log('Button front left is not initialized!', in_exception=True)
-            raise TypeError('Button front left is not initialized!')
-
-        if not isinstance(self.button_fr, Digital):
-            log('Button front right is not initialized!', in_exception=True)
-            raise TypeError('Button front right is not initialized!')
+        self.check_instance_button_fr()
+        self.check_instance_button_fl()
 
         return True
 
@@ -3853,13 +3643,8 @@ class Mecanum_Wheels_four(base_driver):
         Returns:
             bool: if there is an instance of all buttons in existence (True) or not (raises TypeError)
         """
-        if not isinstance(self.button_bl, Digital):
-            log('Button back left is not initialized!', in_exception=True)
-            raise TypeError('Button back left is not initialized!')
-
-        if not isinstance(self.button_br, Digital):
-            log('Button back right is not initialized!', in_exception=True)
-            raise TypeError('Button back right is not initialized!')
+        self.check_instance_button_br()
+        self.check_instance_button_bl()
 
         return True
 
@@ -3873,21 +3658,8 @@ class Mecanum_Wheels_four(base_driver):
         Returns:
             bool: if there is an instance of all buttons in existence (True) or not (raises TypeError)
         """
-        if not isinstance(self.button_fl, Digital):
-            log('Button front left is not initialized!', in_exception=True)
-            raise TypeError('Button front left is not initialized!')
-
-        if not isinstance(self.button_fr, Digital):
-            log('Button front right is not initialized!', in_exception=True)
-            raise TypeError('Button front right is not initialized!')
-
-        if not isinstance(self.button_bl, Digital):
-            log('Button back left is not initialized!', in_exception=True)
-            raise TypeError('Button back left is not initialized!')
-
-        if not isinstance(self.button_br, Digital):
-            log('Button back right is not initialized!', in_exception=True)
-            raise TypeError('Button back right is not initialized!')
+        self.check_instances_buttons_front()
+        self.check_instances_buttons_back()
 
         return True
 
@@ -4153,28 +3925,28 @@ class Mecanum_Wheels_four(base_driver):
         side_timer.start_timer_millis()
         straight_timer.start_timer_millis()
         while side_timer.stop_timer(False) < millis:
-            if straight_timer.stop_timer(False) > 50:
+            if straight_timer.stop_timer(False) > 150:
                 if threshold > theta_side > -threshold:
                     wheels[0].drive(straight_speed)
                     wheels[1].drive(straight_speed)
                     wheels[2].drive(straight_speed)
                     wheels[3].drive(straight_speed)
                 elif self.check_threshold_strength(theta_side, threshold):
-                    wheels[0].drive(higher_straight_speed)
-                    wheels[1].drive(lower_straight_speed)
-                    wheels[2].drive(higher_straight_speed)
-                    wheels[3].drive(lower_straight_speed)
-                else:
                     wheels[0].drive(lower_straight_speed)
                     wheels[1].drive(higher_straight_speed)
                     wheels[2].drive(lower_straight_speed)
                     wheels[3].drive(higher_straight_speed)
+                else:
+                    wheels[0].drive(higher_straight_speed)
+                    wheels[1].drive(lower_straight_speed)
+                    wheels[2].drive(higher_straight_speed)
+                    wheels[3].drive(lower_straight_speed)
                 straight_timer.start_timer_millis()
 
             this_bias = self.get_current_standard_gyro()
             if last_bias != this_bias:
                 last_bias = this_bias
-            theta_side += this_bias - self.standard_bias_gyro
+                theta_side += this_bias - self.standard_bias_gyro
 
             if threshold > theta_side > -threshold:
                 wheels[0].drive(speed)
@@ -4195,8 +3967,7 @@ class Mecanum_Wheels_four(base_driver):
             this_bias = self.get_current_standard_gyro()
             if last_bias != this_bias:
                 last_bias = this_bias
-            theta_side += this_bias - self.standard_bias_gyro
-
+                theta_side += this_bias - self.standard_bias_gyro
         self.break_all_motors()
 
     @DriveableFunction
@@ -4262,8 +4033,8 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             end (str): "front" or "back", depending on where you want to go (either backwards or forwards)
             side (str): "left" or "right", depending on where you want to go
-            millis (int): for how long you want to drive sideways
-            speed (int, optional): the speed it is going to drive sideways (default: ds_speed)
+            millis (int): for how long you want to drive diagonal
+            speed (int, optional): the speed it is going to drive diagonal (default: ds_speed)
 
         Returns:
             None
@@ -4822,28 +4593,28 @@ class Mecanum_Wheels_four(base_driver):
         side_timer.start_timer_millis()
         threading.Thread(target=distance_stopper).start()
         while not self.isClose and side_timer.stop_timer(False) < millis:
-            if straight_timer.stop_timer(False) > 50:
+            if straight_timer.stop_timer(False) > 150:
                 if threshold > theta_side > -threshold:
                     wheels[0].drive(straight_speed)
                     wheels[1].drive(straight_speed)
                     wheels[2].drive(straight_speed)
                     wheels[3].drive(straight_speed)
                 elif self.check_threshold_strength(theta_side, threshold):
-                    wheels[0].drive(higher_straight_speed)
-                    wheels[1].drive(lower_straight_speed)
-                    wheels[2].drive(higher_straight_speed)
-                    wheels[3].drive(lower_straight_speed)
-                else:
                     wheels[0].drive(lower_straight_speed)
                     wheels[1].drive(higher_straight_speed)
                     wheels[2].drive(lower_straight_speed)
                     wheels[3].drive(higher_straight_speed)
+                else:
+                    wheels[0].drive(higher_straight_speed)
+                    wheels[1].drive(lower_straight_speed)
+                    wheels[2].drive(higher_straight_speed)
+                    wheels[3].drive(lower_straight_speed)
                 straight_timer.start_timer_millis()
 
             this_bias = self.get_current_standard_gyro()
             if last_bias != this_bias:
                 last_bias = this_bias
-            theta_side += this_bias - self.standard_bias_gyro
+                theta_side += this_bias - self.standard_bias_gyro
 
             if threshold > theta_side > -threshold:
                 wheels[0].drive(speed)
@@ -4864,7 +4635,7 @@ class Mecanum_Wheels_four(base_driver):
             this_bias = self.get_current_standard_gyro()
             if last_bias != this_bias:
                 last_bias = this_bias
-            theta_side += this_bias - self.standard_bias_gyro
+                theta_side += this_bias - self.standard_bias_gyro
 
         self.break_all_motors()
 
@@ -5170,6 +4941,231 @@ class Mecanum_Wheels_four(base_driver):
             self.break_all_motors()
 
     @DriveableFunction
+    def drive_diagonal_condition_analog(self, end: str, side: str, instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
+        """
+        drive diagonal for as long as you want to (in millis)
+
+        Args:
+            end (str): "front" or "back", depending on where you want to go (either backwards or forwards)
+            side (str): "left" or "right", depending on where you want to go
+            instance (Analog): just has to be from something analog (since there is (as of time of creation) only brightness and distance sensors, which are valid for this argument, just those should be used.
+            condition (str): ("let" / "<=") or ("get" / ">=") or ("ht" / ">") or ("lt" / "<") are valid. Notice: l -> less | h -> higher | e -> equal | t -> than. (The parentheses should be left out, as well as the slash, only choose one argument Example: ">=")
+            value (int): The value that the current value gets compared to and has to be reached
+            millis (int, optional): The maximum amount of time (in milliseconds) which can be taken (default: 9999999)
+            speed (int, optional): the speed it is going to drive sideways (default: ds_speed)
+
+        Returns:
+            None
+        """
+        if speed is None:
+            speed = self.ds_speed
+
+        if end != 'front' and end != 'back':
+            log('Only "front" or "back" are valid options for the "end" parameter', in_exception=True)
+            raise ValueError('Exception: Only "front" or "back" are valid options for the "end" parameter')
+
+        if side != 'right' and side != 'left':
+            log('Only "right" or "left" are valid options for the "side" parameter', in_exception=True)
+            raise ValueError('Only "right" or "left" are valid options for the "side" parameter')
+
+        points = 0
+        if end == 'front':
+            points += 1
+        if side == 'right':
+            points += 1
+
+        speed = abs(speed)
+        threshold = 10
+        last_bias = 0
+        theta = 0
+        diagonal_timer = TimeR()
+        adjuster = -speed // self.adjuster
+        instances_left = [self.fr_wheel, self.bl_wheel]
+        instances_right = [self.fl_wheel, self.br_wheel]
+        wheels = instances_left if side == 'left' else instances_right
+
+        if side == 'right':
+            adjuster = -adjuster
+
+        if end == 'back':
+            speed = -speed
+            wheels = instances_right if self.fr_wheel in wheels else instances_left
+
+        if points == 2 or points == 0:
+            adjuster = -adjuster
+
+        diagonal_timer.start_timer_millis()
+        if condition == 'let' or condition == '<=':  # let -> less or equal than
+            while instance.current_value() <= value and diagonal_timer.stop_timer(False) < millis:
+                if threshold > theta > -threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(speed)
+                elif self.check_threshold_strength(theta, threshold):
+                    wheels[1].drive(speed)
+                    wheels[0].drive(speed - adjuster)
+                else:
+                    wheels[1].drive(speed)
+                    wheels[0].drive(speed - adjuster)
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
+        elif condition == 'het' or condition == '>=':  # het -> higher or equal than
+            while instance.current_value() >= value and diagonal_timer.stop_timer(False) < millis:
+                if threshold > theta > -threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(speed)
+                elif self.check_threshold_strength(theta, threshold):
+                    wheels[1].drive(speed)
+                    wheels[0].drive(speed - adjuster)
+                else:
+                    wheels[1].drive(speed)
+                    wheels[0].drive(speed - adjuster)
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
+
+
+        elif condition == 'ht' or condition == '>':  # ht -> higher than
+            while instance.current_value() > value and diagonal_timer.stop_timer(False) < millis:
+                if threshold > theta > -threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(speed)
+                elif self.check_threshold_strength(theta, threshold):
+                    wheels[1].drive(speed)
+                    wheels[0].drive(speed - adjuster)
+                else:
+                    wheels[1].drive(speed)
+                    wheels[0].drive(speed - adjuster)
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
+
+
+        elif condition == 'lt' or condition == '<':  # lt -> less than
+            while instance.current_value() < value and diagonal_timer.stop_timer(False) < millis:
+                if threshold > theta > -threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(speed)
+                elif self.check_threshold_strength(theta, threshold):
+                    wheels[1].drive(speed)
+                    wheels[0].drive(speed - adjuster)
+                else:
+                    wheels[1].drive(speed)
+                    wheels[0].drive(speed - adjuster)
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
+        else:
+            log('the "condition" parameter has to be either "<" / "lt" ; ">" / "ht" ; "<=" / "het" ; ">=" / "let"')
+            raise ValueError('the "condition" parameter has to be either "<" / "lt" ; ">" / "ht" ; "<=" / "het" ; ">=" / "let"')
+
+        self.break_all_motors()
+
+    @DriveableFunction
+    def drive_diagonal_condition_digital(self, end: str, side: str, instance: Digital, condition: str, value: int,
+                                        millis: int = 9999999, speed: int = None) -> None:
+        """
+        drive diagonal for as long as you want to (in millis)
+
+        Args:
+            end (str): "front" or "back", depending on where you want to go (either backwards or forwards)
+            side (str): "left" or "right", depending on where you want to go
+            instance (Digital): just has to be from something digital such as a button
+            condition (str): either "==" or "!=", indicating if the current value of the button should be equal or unequal to the value given
+            value (int): The value that the current value gets compared to and has to be reached
+            millis (int, optional): The maximum amount of time (in milliseconds) which can be taken (default: 9999999)
+            speed (int, optional): the speed it is going to drive sideways (default: ds_speed)
+
+        Returns:
+            None
+        """
+        if speed is None:
+            speed = self.ds_speed
+
+        if end != 'front' and end != 'back':
+            log('Only "front" or "back" are valid options for the "end" parameter', in_exception=True)
+            raise ValueError('Exception: Only "front" or "back" are valid options for the "end" parameter')
+
+        if side != 'right' and side != 'left':
+            log('Only "right" or "left" are valid options for the "side" parameter', in_exception=True)
+            raise ValueError('Only "right" or "left" are valid options for the "side" parameter')
+
+        points = 0
+        if end == 'front':
+            points += 1
+        if side == 'right':
+            points += 1
+
+        speed = abs(speed)
+        threshold = 10
+        last_bias = 0
+        theta = 0
+        diagonal_timer = TimeR()
+        adjuster = -speed // self.adjuster
+        instances_left = [self.fr_wheel, self.bl_wheel]
+        instances_right = [self.fl_wheel, self.br_wheel]
+        wheels = instances_left if side == 'left' else instances_right
+
+        if side == 'right':
+            adjuster = -adjuster
+
+        if end == 'back':
+            speed = -speed
+            wheels = instances_right if self.fr_wheel in wheels else instances_left
+
+        if points == 2 or points == 0:
+            adjuster = -adjuster
+
+        diagonal_timer.start_timer_millis()
+        if condition == '!=':
+            while instance.current_value() != value and diagonal_timer.stop_timer(False) < millis:
+                if threshold > theta > -threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(speed)
+                elif self.check_threshold_strength(theta, threshold):
+                    wheels[1].drive(speed)
+                    wheels[0].drive(speed - adjuster)
+                else:
+                    wheels[1].drive(speed)
+                    wheels[0].drive(speed - adjuster)
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
+
+        elif condition == '==':
+            while instance.current_value() == value and diagonal_timer.stop_timer(False) < millis:
+                if threshold > theta > -threshold:
+                    wheels[0].drive(speed)
+                    wheels[1].drive(speed)
+                elif self.check_threshold_strength(theta, threshold):
+                    wheels[1].drive(speed)
+                    wheels[0].drive(speed - adjuster)
+                else:
+                    wheels[1].drive(speed)
+                    wheels[0].drive(speed - adjuster)
+
+                this_bias = self.get_current_standard_gyro()
+                if last_bias != this_bias:
+                    last_bias = this_bias
+                    theta += this_bias - self.standard_bias_gyro
+        else:
+            log('Only "==" or "!=" is available for the condition!', important=True, in_exception=True)
+            raise ValueError('Only "==" or "!=" is available for the condition!')
+
+        self.break_all_motors()
+
+
+    @DriveableFunction
     def drive_side_condition_analog(self, direction: str, instance: Analog, condition: str, value: int,
                                     millis: int = 9999999,
                                     speed: int = None) -> None:
@@ -5191,8 +5187,7 @@ class Mecanum_Wheels_four(base_driver):
             speed = self.ds_speed
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid arguments for the direction parameter!', in_exception=True)
-            raise ValueError(
-                'drive_side_condition_analog() Exception: Only "right" or "left" are valid arguments for the direction parameter! ')
+            raise ValueError('Only "right" or "left" are valid arguments for the direction parameter! ')
 
         speed = abs(speed)
         side_timer = TimeR()
@@ -5218,28 +5213,28 @@ class Mecanum_Wheels_four(base_driver):
         straight_timer.start_timer_millis()
         if condition == 'let' or condition == '<=':  # let -> less or equal than
             while (instance.current_value() <= value) and (side_timer.stop_timer(False) < millis):
-                if straight_timer.stop_timer(False) > 50:
+                if straight_timer.stop_timer(False) > 150:
                     if threshold > theta_side > -threshold:
                         wheels[0].drive(straight_speed)
                         wheels[1].drive(straight_speed)
                         wheels[2].drive(straight_speed)
                         wheels[3].drive(straight_speed)
                     elif self.check_threshold_strength(theta_side, threshold):
-                        wheels[0].drive(higher_straight_speed)
-                        wheels[1].drive(lower_straight_speed)
-                        wheels[2].drive(higher_straight_speed)
-                        wheels[3].drive(lower_straight_speed)
-                    else:
                         wheels[0].drive(lower_straight_speed)
                         wheels[1].drive(higher_straight_speed)
                         wheels[2].drive(lower_straight_speed)
                         wheels[3].drive(higher_straight_speed)
+                    else:
+                        wheels[0].drive(higher_straight_speed)
+                        wheels[1].drive(lower_straight_speed)
+                        wheels[2].drive(higher_straight_speed)
+                        wheels[3].drive(lower_straight_speed)
                     straight_timer.start_timer_millis()
 
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
                     last_bias = this_bias
-                theta_side += this_bias - self.standard_bias_gyro
+                    theta_side += this_bias - self.standard_bias_gyro
 
                 if threshold > theta_side > -threshold:
                     wheels[0].drive(speed)
@@ -5260,33 +5255,33 @@ class Mecanum_Wheels_four(base_driver):
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
                     last_bias = this_bias
-                theta_side += this_bias - self.standard_bias_gyro
+                    theta_side += this_bias - self.standard_bias_gyro
 
 
         elif condition == 'het' or condition == '>=':  # het -> higher or equal than
             while (instance.current_value() >= value) and (side_timer.stop_timer(False) < millis):
-                if straight_timer.stop_timer(False) > 50:
+                if straight_timer.stop_timer(False) > 150:
                     if threshold > theta_side > -threshold:
                         wheels[0].drive(straight_speed)
                         wheels[1].drive(straight_speed)
                         wheels[2].drive(straight_speed)
                         wheels[3].drive(straight_speed)
                     elif self.check_threshold_strength(theta_side, threshold):
-                        wheels[0].drive(higher_straight_speed)
-                        wheels[1].drive(lower_straight_speed)
-                        wheels[2].drive(higher_straight_speed)
-                        wheels[3].drive(lower_straight_speed)
-                    else:
                         wheels[0].drive(lower_straight_speed)
                         wheels[1].drive(higher_straight_speed)
                         wheels[2].drive(lower_straight_speed)
                         wheels[3].drive(higher_straight_speed)
+                    else:
+                        wheels[0].drive(higher_straight_speed)
+                        wheels[1].drive(lower_straight_speed)
+                        wheels[2].drive(higher_straight_speed)
+                        wheels[3].drive(lower_straight_speed)
                     straight_timer.start_timer_millis()
 
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
                     last_bias = this_bias
-                theta_side += this_bias - self.standard_bias_gyro
+                    theta_side += this_bias - self.standard_bias_gyro
 
                 if threshold > theta_side > -threshold:
                     wheels[0].drive(speed)
@@ -5307,33 +5302,33 @@ class Mecanum_Wheels_four(base_driver):
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
                     last_bias = this_bias
-                theta_side += this_bias - self.standard_bias_gyro
+                    theta_side += this_bias - self.standard_bias_gyro
 
 
         elif condition == 'ht' or condition == '>':  # ht -> higher than
             while (instance.current_value() > value) and (side_timer.stop_timer(False) < millis):
-                if straight_timer.stop_timer(False) > 50:
+                if straight_timer.stop_timer(False) > 150:
                     if threshold > theta_side > -threshold:
                         wheels[0].drive(straight_speed)
                         wheels[1].drive(straight_speed)
                         wheels[2].drive(straight_speed)
                         wheels[3].drive(straight_speed)
                     elif self.check_threshold_strength(theta_side, threshold):
-                        wheels[0].drive(higher_straight_speed)
-                        wheels[1].drive(lower_straight_speed)
-                        wheels[2].drive(higher_straight_speed)
-                        wheels[3].drive(lower_straight_speed)
-                    else:
                         wheels[0].drive(lower_straight_speed)
                         wheels[1].drive(higher_straight_speed)
                         wheels[2].drive(lower_straight_speed)
                         wheels[3].drive(higher_straight_speed)
+                    else:
+                        wheels[0].drive(higher_straight_speed)
+                        wheels[1].drive(lower_straight_speed)
+                        wheels[2].drive(higher_straight_speed)
+                        wheels[3].drive(lower_straight_speed)
                     straight_timer.start_timer_millis()
 
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
                     last_bias = this_bias
-                theta_side += this_bias - self.standard_bias_gyro
+                    theta_side += this_bias - self.standard_bias_gyro
 
                 if threshold > theta_side > -threshold:
                     wheels[0].drive(speed)
@@ -5354,33 +5349,33 @@ class Mecanum_Wheels_four(base_driver):
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
                     last_bias = this_bias
-                theta_side += this_bias - self.standard_bias_gyro
+                    theta_side += this_bias - self.standard_bias_gyro
 
 
         elif condition == 'lt' or condition == '<':  # lt -> less than
             while (instance.current_value() < value) and (side_timer.stop_timer(False) < millis):
-                if straight_timer.stop_timer(False) > 50:
+                if straight_timer.stop_timer(False) > 150:
                     if threshold > theta_side > -threshold:
                         wheels[0].drive(straight_speed)
                         wheels[1].drive(straight_speed)
                         wheels[2].drive(straight_speed)
                         wheels[3].drive(straight_speed)
                     elif self.check_threshold_strength(theta_side, threshold):
-                        wheels[0].drive(higher_straight_speed)
-                        wheels[1].drive(lower_straight_speed)
-                        wheels[2].drive(higher_straight_speed)
-                        wheels[3].drive(lower_straight_speed)
-                    else:
                         wheels[0].drive(lower_straight_speed)
                         wheels[1].drive(higher_straight_speed)
                         wheels[2].drive(lower_straight_speed)
                         wheels[3].drive(higher_straight_speed)
+                    else:
+                        wheels[0].drive(higher_straight_speed)
+                        wheels[1].drive(lower_straight_speed)
+                        wheels[2].drive(higher_straight_speed)
+                        wheels[3].drive(lower_straight_speed)
                     straight_timer.start_timer_millis()
 
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
                     last_bias = this_bias
-                theta_side += this_bias - self.standard_bias_gyro
+                    theta_side += this_bias - self.standard_bias_gyro
 
                 if threshold > theta_side > -threshold:
                     wheels[0].drive(speed)
@@ -5401,7 +5396,7 @@ class Mecanum_Wheels_four(base_driver):
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
                     last_bias = this_bias
-                theta_side += this_bias - self.standard_bias_gyro
+                    theta_side += this_bias - self.standard_bias_gyro
 
 
         else:
@@ -5419,7 +5414,7 @@ class Mecanum_Wheels_four(base_driver):
         Args:
             direction (str): "left" or "right" - depends on where you want to go
             instance (Digital): just has to be from something digital such as a button
-            condition (str): ("let" / "<=") or ("get" / ">=") or ("ht" / ">") or ("lt" / "<") are valid. Notice: l -> less | h -> higher | e -> equal | t -> than. (The parentheses should be left out, as well as the slash, only choose one argument Example: ">=")
+            condition (str): either "==" or "!=", indicating if the current value of the button should be equal or unequal to the value given
             value (int): The value that the current value gets compared to and has to be reached
             millis (int, optional): The maximum amount of time (in milliseconds) which can be taken (default: 9999999)
             speed (int, optional): The speed it drives sideways (default: ds_speed)
@@ -5459,28 +5454,28 @@ class Mecanum_Wheels_four(base_driver):
 
         if condition == '==':
             while (instance.current_value() == value) and (side_timer.stop_timer(False) < millis):
-                if straight_timer.stop_timer(False) > 50:
+                if straight_timer.stop_timer(False) > 150:
                     if threshold > theta_side > -threshold:
                         wheels[0].drive(straight_speed)
                         wheels[1].drive(straight_speed)
                         wheels[2].drive(straight_speed)
                         wheels[3].drive(straight_speed)
                     elif self.check_threshold_strength(theta_side, threshold):
-                        wheels[0].drive(higher_straight_speed)
-                        wheels[1].drive(lower_straight_speed)
-                        wheels[2].drive(higher_straight_speed)
-                        wheels[3].drive(lower_straight_speed)
-                    else:
                         wheels[0].drive(lower_straight_speed)
                         wheels[1].drive(higher_straight_speed)
                         wheels[2].drive(lower_straight_speed)
                         wheels[3].drive(higher_straight_speed)
+                    else:
+                        wheels[0].drive(higher_straight_speed)
+                        wheels[1].drive(lower_straight_speed)
+                        wheels[2].drive(higher_straight_speed)
+                        wheels[3].drive(lower_straight_speed)
                     straight_timer.start_timer_millis()
 
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
                     last_bias = this_bias
-                theta_side += this_bias - self.standard_bias_gyro
+                    theta_side += this_bias - self.standard_bias_gyro
 
                 if threshold > theta_side > -threshold:
                     wheels[0].drive(speed)
@@ -5501,33 +5496,33 @@ class Mecanum_Wheels_four(base_driver):
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
                     last_bias = this_bias
-                theta_side += this_bias - self.standard_bias_gyro
+                    theta_side += this_bias - self.standard_bias_gyro
 
 
         elif condition == '!=':
             while (instance.current_value() != value) and (side_timer.stop_timer(False) < millis):
-                if straight_timer.stop_timer(False) > 50:
+                if straight_timer.stop_timer(False) > 150:
                     if threshold > theta_side > -threshold:
                         wheels[0].drive(straight_speed)
                         wheels[1].drive(straight_speed)
                         wheels[2].drive(straight_speed)
                         wheels[3].drive(straight_speed)
                     elif self.check_threshold_strength(theta_side, threshold):
-                        wheels[0].drive(higher_straight_speed)
-                        wheels[1].drive(lower_straight_speed)
-                        wheels[2].drive(higher_straight_speed)
-                        wheels[3].drive(lower_straight_speed)
-                    else:
                         wheels[0].drive(lower_straight_speed)
                         wheels[1].drive(higher_straight_speed)
                         wheels[2].drive(lower_straight_speed)
                         wheels[3].drive(higher_straight_speed)
+                    else:
+                        wheels[0].drive(higher_straight_speed)
+                        wheels[1].drive(lower_straight_speed)
+                        wheels[2].drive(higher_straight_speed)
+                        wheels[3].drive(lower_straight_speed)
                     straight_timer.start_timer_millis()
 
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
                     last_bias = this_bias
-                theta_side += this_bias - self.standard_bias_gyro
+                    theta_side += this_bias - self.standard_bias_gyro
 
                 if threshold > theta_side > -threshold:
                     wheels[0].drive(speed)
@@ -5548,7 +5543,7 @@ class Mecanum_Wheels_four(base_driver):
                 this_bias = self.get_current_standard_gyro()
                 if last_bias != this_bias:
                     last_bias = this_bias
-                theta_side += this_bias - self.standard_bias_gyro
+                    theta_side += this_bias - self.standard_bias_gyro
         else:
             log('Only "==" or "!=" is available for the condition!', important=True, in_exception=True)
             raise ValueError('Only "==" or "!=" is available for the condition!')
@@ -5573,7 +5568,6 @@ class Mecanum_Wheels_four(base_driver):
        """
         if speed is None:
             speed = self.ds_speed
-        self.check_instances_buttons()
         theta = 0.0
         straight_timer = TimeR()
         threshold = 10
@@ -5694,7 +5688,7 @@ class Mecanum_Wheels_four(base_driver):
 
         Args:
             instance (Digital): just has to be from something digital (buttons)
-            condition (str): should it match "==" or not "!="
+            condition (str): either "==" or "!=", indicating if the current value of the button should be equal or unequal to the value given
             value (int): The value that the current value gets compared to and has to be reached / not matched
             millis (int, optional): The maximum amount of time (in milliseconds) which can be taken (default: 9999999)
             speed (int, optional): The speed it drives straight (default: ds_speed)
@@ -5834,6 +5828,9 @@ class Mecanum_Wheels_four(base_driver):
             None
         """
         speed = self.ds_speed if forward else -self.ds_speed
+        if not forward:
+            direction = 'right' if direction != 'right' else 'left'
+
         self.check_instances_buttons()
         self.check_instance_light_sensors_middle()
         align_timer = TimeR()

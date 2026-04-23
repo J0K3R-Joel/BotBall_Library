@@ -112,7 +112,7 @@ class FileR:
 
 
 	# =================== PUBLIC METHODS ==================
-	def creator(self, path: str, text: str = '') -> None:
+	def creator(self, path: str, text: str = '') -> bool:
 		"""
 		Create a file or directory
 
@@ -121,13 +121,13 @@ class FileR:
 			text (str, optional):
 
 		Returns:
-			None
+			bool: If the file creation did not work (file already exists) (-> False) or if the file got created (True)
 		"""
 		file_path = self._build_file_path(path)
 
 		if os.path.exists(file_path):
 			log(f'Path {file_path} already exists, nothing to create.', important=True)
-			return
+			return False
 
 		path, potential_file, contains_file = self._separate_file_from_path(file_path)
 		if not os.path.exists(path):
@@ -137,7 +137,7 @@ class FileR:
 			self.writer(file_path, 'w', text)
 
 		log(f'Path {file_path} created!')
-
+		return True
 
 	def reader(self, file_name: str, type_name: str = 'str'):
 		"""

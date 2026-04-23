@@ -15,6 +15,9 @@ PRIORITY_SCRIPTS=("wifi_executor.sh" "comm_executor.sh" "bias_creater.sh" "util_
 FINAL_SCRIPT="wifi_finisher.sh"
 FINAL_SCRIPT_PATH="$SCRIPTS_DIR/$FINAL_SCRIPT"
 
+# Set the timezone
+timedatectl set-timezone Europe/Vienna
+
 # Change permissions for every user and project that gets created (for BotBall)
 chmod 777 "/home/kipr/Documents/KISS"/*
 

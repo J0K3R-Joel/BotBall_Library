@@ -143,8 +143,8 @@ class LightSensor(Analog):
         try:
             if self.file_manager.exists(file_name):
                 old_val = self.file_manager.reader(file_name, 'int')
-                measured_value = (old_val + measured_value) // 2
-            self.file_manager.writer(file_name, 'w', measured_value)
+                measured_value = int(old_val * 0.25 + measured_value * 0.75)
+            self.file_manager.writer(file_name, 'w', str(measured_value))
             self.val_black = measured_value
         except Exception as e:
             log(str(e), in_exception=True)
@@ -166,8 +166,8 @@ class LightSensor(Analog):
         try:
             if self.file_manager.exists(file_name):
                 old_val = self.file_manager.reader(file_name, 'int')
-                measured_value = (old_val + measured_value) // 2
-            self.file_manager.writer(file_name, 'w', measured_value)
+                measured_value = int(old_val * 0.25 + measured_value * 0.75)
+            self.file_manager.writer(file_name, 'w', str(measured_value))
             self.val_white = measured_value
         except Exception as e:
             log(str(e), in_exception=True)

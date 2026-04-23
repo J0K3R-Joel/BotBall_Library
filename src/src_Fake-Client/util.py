@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import multiprocessing
 import os, sys
 sys.path.append("/usr/lib")
 
@@ -20,6 +21,7 @@ try:
     from digital import Digital  # selfmade
     from light_sensor import LightSensor  # selfmade
     from distance_sensor import DistanceSensor  # selfmade
+    from timer import TimeR  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
 
@@ -362,6 +364,111 @@ class Util:
         while not self.button_fr.is_pressed():
             continue
 
+    def start_IMU_view_total(self):
+        globals()['IMU_gyro_x'], globals()['IMU_gyro_y'], globals()['IMU_gyro_z'] = 0, 0, 0
+        globals()['IMU_accel_x'], globals()['IMU_accel_y'], globals()['IMU_accel_z'] = 0, 0, 0
+        self.IMU_stop = False
+
+        def collect_data():
+            global IMU_gyro_x, IMU_gyro_y, IMU_gyro_z, IMU_accel_x, IMU_accel_y, IMU_accel_z
+            exists = self.file_manager.exists('IMU_stopper_total.txt')
+            if exists:
+                self.file_manager.remover('IMU_stopper_total.txt')
+            self.file_manager.creator('IMU_stopper_total.txt', 'exists')
+
+            def look_at_file():
+                while True:
+                    k.msleep(10)
+                    text = self.file_manager.reader('IMU_stopper_total.txt')
+                    if not text:
+                        break
+
+                self.file_manager.remover('IMU_stopper_total.txt')
+                self.IMU_stop = True
+
+            threading.Thread(target=look_at_file).start()
+
+            while not self.IMU_stop:
+                IMU_gyro_x += k.gyro_x()
+                IMU_gyro_y += k.gyro_y()
+                IMU_gyro_z += k.gyro_z()
+                IMU_accel_x += k.accel_x()
+                IMU_accel_y += k.accel_y()
+                IMU_accel_z += k.accel_z()
+
+            log(f"\nTotal IMU values:\n"
+                f"\tgyro x: {IMU_gyro_x}\n"
+                f"\tgyro y: {IMU_gyro_y}\n"
+                f"\tgyro z: {IMU_gyro_z}\n"
+                f"\taccel x: {IMU_accel_x}\n"
+                f"\taccel y: {IMU_accel_y}\n"
+                f"\taccel z: {IMU_accel_z}\n", important=True)
+
+        multiprocessing.Process(target=collect_data).start()
+
+    def start_IMU_view_difference(self):
+        globals()['IMU_gyro_x'], globals()['IMU_gyro_y'], globals()['IMU_gyro_z'] = 0, 0, 0
+        globals()['IMU_accel_x'], globals()['IMU_accel_y'], globals()['IMU_accel_z'] = 0, 0, 0
+        self.IMU_stop = False
+
+        def collect_data():
+            global IMU_gyro_x, IMU_gyro_y, IMU_gyro_z, IMU_accel_x, IMU_accel_y, IMU_accel_z
+            exists = self.file_manager.exists('IMU_stopper_difference.txt')
+            if exists:
+                self.file_manager.remover('IMU_stopper_difference.txt')
+            self.file_manager.creator('IMU_stopper_difference.txt', 'exists')
+
+            def look_at_file():
+                while True:
+                    k.msleep(10)
+                    text = self.file_manager.reader('IMU_stopper_difference.txt')
+                    if not text:
+                        break
+
+                self.file_manager.remover('IMU_stopper_difference.txt')
+                self.IMU_stop = True
+
+            threading.Thread(target=look_at_file).start()
+            beginning_gyro_x = k.gyro_x()
+            beginning_gyro_y = k.gyro_y()
+            beginning_gyro_z = k.gyro_z()
+            beginning_accel_x = k.accel_x()
+            beginning_accel_y = k.accel_y()
+            beginning_accel_z = k.accel_z()
+
+            start_timer = TimeR()
+            lower_timer = TimeR()
+
+            total_lower_time = 0
+            start_timer.start_timer_millis()
+            while not self.IMU_stop:
+                lower_timer.start_timer_millis()
+                IMU_gyro_x += k.gyro_x()
+                IMU_gyro_y += k.gyro_y()
+                IMU_gyro_z += k.gyro_z()
+                IMU_accel_x += k.accel_x()
+                IMU_accel_y += k.accel_y()
+                IMU_accel_z += k.accel_z()
+                total_lower_time += lower_timer.stop_timer()
+
+            finished_at_original = start_timer.stop_timer()
+            finished_at = finished_at_original - (finished_at_original - total_lower_time)
+
+            log(f"\nIMU difference values:\n"
+                f"\tgyro x: {(IMU_gyro_x//finished_at)-beginning_gyro_x}\n"
+                f"\tgyro y: {(IMU_gyro_y//finished_at)-beginning_gyro_y}\n"
+                f"\tgyro z: {(IMU_gyro_z//finished_at)-beginning_gyro_z}\n"
+                f"\taccel x: {(IMU_accel_x//finished_at)-beginning_accel_x}\n"
+                f"\taccel y: {(IMU_accel_y//finished_at)-beginning_accel_y}\n"
+                f"\taccel z: {(IMU_accel_z//finished_at)-beginning_accel_z}\n", important=True)
+
+        multiprocessing.Process(target=collect_data).start()
+
+    def stop_IMU_view_total(self):
+        self.file_manager.cleaner('IMU_stopper_total.txt')
+
+    def stop_IMU_view_difference(self):
+        self.file_manager.cleaner('IMU_stopper_difference.txt')
 
     def toggle_local_test_variable(self) -> str:
         """

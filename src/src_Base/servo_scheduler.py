@@ -140,7 +140,7 @@ class ServoScheduler:
 
     def set_pos(self, port: int, pos: int):
         k.enable_servo(port)
-        millis = int((abs(k.get_servo_position(port) - pos)))
+        millis = abs(k.get_servo_position(port) - pos)//3
 
         k.set_servo_position(port, pos)
         k.msleep(millis)

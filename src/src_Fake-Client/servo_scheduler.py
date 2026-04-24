@@ -139,11 +139,12 @@ class ServoScheduler:
             log(str(e), in_exception=True)
 
     def set_pos(self, port: int, pos: int):
-        millis = int((abs(k.get_servo_position(port) - pos)))
-
         k.enable_servo(port)
+        millis = abs(k.get_servo_position(port) - pos)//3
+
         k.set_servo_position(port, pos)
         k.msleep(millis)
+        k.disable_servo(port)
 
     def set_position(self, port: int, pos: int) -> bool:
         """

@@ -15,6 +15,7 @@ try:
     from datetime import datetime
     import time
     from threading import Lock
+    from timer import TimeR  # selfmade
     from camera_manager import CameraManager  # selfmade
 except Exception as e:
     log(f'Import Exception: {str(e)}', important=True, in_exception=True)
@@ -684,15 +685,15 @@ class CameraObjectDetector:
         return found
 
     # x----------x wait methods x------------x
-    def wait_for_object(self, object_name: str, interval: float=0.25, min_matches: int =35, max_hue_diff: int=10, max_secs: float=999999.0) -> bool:
+    def wait_for_object(self, object_name: str, interval: float=0.01, min_matches: int=50, max_hue_diff: int=5, max_secs: float=999999.0) -> bool:
         '''
-        takes multiple images for as long as the timeout limit is not hit or the object is not found. If the object is found within the limit, it exits this function
+        Takes multiple images for as long as the timeout limit is not hit or the object is not found. If the object is found within the limit, it exits this function
 
         Args:
             object_name (str): the name of the object (the folder name of the object)
             interval (float, optional): the time in seconds between two pictures (default: 0.25)
-            min_matches (int, optional): the least amount of shape matches to be able to see if its the same object by shape. Higher value -> more strict (default: 35)
-            max_hue_diff (int, optional): the forgiveness of color. Lower value -> more strict (less forgiving by having a different color (default: 10)
+            min_matches (int, optional): the least amount of shape matches to be able to see if it's the same object by shape. Higher value -> stricter (default: 35)
+            max_hue_diff (int, optional): the forgiveness of color. Lower value -> stricter (less forgiving by having a different color (default: 10)
             max_secs (float, optional): The most amount of time in seconds, which it is allowed to wait for the object to be found (default: 999999.0)
 
         Returns:
@@ -721,8 +722,9 @@ class CameraObjectDetector:
         frame = None
 
         log("waiting for object")
-        start_time = time.time()
-        while time.time() - start_time < max_secs:
+        start_timer = TimeR()
+        start_timer.start_timer_sec()
+        while start_timer.stop_timer(False) < max_secs:
             frame = self.camera_manager.get_frame()
 
             corrected = self._apply_bias(frame)
@@ -748,6 +750,7 @@ class CameraObjectDetector:
             hue_frame = (lower_frame[0] + upper_frame[0]) // 2
             hue_diff = abs(int(hue_frame) - int(hue_template))
 
+            print(f'{good_matches = }\n{hue_diff = }\n=======================================================', flush=True)
             if good_matches >= min_matches and hue_diff <= max_hue_diff:
                 frame_marked = frame.copy()
                 self._mark_detected_object(frame_marked, contour_frame)

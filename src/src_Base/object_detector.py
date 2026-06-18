@@ -443,7 +443,6 @@ class CameraObjectDetector:
         min_brightness = 0
         called_function = False
         try:
-            self.camera_manager.set_warmed_up(False)
             while True:
                 frame = self.camera_manager.get_frame()
 

@@ -216,7 +216,7 @@ class base_driver:
 
 
     def _set_threshold_strength(self):
-        self._threshold_strength = file_Manager.reader('threshold_file.txt').strip()
+        self._threshold_strength = filed_Manager.reader('threshold_file.txt').strip()
 
     def _reverse_threshold_strength(self):
         cur_strength = file_Manager.reader('threshold_file.txt').strip()
@@ -850,6 +850,7 @@ class base_driver:
         Returns:
             None
         """
+        print('Calibrating....', flush=True)
         for i in range(times):
             self.calibrate(output=output)
             print(f'=== {i + 1} / {times} times calibrated ===', flush=True)

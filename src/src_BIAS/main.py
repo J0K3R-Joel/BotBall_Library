@@ -137,6 +137,7 @@ def main():
         # Step 0: Create the global instances
         # HINT: You will need this all the time, so do not comment the next line out!
         # HINT: After execution of a function - except the next one ("Instancer_Setup") - you can comment it out so you do not get distracted
+        # HINT: Execute every step after another, not all at the same time. (Step 0 still cannot be commented out)
         #Instancer_Setup()
 
         # Step 1: Register the light values for the front, back and side brightness sensor to know when it should see black / white

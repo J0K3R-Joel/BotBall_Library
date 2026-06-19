@@ -207,7 +207,7 @@ class base_driver:
             self.standard_axis_function = k.gyro_z
             self.standard_bias_accel = self.bias_accel_z
         else:
-            log('RUN THE "hardware_orientation_identification" FUNCTION TO IDENTIFY THE NECESSARY AXIS (X, Y, Z)', important=True)
+            log('RUN THE "threshold_identification" FUNCTION TO IDENTIFY THE NECESSARY AXIS (X, Y, Z)', important=True)
             self.standard_axis_function = None
 
 
@@ -850,6 +850,7 @@ class base_driver:
         Returns:
             None
         """
+        print('Calibrating....', flush=True)
         for i in range(times):
             self.calibrate(output=output)
             print(f'=== {i + 1} / {times} times calibrated ===', flush=True)
@@ -3714,7 +3715,7 @@ class Mecanum_Wheels_four(base_driver):
                 self.bl_wheel.drive_dfw()
                 self.br_wheel.drive_dbw()
 
-            return abs(time_front - time_back)/2
+            return abs(time_front - time_back)#/2
 
 
         t_timer.start_timer_sec()
@@ -4212,7 +4213,7 @@ class Mecanum_Wheels_four(base_driver):
 
         if 180 < degree <= 0:
             log('Only values from range 0> - 180 are valid for the "degree" parameter', in_exception=True)
-            raise ValueError('turn_degrees_far() Exception: Only values from range 0> - 180 are valid for the "degree" parameter')
+            raise ValueError('Only values from range 0> - 180 are valid for the "degree" parameter')
         div = 180 / degree
         value = self.ONEEIGHTY_DEGREES_SECS / div
         if degree <= 90:
@@ -5817,7 +5818,7 @@ class Mecanum_Wheels_four(base_driver):
     @DriveableFunction
     def drive_align_line(self, direction: str, forward: bool) -> None:
         """
-        If you are anywhere on the black line, you can align yourself on the black line. If you are not on the line, it drives (forwards or backwards, depends if the speed is positive or negative) until the line was found and then aligns as desired.
+        If you are not on the line, it drives (forwards or backwards, depends if the speed is positive or negative) until the line was found and then aligns as desired.
         Improvement: align backwards, so there is no need to make a 180 degrees turn. Would spare you some time.
 
         Args:

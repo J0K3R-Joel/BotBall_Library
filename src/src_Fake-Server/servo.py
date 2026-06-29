@@ -22,7 +22,7 @@ except Exception as e:
     log(f'Import Exception in WifiConnector: {str(e)}', important=True, in_exception=True)
 
 class ServoX:
-    def __init__(self, port: int, max_value: int = 2047, min_value: int = 0):
+    def __init__(self, port: int, max_value: int = 2047, min_value: int = 0, name: str = ''):
         """
         Class for using the servos. HINT: You can use this class for micro servos as well, just set the min and max values to fit the micro servo
 
@@ -30,8 +30,10 @@ class ServoX:
             port (int): The integer value from where it is plugged in (the hardware) (e.g.: 1; 3; 4; 2).
             max_value (int, optional): The highest value which the servo can go to (default: 2047)
             min_value (int, optional): The lowest value which the servo can go to (default: 0)
+            name (str, optional): The name that should be shown if an error occurs (default: '' -> Port number will be shown)
         """
         self.port = port
+        self.name = name if name else self.port
         if min_value > max_value:
             self.max_value = min_value
             self.min_value = max_value
@@ -57,7 +59,7 @@ class ServoX:
         """
         in_range = self.min_value <= value <= self.max_value
         if not in_range:
-            log(f"{value} is out of range, where the range is between {self.min_value} to {self.max_value}")
+            log(f"Port / Name - {self.name}: {value} is out of range, where the range is between {self.min_value} to {self.max_value}")
             self.new_pos_val = self.min_value if value <= self.min_value else self.max_value
         return in_range
 
@@ -180,12 +182,23 @@ class ServoX:
             return
 
         counter = int(multi)
+        last_pos = self.get_pos()
         if multi > 0:
             while self.get_pos() < value:
                 self.add_to_pos(counter)
+                if last_pos == self.get_pos():  # did not move last time
+                    counter += 1
+                elif abs(counter) != abs(multi):
+                    counter -= 1
+                last_pos = self.get_pos()
         else:
             while self.get_pos() > value:
                 self.add_to_pos(counter)
+                if last_pos == self.get_pos():  # did not move last time
+                    counter -= 1
+                elif abs(counter) != abs(multi):
+                    counter += 1
+                last_pos = self.get_pos()
 
     def range_from_to_pos(self, interval: list, multi: int = 2) -> None:
         """

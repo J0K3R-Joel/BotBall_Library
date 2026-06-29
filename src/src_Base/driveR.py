@@ -216,7 +216,7 @@ class base_driver:
 
 
     def _set_threshold_strength(self):
-        self._threshold_strength = filed_Manager.reader('threshold_file.txt').strip()
+        self._threshold_strength = file_Manager.reader('threshold_file.txt').strip()
 
     def _reverse_threshold_strength(self):
         cur_strength = file_Manager.reader('threshold_file.txt').strip()
@@ -4858,13 +4858,13 @@ class Mecanum_Wheels_four(base_driver):
         self.break_all_motors()
 
     @DriveableFunction
-    def align_drive_front(self, drive_bw: bool = True, max_millis: int = 9999999) -> None:
+    def align_drive_front(self, drive_bw: bool = True, millis: int = 9999999) -> None:
         """
         aligning the front by bumping into something, so both buttons on the front will be pressed. If there's an error by pressing the buttons, a fail save will occur. If at will it also drive backwards a little bit to be able to turn after it bumped into something
 
         Args:
             drive_bw (bool, optional): If you desire to drive back a little bit (default: True) -> (but sometimes you want to stay aligned at the object)
-            max_millis (int, optional): The maximum amount of time (in milliseconds) on how long it can try to align itself (default: 9999999)
+            millis (int, optional): The maximum amount of time (in milliseconds) on how long it can try to align itself (default: 9999999)
 
         Returns:
             None
@@ -4874,7 +4874,7 @@ class Mecanum_Wheels_four(base_driver):
         align_front_timer = TimeR()
         align_front_timer.start_timer_millis()
 
-        while align_front_timer.stop_timer(False) < max_millis:
+        while align_front_timer.stop_timer(False) < millis:
             if self.button_fl.is_pressed() and self.button_fr.is_pressed():
                 break
             elif self.button_fl.is_pressed():
@@ -4901,13 +4901,13 @@ class Mecanum_Wheels_four(base_driver):
             self.break_all_motors()
 
     @DriveableFunction
-    def align_drive_back(self, drive_fw: bool = True, max_millis: int = 9999999) -> None:
+    def align_drive_back(self, drive_fw: bool = True, millis: int = 9999999) -> None:
         """
         aligning the back by bumping into something, so both buttons on the back will be pressed. If there's an error by pressing the buttons, a fail save will occur. If at will it also drive forwards a little bit to be able to turn after it bumped into something
 
         Args:
             drive_fw (bool, optional): If you desire to drive forward a little bit (default: True) -> (but sometimes you want to stay aligned at the object)
-            max_millis (int, optional): The maximum amount of time (in milliseconds) on how long it can try to align itself (default: 9999999)
+            millis (int, optional): The maximum amount of time (in milliseconds) on how long it can try to align itself (default: 9999999)
 
         Returns:
             None
@@ -4915,7 +4915,7 @@ class Mecanum_Wheels_four(base_driver):
         self.check_instances_buttons_back()
         align_back_timer = TimeR()
         align_back_timer.start_timer_millis()
-        while align_back_timer.stop_timer(False) < max_millis:
+        while align_back_timer.stop_timer(False) < millis:
             if self.button_br.is_pressed() and self.button_bl.is_pressed():
                 break
             elif self.button_br.is_pressed():

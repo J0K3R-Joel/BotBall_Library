@@ -59,7 +59,7 @@ class ServoX:
         """
         in_range = self.min_value <= value <= self.max_value
         if not in_range:
-            log(f"{self.name}: {value} is out of range, where the range is between {self.min_value} to {self.max_value}")
+            log(f"Port / Name - {self.name}: {value} is out of range, where the range is between {self.min_value} to {self.max_value}")
             self.new_pos_val = self.min_value if value <= self.min_value else self.max_value
         return in_range
 

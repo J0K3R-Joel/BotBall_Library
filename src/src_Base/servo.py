@@ -183,9 +183,11 @@ class ServoX:
 
         counter = int(multi)
         last_pos = self.get_pos()
-        if multi > 0:
+        if curr_pos < value:
             while self.get_pos() < value:
                 self.add_to_pos(counter)
+                if self.get_pos() + counter > value:
+                    break
                 if last_pos == self.get_pos():  # did not move last time
                     counter += 1
                 elif abs(counter) != abs(multi):
@@ -194,6 +196,8 @@ class ServoX:
         else:
             while self.get_pos() > value:
                 self.add_to_pos(counter)
+                if self.get_pos() + counter < value:
+                    break
                 if last_pos == self.get_pos():  # did not move last time
                     counter -= 1
                 elif abs(counter) != abs(multi):

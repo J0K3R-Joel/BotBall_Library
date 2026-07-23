@@ -83,7 +83,7 @@ def Instancer_Setup():
         # ================= DriveR ==================
         globals()['Fahrzeug'] = Rubber_Wheels_two(Instance_right_wheel=Rad_R,
                                            Instance_left_wheel=Rad_L,
-                                           False,
+                                           wheels_at_front=False,
                                            Instance_distance_sensor=Distanz,
                                            Instance_light_sensor_front=Helligkeit_V,
                                            Instance_light_sensor_back=Helligkeit_H,

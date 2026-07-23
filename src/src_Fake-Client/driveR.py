@@ -2058,7 +2058,7 @@ class Solarbotic_Wheels_two(base_driver):
 
 
     @DriveableFunction
-    def drive_straight_condition_digital(self, instance: Digital, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
+    def drive_straight_condition_digital(self, instance: Digital, condition: str, value: int, millis: int = 9999999, speed: int = None) -> bool:
         """
         drive straight until a digital value gets reached for the desired instance
 
@@ -2070,7 +2070,7 @@ class Solarbotic_Wheels_two(base_driver):
             speed (int, optional): The speed it drives straight (default: ds_speed)
 
         Returns:
-            None
+            bool @TODO
         """
         if speed is None:
             speed = self.ds_speed
@@ -2122,9 +2122,11 @@ class Solarbotic_Wheels_two(base_driver):
             raise ValueError('Only "==" or "!=" is available for the condition!')
         self.break_all_motors()
 
+        return straight_timer.stop_timer(False) < millis
+
 
     @DriveableFunction
-    def drive_straight_condition_analog(self, instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
+    def drive_straight_condition_analog(self, instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> bool:
         """
         drive straight until an analog value gets reached for the desired instance
 
@@ -2136,7 +2138,7 @@ class Solarbotic_Wheels_two(base_driver):
             speed (int, optional): The speed it drives straight (default: ds_speed)
 
         Returns:
-            None
+            bool @TODO
         """
         if speed is None:
             speed = self.ds_speed
@@ -2220,6 +2222,8 @@ class Solarbotic_Wheels_two(base_driver):
                     last_bias = this_bias
                     theta += this_bias - self.standard_bias_gyro
         self.break_all_motors()
+
+        return straight_timer.stop_timer(False) < millis
 
 
     @DriveableFunction
@@ -3018,7 +3022,7 @@ class Solarbotic_Wheels_two(base_driver):
 
     @DriveableFunction
     def turn_wheel_condition_digital(self, direction: str, instance: Digital, condition: str, value: int,
-                                     millis: int = 9999999, speed: int = None) -> None:
+                                     millis: int = 9999999, speed: int = None) -> bool:
         """
         Turning with one wheel to the desired direction until a button gets pressed (or released)
 
@@ -3031,7 +3035,7 @@ class Solarbotic_Wheels_two(base_driver):
             speed (int, optional): how fast it should turn (default: ds_speed)
 
         Returns:
-            None
+            bool @TODO
         """
         # Information: the time it takes to do a normal 180-degree turn is double the amount you need for turning 180 degrees with only one wheel -> self.ONEEIGHTY_DEGREES_SECS = 90 degrees when using this function
         if direction != 'right' and direction != 'left':
@@ -3061,10 +3065,12 @@ class Solarbotic_Wheels_two(base_driver):
             raise ValueError('The "condition" parameter can only be something like "==; !="')
         wheel_to_drive.stop()
 
+        return turn_wheel_timer.stop_timer(False) < millis
+
 
     @DriveableFunction
     def turn_wheel_condition_analog(self, direction: str, instance: Analog, condition: str, value: int,
-                                    millis: int = 9999999, speed: int = None) -> None:
+                                    millis: int = 9999999, speed: int = None) -> bool:
         """
         Turning with one wheel to the desired direction until a value gets of an analog sensor gets reached
 
@@ -3077,7 +3083,7 @@ class Solarbotic_Wheels_two(base_driver):
             speed (int, optional): how fast it should turn (and in which direction) (default: ds_speed)
 
         Returns:
-            None
+            bool @TODO
         """
         # Information: the time it takes to do a normal 180 degree turn is double the amount you need for turning 180 degrees with only one wheel -> self.ONEEIGHTY_DEGREES_SECS = 90 degrees when using this function
         if direction != 'right' and direction != 'left':
@@ -3117,6 +3123,8 @@ class Solarbotic_Wheels_two(base_driver):
             log('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="', in_exception=True)
             raise ValueError('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="')
         self.break_all_motors()
+
+        return turn_wheel_timer.stop_timer(False) < millis
 
 
     @DriveableFunction
@@ -4238,7 +4246,7 @@ class Mecanum_Wheels_four(base_driver):
 
     @DriveableFunction
     def turn_wheel_condition_digital(self, direction: str, instance: Digital, condition: str, value: int,
-                                     millis: int = 9999999, speed: int = None) -> None:
+                                     millis: int = 9999999, speed: int = None) -> bool:
         """
         Turning with one wheel to the desired direction until a button gets pressed (or released)
 
@@ -4251,7 +4259,7 @@ class Mecanum_Wheels_four(base_driver):
             speed (int, optional): how fast it should turn (default: ds_speed)
 
         Returns:
-            None
+            bool @TODO
         """
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
@@ -4282,9 +4290,11 @@ class Mecanum_Wheels_four(base_driver):
             raise ValueError('The "condition" parameter can only be something like "==; !="')
         self.break_all_motors()
 
+        return turn_wheel_timer.stop_timer(False) < millis
+
 
     @DriveableFunction
-    def turn_wheel_condition_analog(self, direction: str, instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
+    def turn_wheel_condition_analog(self, direction: str, instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> bool:
         """
         Turning with one wheel to the desired direction until a value gets of an analog sensor gets reached
 
@@ -4297,7 +4307,7 @@ class Mecanum_Wheels_four(base_driver):
             speed (int, optional): how fast it should turn (default: ds_speed)
 
         Returns:
-            None
+            bool @TODO
         """
         if direction != 'right' and direction != 'left':
             log('Only "right" or "left" are valid options for the "direction" parameter', in_exception=True)
@@ -4343,6 +4353,8 @@ class Mecanum_Wheels_four(base_driver):
             log('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="', in_exception=True)
             raise ValueError('The "condition" parameter can only be something like ">; <; >=; <=; ==; !="')
         self.break_all_motors()
+
+        return turn_wheel_timer.stop_timer(False) < millis
 
 
     @DriveableFunction
@@ -4858,13 +4870,13 @@ class Mecanum_Wheels_four(base_driver):
         self.break_all_motors()
 
     @DriveableFunction
-    def align_drive_front(self, drive_bw: bool = True, max_millis: int = 9999999) -> None:
+    def align_drive_front(self, drive_bw: bool = True, millis: int = 9999999) -> None:
         """
         aligning the front by bumping into something, so both buttons on the front will be pressed. If there's an error by pressing the buttons, a fail save will occur. If at will it also drive backwards a little bit to be able to turn after it bumped into something
 
         Args:
             drive_bw (bool, optional): If you desire to drive back a little bit (default: True) -> (but sometimes you want to stay aligned at the object)
-            max_millis (int, optional): The maximum amount of time (in milliseconds) on how long it can try to align itself (default: 9999999)
+            millis (int, optional): The maximum amount of time (in milliseconds) on how long it can try to align itself (default: 9999999)
 
         Returns:
             None
@@ -4874,7 +4886,7 @@ class Mecanum_Wheels_four(base_driver):
         align_front_timer = TimeR()
         align_front_timer.start_timer_millis()
 
-        while align_front_timer.stop_timer(False) < max_millis:
+        while align_front_timer.stop_timer(False) < millis:
             if self.button_fl.is_pressed() and self.button_fr.is_pressed():
                 break
             elif self.button_fl.is_pressed():
@@ -4901,13 +4913,13 @@ class Mecanum_Wheels_four(base_driver):
             self.break_all_motors()
 
     @DriveableFunction
-    def align_drive_back(self, drive_fw: bool = True, max_millis: int = 9999999) -> None:
+    def align_drive_back(self, drive_fw: bool = True, millis: int = 9999999) -> None:
         """
         aligning the back by bumping into something, so both buttons on the back will be pressed. If there's an error by pressing the buttons, a fail save will occur. If at will it also drive forwards a little bit to be able to turn after it bumped into something
 
         Args:
             drive_fw (bool, optional): If you desire to drive forward a little bit (default: True) -> (but sometimes you want to stay aligned at the object)
-            max_millis (int, optional): The maximum amount of time (in milliseconds) on how long it can try to align itself (default: 9999999)
+            millis (int, optional): The maximum amount of time (in milliseconds) on how long it can try to align itself (default: 9999999)
 
         Returns:
             None
@@ -4915,7 +4927,7 @@ class Mecanum_Wheels_four(base_driver):
         self.check_instances_buttons_back()
         align_back_timer = TimeR()
         align_back_timer.start_timer_millis()
-        while align_back_timer.stop_timer(False) < max_millis:
+        while align_back_timer.stop_timer(False) < millis:
             if self.button_br.is_pressed() and self.button_bl.is_pressed():
                 break
             elif self.button_br.is_pressed():
@@ -4942,7 +4954,7 @@ class Mecanum_Wheels_four(base_driver):
             self.break_all_motors()
 
     @DriveableFunction
-    def drive_diagonal_condition_analog(self, end: str, side: str, instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
+    def drive_diagonal_condition_analog(self, end: str, side: str, instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> bool:
         """
         drive diagonal for as long as you want to (in millis)
 
@@ -4956,7 +4968,7 @@ class Mecanum_Wheels_four(base_driver):
             speed (int, optional): the speed it is going to drive sideways (default: ds_speed)
 
         Returns:
-            None
+            bool @TODO
         """
         if speed is None:
             speed = self.ds_speed
@@ -5069,10 +5081,12 @@ class Mecanum_Wheels_four(base_driver):
             raise ValueError('the "condition" parameter has to be either "<" / "lt" ; ">" / "ht" ; "<=" / "het" ; ">=" / "let"')
 
         self.break_all_motors()
+        return diagonal_timer.stop_timer(False) < millis
+
 
     @DriveableFunction
     def drive_diagonal_condition_digital(self, end: str, side: str, instance: Digital, condition: str, value: int,
-                                        millis: int = 9999999, speed: int = None) -> None:
+                                        millis: int = 9999999, speed: int = None) -> bool:
         """
         drive diagonal for as long as you want to (in millis)
 
@@ -5086,7 +5100,7 @@ class Mecanum_Wheels_four(base_driver):
             speed (int, optional): the speed it is going to drive sideways (default: ds_speed)
 
         Returns:
-            None
+            bool @TODO
         """
         if speed is None:
             speed = self.ds_speed
@@ -5164,12 +5178,13 @@ class Mecanum_Wheels_four(base_driver):
             raise ValueError('Only "==" or "!=" is available for the condition!')
 
         self.break_all_motors()
+        return diagonal_timer.stop_timer(False) < millis
 
 
     @DriveableFunction
     def drive_side_condition_analog(self, direction: str, instance: Analog, condition: str, value: int,
                                     millis: int = 9999999,
-                                    speed: int = None) -> None:
+                                    speed: int = None) -> bool:
         """
         drive sideways until an analog value gets reached for the desired instance
 
@@ -5182,7 +5197,7 @@ class Mecanum_Wheels_four(base_driver):
             speed (int, optional): The speed it drives sideways (default: ds_speed)
 
         Returns:
-            None
+            bool @TODO
         """
         if speed is None:
             speed = self.ds_speed
@@ -5404,11 +5419,12 @@ class Mecanum_Wheels_four(base_driver):
             log('the "condition" parameter has to be either "<" / "lt" ; ">" / "ht" ; "<=" / "het" ; ">=" / "let"')
             raise ValueError('the "condition" parameter has to be either "<" / "lt" ; ">" / "ht" ; "<=" / "het" ; ">=" / "let"')
         self.break_all_motors()
+        return side_timer.stop_timer(False) < millis
 
     @DriveableFunction
     def drive_side_condition_digital(self, direction: str, instance: Digital, condition: str, value: int,
                                      millis: int = 9999999,
-                                     speed: int = None) -> None:
+                                     speed: int = None) -> bool:
         """
         drive sideways until an analog value gets reached for the desired instance
 
@@ -5421,7 +5437,7 @@ class Mecanum_Wheels_four(base_driver):
             speed (int, optional): The speed it drives sideways (default: ds_speed)
 
         Returns:
-            None
+            bool @TODO
         """
         if speed is None:
             speed = self.ds_speed
@@ -5550,10 +5566,11 @@ class Mecanum_Wheels_four(base_driver):
             raise ValueError('Only "==" or "!=" is available for the condition!')
 
         self.break_all_motors()
+        return side_timer.stop_timer(False) < millis
 
 
     @DriveableFunction
-    def drive_straight_condition_analog(self, instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> None:
+    def drive_straight_condition_analog(self, instance: Analog, condition: str, value: int, millis: int = 9999999, speed: int = None) -> bool:
         """
         drive straight until an analog value gets reached for the desired instance
 
@@ -5565,7 +5582,7 @@ class Mecanum_Wheels_four(base_driver):
             speed (int, optional): The speed it drives sideways (default: ds_speed)
 
         Returns:
-            None
+            bool @TODO
        """
         if speed is None:
             speed = self.ds_speed
@@ -5680,10 +5697,11 @@ class Mecanum_Wheels_four(base_driver):
             log('the "condition" parameter has to be either "<" / "lt" ; ">" / "ht" ; "<=" / "het" ; ">=" / "let"')
             raise ValueError('the "condition" parameter has to be either "<" / "lt" ; ">" / "ht" ; "<=" / "het" ; ">=" / "let"')
         self.break_all_motors()
+        return straight_timer.stop_timer(False) < millis
 
     @DriveableFunction
     def drive_straight_condition_digital(self, instance: Digital, condition: str, value: int, millis: int = 9999999,
-                                         speed: int = None):
+                                         speed: int = None) -> bool:
         """
         drive straight until a digital value gets reached for the desired instance
 
@@ -5695,7 +5713,7 @@ class Mecanum_Wheels_four(base_driver):
             speed (int, optional): The speed it drives straight (default: ds_speed)
 
         Returns:
-            None
+            bool
         """
         if speed is None:
             speed = self.ds_speed
@@ -5763,6 +5781,7 @@ class Mecanum_Wheels_four(base_driver):
             log('Only "==" or "!=" is available for the condition!', important=True, in_exception=True)
             raise ValueError('Only "==" or "!=" is available for the condition!')
         self.break_all_motors()
+        return straight_timer.stop_timer(False) < millis
 
 
     @DriveableFunction
